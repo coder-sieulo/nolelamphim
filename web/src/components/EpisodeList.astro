@@ -79,7 +79,7 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
     }
   </div>
 
-  <div class="content-card px-5 py-4">
+  <div class="episode-panel px-5 py-4">
     <div id="episode-grid" class="flex flex-wrap gap-2">
       {
         initialEpisodes.length > 0 ? (
@@ -87,7 +87,7 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
             <a
               
               href={`/xem/${slug}/${ep.slug}`}
-              class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl glass-tile text-text-secondary text-xs flex items-center justify-center hover:text-white transition-all"
+              class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-xl text-xs flex items-center justify-center"
             >
               {ep.name}
             </a>
@@ -189,7 +189,7 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
             ? visible
                 .map(
                   (ep) =>
-                    `<a href="/xem/${slug}/${escapeHTML(ep.slug)}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl glass-tile text-text-secondary text-xs flex items-center justify-center hover:text-white transition-all">${escapeHTML(ep.name)}</a>`,
+                    `<a href="/xem/${slug}/${escapeHTML(ep.slug)}" class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-xl text-xs flex items-center justify-center">${escapeHTML(ep.name)}</a>`,
                 )
                 .join('')
             : `<div class="w-full py-8 flex flex-col items-center justify-center text-center">

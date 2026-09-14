@@ -215,6 +215,32 @@ body::before {
     0 0 0 1px rgba(196, 75, 237, 0.15);
 }
 
+/* Nút tập phim — nổi rõ hơn glass-tile để tập phim dễ thấy, dễ bấm.
+   Nền sáng hơn + border rõ + viền tím khi hover theo ngôn ngữ brand. */
+.ep-btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.19) 0%, rgba(255, 255, 255, 0.08) 45%, rgba(255, 255, 255, 0.13) 100%),
+    rgba(30, 30, 60, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+.ep-btn:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.11) 45%, rgba(255, 255, 255, 0.17) 100%),
+    rgba(30, 30, 60, 0.5);
+  border-color: rgba(196, 75, 237, 0.55);
+  color: #ffffff;
+  box-shadow:
+    0 4px 18px rgba(196, 75, 237, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 1px rgba(196, 75, 237, 0.22);
+}
+
 /* Chip tĩnh nhỏ (thể loại, keyword, meta) — không cần blur */
 .glass-chip {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
@@ -261,6 +287,40 @@ body::before {
 #navbar #nav-shell {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+}
+
+/* Panel tập phim — nổi rõ hơn content-card thường:
+   nền sáng hơn, border tím nhẹ + shadow brand để người xem dễ nhận ra */
+.episode-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.045) 45%, rgba(255, 255, 255, 0.09) 100%),
+    rgba(26, 26, 56, 0.32);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  box-shadow:
+    0 10px 36px -12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(196, 75, 237, 0.12);
+}
+
+/* Tiêu đề "Tập phim" — nổi với gradient nhỏ */
+.episode-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.episode-title::before {
+  content: '';
+  width: 4px;
+  height: 1.1em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ff6b9d, #c44bed);
+  box-shadow: 0 0 10px rgba(196, 75, 237, 0.5);
 }
 #navbar.scrolled #nav-shell {
   padding-top: 0.25rem;
@@ -524,7 +584,9 @@ body::before {
   .liquid-glass,
   .content-card,
   .glass-pane,
-  .glass-tile {
+  .glass-tile,
+  .ep-btn,
+  .episode-panel {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -552,6 +614,18 @@ body::before {
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.025) 45%, rgba(255, 255, 255, 0.05) 100%),
       rgba(18, 18, 40, 0.55);
+  }
+
+  .ep-btn {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.1) 100%),
+      rgba(24, 24, 48, 0.4);
+  }
+
+  .episode-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.08) 100%),
+      rgba(22, 22, 48, 0.5);
   }
 
   /* Navbar luôn nền đục khi chưa cuộn để dễ đọc trên mobile */
