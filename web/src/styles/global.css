@@ -289,20 +289,39 @@ body::before {
   padding-bottom: 0.5rem;
 }
 
-/* Panel tập phim — nổi rõ hơn content-card thường:
-   nền sáng hơn, border tím nhẹ + shadow brand để người xem dễ nhận ra */
+/* Panel tập phim — NỔI BẬT riêng, không nhầm với content-card/glass khác:
+   viền gradient hồng→tím→xanh + nền tím đục + header riêng trội hẳn. */
 .episode-panel {
+  position: relative;
+  isolation: isolate;
+  border-radius: 16px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.045) 45%, rgba(255, 255, 255, 0.09) 100%),
-    rgba(26, 26, 56, 0.32);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.08) 100%),
+    rgba(34, 26, 58, 0.45);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
   box-shadow:
-    0 10px 36px -12px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 0 0 1px rgba(196, 75, 237, 0.12);
+    0 14px 42px -14px rgba(196, 75, 237, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.episode-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(255, 107, 157, 0.6), rgba(196, 75, 237, 0.6), rgba(74, 158, 255, 0.5));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.episode-header {
+  position: relative;
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(180deg, rgba(196, 75, 237, 0.16), rgba(255, 107, 157, 0.05));
 }
 
 /* Tiêu đề "Tập phim" — nổi với gradient nhỏ */
@@ -625,7 +644,7 @@ body::before {
   .episode-panel {
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.08) 100%),
-      rgba(22, 22, 48, 0.5);
+      rgba(28, 22, 50, 0.62);
   }
 
   /* Navbar luôn nền đục khi chưa cuộn để dễ đọc trên mobile */

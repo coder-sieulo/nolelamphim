@@ -35,70 +35,82 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
 ---
 
 <div class="episode-list" data-slug={slug} data-servers={dataAttr} data-per-page={PER_PAGE}>
-  <div class="flex items-center gap-2 mb-3 flex-wrap">
-    {
-      servers.length > 1 &&
-        servers.map((s, i) => (
-          <button
-           
-            type="button"
-            class={`ep-server px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-              i === 0 ? 'glass-tile-active text-white' : 'glass-tile text-text-secondary'
-            }`}
-            data-server={i}
-          >
-            {s.server_name.trim()}
-          </button>
-        ))
-    }
-
-    <form id="episode-jump" class="episode-jump ml-auto flex items-center gap-1.5 hidden" role="search" aria-label="Nhảy tới tập">
-      <input
-        id="episode-jump-input"
-        type="number"
-        min="1"
-        inputmode="numeric"
-        placeholder="Số tập"
-        aria-label="Nhập số tập"
-        class="w-20 px-2.5 py-1.5 rounded-xl glass-tile bg-transparent text-text-secondary text-xs outline-none placeholder:text-text-muted focus:ring-1 focus:ring-[#C44BED]/40 text-center"
-      />
-      <button
-        type="submit"
-        class="px-3 py-1.5 rounded-xl glass-tile text-text-secondary text-xs hover:text-white transition-colors"
-      >
-        Nhảy
-      </button>
-    </form>
-
-    {
-      totalPages > 1 && (
-        <span class="ep-count text-[11px] text-text-muted ml-auto">
-          {current?.list.length ?? 0} tập
+  <div class="episode-panel">
+    <div class="episode-header flex items-center justify-between gap-3 px-5 py-3 border-b border-white/10">
+      <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
+        <span class="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-[#FF6B9D] to-[#C44BED] text-white shadow-[0_2px_10px_rgba(196,75,237,0.4)]">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
         </span>
-      )
-    }
-  </div>
+        <span class="episode-title-text">Tập phim</span>
+        {totalPages > 1 && (
+          <span class="ep-count text-[11px] font-medium text-text-muted ml-1">
+            ({current?.list.length ?? 0} tập)
+          </span>
+        )}
+      </h3>
+      <form id="episode-jump" class="episode-jump flex items-center gap-1.5 hidden" role="search" aria-label="Nhảy tới tập">
+        <input
+          id="episode-jump-input"
+          type="number"
+          min="1"
+          inputmode="numeric"
+          placeholder="Số tập"
+          aria-label="Nhập số tập"
+          class="w-20 px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-text-secondary text-xs outline-none placeholder:text-text-muted focus:ring-1 focus:ring-[#C44BED]/60 focus:border-[#C44BED]/50 text-center"
+        />
+        <button
+          type="submit"
+          class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-text-secondary text-xs hover:text-white hover:border-[#C44BED]/50 transition-all"
+        >
+          Nhảy
+        </button>
+      </form>
+    </div>
 
-  <div class="episode-panel px-5 py-4">
-    <div id="episode-grid" class="flex flex-wrap gap-2">
-      {
-        initialEpisodes.length > 0 ? (
-          initialEpisodes.map((ep) => (
-            <a
-              
-              href={`/xem/${slug}/${ep.slug}`}
-              class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-xl text-xs flex items-center justify-center"
-            >
-              {ep.name}
-            </a>
-          ))
-        ) : (
-          <div class="w-full py-8 flex flex-col items-center justify-center text-center">
-            <p class="text-text-muted text-xs">Chưa có tập nào cho bộ phim này</p>
-            <p class="text-text-muted/70 text-[11px] mt-1">Vui lòng quay lại sau</p>
-          </div>
-        )
-      }
+    <div class="px-5 py-4">
+      <div class="flex items-center gap-2 mb-3 flex-wrap">
+        {
+          servers.length > 1 &&
+            servers.map((s, i) => (
+              <button
+                
+                type="button"
+                class={`ep-server px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                  i === 0
+                    ? 'glass-tile-active text-white border-white/20'
+                    : 'glass-tile text-text-secondary border-white/10'
+                }`}
+                data-server={i}
+              >
+                {s.server_name.trim()}
+              </button>
+            ))
+        }
+      </div>
+
+      <div
+        id="episode-grid"
+        class="flex flex-wrap gap-2"
+      >
+        {
+          initialEpisodes.length > 0 ? (
+            initialEpisodes.map((ep) => (
+              <a
+                
+                href={`/xem/${slug}/${ep.slug}`}
+                class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-xl text-xs flex items-center justify-center"
+              >
+                {ep.name}
+              </a>
+            ))
+          ) : (
+            <div class="w-full py-8 flex flex-col items-center justify-center text-center">
+              <p class="text-text-muted text-xs">Chưa có tập nào cho bộ phim này</p>
+              <p class="text-text-muted/70 text-[11px] mt-1">Vui lòng quay lại sau</p>
+            </div>
+          )
+        }
+      </div>
     </div>
   </div>
 

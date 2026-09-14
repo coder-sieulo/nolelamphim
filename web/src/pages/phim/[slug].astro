@@ -263,12 +263,7 @@ const trailerEmbed = youtubeEmbedUrl(movie.trailer_url)
         }
 
         {
-          episodes.length > 0 && (
-            <div>
-              <h3 class="episode-title mb-3">Tập phim</h3>
-              <EpisodeList slug={slug} servers={episodes} />
-            </div>
-          )
+          episodes.length > 0 && <EpisodeList slug={slug} servers={episodes} />
         }
 
         <SimilarMovies categories={movie.category ?? []} excludeSlug={slug} />
