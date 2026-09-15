@@ -54,6 +54,16 @@ const specialLoader = slug === 'am-anh'
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
   {embedOrigin && <link rel="preconnect" href={embedOrigin} slot="head" />}
   {
+    specialLoader && (
+      <div class="horror-bg fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden>
+        <div class="horror-bg-veil absolute inset-0"></div>
+        <div class="horror-bg-fog absolute -inset-10"></div>
+        <div class="horror-bg-vignette absolute inset-0"></div>
+        <div class="horror-bg-flicker absolute inset-0"></div>
+      </div>
+    )
+  }
+  {
     !currentEp ? (
       <div class="px-4 md:px-8 py-20 flex flex-col items-center">
         <p class="text-text-secondary text-sm">Không tìm thấy tập phim</p>
