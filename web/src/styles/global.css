@@ -445,6 +445,38 @@ html[data-theme='horror'] {
     radial-gradient(ellipse at 80% 75%, rgba(120, 0, 30, 0.3) 0%, transparent 55%),
     linear-gradient(180deg, #1a0408 0%, #0d0204 55%, #0a0103 100%);
 }
+
+/* ══ Noir (thám tử lừng danh conan) — đêm thám tử, ánh đèn hổ phách ══
+   Nền indigo/đen tím, glow vàng amber (ngọn đèn phá án) + tím neon nhẹ */
+html[data-theme='noir'] {
+  background:
+    radial-gradient(ellipse at 82% 8%, rgba(255, 170, 70, 0.16) 0%, transparent 45%),
+    radial-gradient(ellipse at 15% 18%, rgba(120, 80, 255, 0.14) 0%, transparent 52%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 140, 60, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, #17173a 0%, #10102e 45%, #0a0a1d 100%);
+}
+html[data-theme='noir'] .theme-bg-veil {
+  background:
+    radial-gradient(ellipse at 85% 12%, rgba(255, 180, 80, 0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 18% 85%, rgba(120, 80, 255, 0.13) 0%, transparent 55%);
+  animation: theme-blue-pulse 4.5s ease-in-out infinite;
+}
+html[data-theme='noir'] .theme-bg-fog {
+  background:
+    radial-gradient(ellipse 60% 40% at 78% 22%, rgba(255, 170, 70, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 20% 78%, rgba(120, 80, 255, 0.11) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 30% at 55% 45%, rgba(255, 150, 90, 0.07) 0%, transparent 70%);
+  filter: blur(40px);
+  animation: theme-fog-drift 18s ease-in-out infinite alternate;
+}
+html[data-theme='noir'] .theme-bg-vignette {
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(10, 8, 30, 0.5) 100%);
+}
+html[data-theme='noir'] .theme-bg-flicker {
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.12) 2px, rgba(0, 0, 0, 0.12) 3px);
+}
 html[data-theme] body {
   background: transparent;
 }
