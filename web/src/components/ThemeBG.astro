@@ -3,13 +3,14 @@ interface Props {
   name?: string
 }
 const { name = '' } = Astro.props
-const variant = name === 'doraemon' ? 'light' : name === 'am-anh' ? 'horror' : ''
+const variant = name === 'doraemon' || name === 'dao-hai-tac' ? 'light' : name === 'am-anh' ? 'horror' : ''
+const accent = name === 'dao-hai-tac' ? 'sunset' : name === 'doraemon' ? 'sky' : ''
 ---
 
 {
   variant && (
     <>
-      <script is:inline set:html={`document.documentElement.setAttribute('data-theme', '${variant}')`} />
+      <script is:inline set:html={`document.documentElement.setAttribute('data-theme', '${variant}'); document.documentElement.setAttribute('data-accent', '${accent}')`} />
       <div class={`theme-bg theme-${variant} fixed inset-0 -z-[5] overflow-hidden pointer-events-none`} aria-hidden>
         <div class="theme-bg-veil absolute inset-0"></div>
         <div class="theme-bg-fog absolute -inset-10"></div>

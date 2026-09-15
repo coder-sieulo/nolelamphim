@@ -500,6 +500,46 @@ html[data-theme='light'] .theme-bg-flicker {
   animation: theme-blue-flicker 6s ease-in-out infinite;
 }
 
+/* ══ Light mode — biến thể "sunset" (đảo hải tặc): nền vàng cam hoàng hôn ══
+   Dùng cùng nhóm chip/text/glass của light, chỉ đổi palette nền */
+html[data-theme='light'][data-accent='sunset'] {
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(255, 196, 120, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 12%, rgba(255, 140, 90, 0.38) 0%, transparent 52%),
+    radial-gradient(ellipse at 20% 90%, rgba(120, 200, 180, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg, #fff3e0 0%, #ffe9cd 45%, #fff7ea 100%);
+}
+html[data-theme='light'][data-accent='sunset'] .from-bg-dark {
+  --tw-gradient-from: #edba7d;
+}
+html[data-theme='light'][data-accent='sunset'] .via-bg-dark\/30 {
+  --tw-gradient-via: rgba(237, 186, 125, 0.35);
+  --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+}
+html[data-theme='light'][data-accent='sunset'] .theme-bg-veil {
+  background:
+    radial-gradient(ellipse at 85% 15%, rgba(255, 170, 100, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 18% 85%, rgba(120, 200, 180, 0.16) 0%, transparent 55%);
+  animation: theme-blue-pulse 4.5s ease-in-out infinite;
+}
+html[data-theme='light'][data-accent='sunset'] .theme-bg-fog {
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 25%, rgba(255, 190, 120, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 80% 70%, rgba(255, 150, 100, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 30% at 60% 15%, rgba(120, 200, 180, 0.14) 0%, transparent 70%);
+  filter: blur(40px);
+  animation: theme-fog-drift 18s ease-in-out infinite alternate;
+}
+html[data-theme='light'][data-accent='sunset'] .theme-bg-vignette {
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(214, 150, 90, 0.14) 100%);
+}
+html[data-theme='light'][data-accent='sunset'] .theme-bg-flicker {
+  opacity: 0.16;
+  mix-blend-mode: normal;
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255, 244, 220, 0.7) 3px, rgba(255, 244, 220, 0.7) 4px);
+  animation: theme-blue-flicker 6s ease-in-out infinite;
+}
+
 @keyframes theme-heartbeat {
   0%, 100% { opacity: 0.55; }
   10% { opacity: 1; }
@@ -952,6 +992,33 @@ html[data-theme='light'] .text-text-primary { color: #1d3a5f; }
 html[data-theme='light'] .text-text-secondary { color: rgba(29, 58, 95, 0.78); }
 html[data-theme='light'] .text-text-muted { color: rgba(29, 58, 95, 0.6); }
 
+/* Sunset (đảo hải tặc): chữ ánh nâu đỏ đậm thay vì navy, viền glass vàng hổ phách */
+html[data-theme='light'][data-accent='sunset'] {
+  --color-text-primary: #5a3a25;
+  --color-text-secondary: rgba(90, 58, 37, 0.78);
+  --color-text-muted: rgba(90, 58, 37, 0.6);
+  --color-glass-border: rgba(196, 142, 70, 0.28);
+  --color-glass-border-hover: rgba(230, 140, 60, 0.55);
+}
+html[data-theme='light'][data-accent='sunset'] .text-text-primary { color: #5a3a25; }
+html[data-theme='light'][data-accent='sunset'] .text-text-secondary { color: rgba(90, 58, 37, 0.78); }
+html[data-theme='light'][data-accent='sunset'] .text-text-muted { color: rgba(90, 58, 37, 0.6); }
+html[data-theme='light'][data-accent='sunset'] .hover\:text-white:hover { color: #4a2f1e; }
+html[data-theme='light'][data-accent='sunset'] .glass-tile-active.text-white { color: #4a2f1e; }
+html[data-theme='light'][data-accent='sunset'] .glass-tile,
+html[data-theme='light'][data-accent='sunset'] .liquid-glass,
+html[data-theme='light'][data-accent='sunset'] .glass-pane,
+html[data-theme='light'][data-accent='sunset'] .glass-chip,
+html[data-theme='light'][data-accent='sunset'] .glass-frame,
+html[data-theme='light'][data-accent='sunset'] .ep-btn {
+  border-color: rgba(196, 142, 70, 0.32);
+}
+html[data-theme='light'][data-accent='sunset'] .glass-tile:hover,
+html[data-theme='light'][data-accent='sunset'] .ep-btn:hover,
+html[data-theme='light'][data-accent='sunset'] .group:hover .glass-frame {
+  border-color: rgba(230, 140, 60, 0.55);
+}
+
 /* Hover text-white → chuyển thành navy đậm để vẫn đọc được trên nền sáng */
 html[data-theme='light'] .hover\:text-white:hover { color: #14325c; }
 
@@ -1014,6 +1081,12 @@ html[data-theme='light'] body::before {
     radial-gradient(46% 40% at 78% 78%, rgba(150, 170, 255, 0.22) 0%, transparent 62%),
     radial-gradient(40% 36% at 22% 88%, rgba(0, 214, 200, 0.14) 0%, transparent 62%),
     linear-gradient(180deg, #e6f3ff 0%, #eef8ff 50%, #f5fbff 100%);
+}
+html[data-theme='light'][data-accent='sunset'] body::before {
+  background:
+    radial-gradient(46% 40% at 78% 25%, rgba(255, 165, 100, 0.25) 0%, transparent 62%),
+    radial-gradient(42% 36% at 18% 82%, rgba(255, 195, 130, 0.2) 0%, transparent 62%),
+    linear-gradient(180deg, #fff3e0 0%, #ffe9cd 50%, #fff7ea 100%);
 }
 
 /* ---------- Mobile (touch) perf: giảm chi phí render ---------- */
