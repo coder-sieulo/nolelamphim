@@ -14,6 +14,18 @@ const accent = name === 'dao-hai-tac' ? 'sunset' : name === 'doraemon' ? 'sky' :
       <div class={`theme-bg theme-${variant} fixed inset-0 -z-[5] overflow-hidden pointer-events-none`} aria-hidden>
         <div class="theme-bg-veil absolute inset-0"></div>
         <div class="theme-bg-fog absolute -inset-10"></div>
+        {
+          variant === 'noir' && (
+            <div class="theme-notes absolute inset-0">
+              <i class="theme-note note-1"><span>NGHI PHẠM?</span></i>
+              <i class="theme-note note-2"><span>THỜI GIAN</span></i>
+              <i class="theme-note note-3"><span>ALIBI?</span></i>
+              <i class="theme-note note-4"><span>TANG VẬT</span></i>
+              <i class="theme-note note-5"><span>MOTIVE?</span></i>
+              <i class="theme-note note-6"><span>HIỆN TRƯỜNG</span></i>
+            </div>
+          )
+        }
         <div class="theme-bg-vignette absolute inset-0"></div>
         <div class="theme-bg-flicker absolute inset-0"></div>
       </div>
