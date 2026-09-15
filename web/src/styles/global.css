@@ -418,6 +418,80 @@ body::before {
   display: none;
 }
 
+/* ══ Loader trang xem phim — cuộn phim (reel) mô phỏng phòng chiếu ══ */
+#player-loader {
+  background: radial-gradient(ellipse at center, rgba(10, 8, 24, 0.85) 0%, rgba(5, 4, 14, 0.96) 70%);
+  transition: opacity 0.3s ease;
+}
+#player-loader.reel-active {
+  animation: reel-fade-in 0.35s ease both;
+}
+
+.reel-loader .reel-disc {
+  opacity: 0;
+  animation: reel-fade 2.6s linear infinite;
+}
+.reel-loader .reel-disc:nth-child(1) {
+  border-style: dashed;
+  border-width: 3px;
+  animation-duration: 1.4s;
+}
+.reel-loader .reel-disc:nth-child(2) {
+  border-style: dashed;
+  border-width: 2px;
+  animation-direction: reverse;
+  animation-delay: 0.7s;
+}
+.reel-loader .reel-spoke {
+  position: absolute;
+  animation: reel-spin 3s linear infinite;
+}
+.reel-loader .reel-spoke:nth-child(5) {
+  animation-direction: reverse;
+  animation-duration: 2.4s;
+}
+.reel-core {
+  animation: reel-pulse 1.6s ease-in-out infinite;
+}
+
+.film-bar-fill {
+  width: 30%;
+  animation: film-bar 1.8s ease-in-out infinite;
+}
+
+.film-flicker {
+  text-shadow: 0 0 12px rgba(196, 75, 237, 0.8);
+  animation: film-flicker 2.4s ease-in-out infinite;
+}
+
+@keyframes reel-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes reel-fade {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+@keyframes reel-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes reel-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 14px rgba(196, 75, 237, 0.5); }
+  50% { transform: scale(1.18); box-shadow: 0 0 26px rgba(196, 75, 237, 0.85); }
+}
+@keyframes film-bar {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(240%); }
+  100% { transform: translateX(-110%); }
+}
+@keyframes film-flicker {
+  0%, 92%, 100% { opacity: 1; }
+  94% { opacity: 0.55; }
+  96% { opacity: 0.9; }
+  98% { opacity: 0.4; }
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
