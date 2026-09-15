@@ -419,12 +419,29 @@ body::before {
 }
 
 /* ══ Nền theme riêng theo phim — horror (am-anh) / blue (doraemon) ══ */
+/* Đảm bảo nền theme phủ: gắn trực tiếp lên html (nằm trên body), tránh
+   bị stacking context của main (page-enter transform) che mất div -z */
+html[data-theme='blue'] {
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(74, 158, 255, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 20%, rgba(30, 120, 220, 0.45) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 85%, rgba(0, 214, 200, 0.35) 0%, transparent 55%),
+    linear-gradient(180deg, #123a7a 0%, #0d2556 55%, #0a1d4a 100%);
+}
+html[data-theme='horror'] {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(180, 0, 40, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 75%, rgba(120, 0, 30, 0.3) 0%, transparent 55%),
+    linear-gradient(180deg, #1a0408 0%, #0d0204 55%, #0a0103 100%);
+}
+html[data-theme] body {
+  background: transparent;
+}
 .theme-bg {
-  background: radial-gradient(ellipse at center, rgba(38, 2, 10, 0.55) 0%, rgba(10, 0, 4, 0.9) 100%);
+  background: transparent;
 }
-.theme-blue {
-  background: radial-gradient(ellipse at center, rgba(6, 26, 58, 0.55) 0%, rgba(3, 8, 24, 0.92) 100%);
-}
+
+/* ==== Lớp hiệu ứng động (phủ mờ trên nền html, div nằm sau content) ==== */
 .theme-bg-veil {
   background:
     radial-gradient(ellipse at 20% 20%, rgba(255, 0, 51, 0.13) 0%, transparent 55%),
@@ -433,8 +450,8 @@ body::before {
 }
 .theme-blue .theme-bg-veil {
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(74, 158, 255, 0.2) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 75%, rgba(0, 214, 200, 0.14) 0%, transparent 55%);
+    radial-gradient(ellipse at 20% 20%, rgba(74, 158, 255, 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 75%, rgba(0, 214, 200, 0.2) 0%, transparent 55%);
   animation: theme-blue-pulse 4.5s ease-in-out infinite;
 }
 .theme-bg-fog {
@@ -447,9 +464,9 @@ body::before {
 }
 .theme-blue .theme-bg-fog {
   background:
-    radial-gradient(ellipse 60% 40% at 22% 28%, rgba(74, 158, 255, 0.16) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 35% at 78% 68%, rgba(0, 214, 200, 0.14) 0%, transparent 70%),
-    radial-gradient(ellipse 45% 30% at 58% 22%, rgba(30, 120, 220, 0.12) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 40% at 22% 28%, rgba(74, 158, 255, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 78% 68%, rgba(0, 214, 200, 0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 30% at 58% 22%, rgba(40, 130, 230, 0.18) 0%, transparent 70%);
   filter: blur(40px);
   animation: theme-fog-drift 18s ease-in-out infinite alternate;
 }
@@ -462,7 +479,13 @@ body::before {
   background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.12) 2px, rgba(0, 0, 0, 0.12) 3px);
   animation: theme-flicker 4s linear infinite;
 }
+.theme-blue .theme-bg-vignette {
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(2, 8, 22, 0.35) 100%);
+}
 .theme-blue .theme-bg-flicker {
+  opacity: 0.22;
+  mix-blend-mode: normal;
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(180, 220, 255, 0.06) 2px, rgba(180, 220, 255, 0.06) 3px);
   animation: theme-blue-flicker 6s ease-in-out infinite;
 }
 

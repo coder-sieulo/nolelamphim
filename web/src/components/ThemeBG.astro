@@ -8,11 +8,14 @@ const variant = name === 'doraemon' ? 'blue' : name === 'am-anh' ? 'horror' : ''
 
 {
   variant && (
-    <div class={`theme-bg theme-${variant} fixed inset-0 -z-10 overflow-hidden pointer-events-none`} aria-hidden>
-      <div class="theme-bg-veil absolute inset-0"></div>
-      <div class="theme-bg-fog absolute -inset-10"></div>
-      <div class="theme-bg-vignette absolute inset-0"></div>
-      <div class="theme-bg-flicker absolute inset-0"></div>
-    </div>
+    <>
+      <script is:inline set:html={`document.documentElement.setAttribute('data-theme', '${variant}')`} />
+      <div class={`theme-bg theme-${variant} fixed inset-0 -z-[5] overflow-hidden pointer-events-none`} aria-hidden>
+        <div class="theme-bg-veil absolute inset-0"></div>
+        <div class="theme-bg-fog absolute -inset-10"></div>
+        <div class="theme-bg-vignette absolute inset-0"></div>
+        <div class="theme-bg-flicker absolute inset-0"></div>
+      </div>
+    </>
   )
 }
