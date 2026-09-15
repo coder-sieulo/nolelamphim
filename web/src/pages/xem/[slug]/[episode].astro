@@ -235,11 +235,24 @@ const specialLoader = slug === 'am-anh'
       let frame: HTMLIFrameElement | null = null
       let pendingEmbed = stage?.dataset.embed || ''
       let pendingTitle = stage?.dataset.title || ''
+      let loaderMinTimer = 0
+      let frameLoaded = false
+
+      function maybeHideLoader() {
+        if (!loaderEl) return
+        if (frameLoaded && loaderMinTimer <= 0) hideLoader()
+      }
 
       function showLoader() {
         if (!loaderEl) return
         loaderEl.classList.add('reel-active')
         loaderEl.classList.remove('hidden')
+        frameLoaded = false
+        window.clearTimeout(loaderMinTimer)
+        loaderMinTimer = window.setTimeout(() => {
+          loaderMinTimer = 0
+          maybeHideLoader()
+        }, 1500)
       }
       function hideLoader() {
         if (!loaderEl) return
@@ -257,10 +270,13 @@ const specialLoader = slug === 'am-anh'
         frame.setAttribute('allow', 'autoplay; fullscreen')
         frame.title = title
         frame.src = embed
+        frame.addEventListener('load', () => {
+          frameLoaded = true
+          maybeHideLoader()
+        })
         stage.innerHTML = ''
         stage.appendChild(frame)
         showLoader()
-        frame.addEventListener('load', () => hideLoader())
       }
 
       playBtn?.addEventListener('click', () => {
@@ -322,7 +338,10 @@ const specialLoader = slug === 'am-anh'
             pendingTitle = `${movieName} - ${ep.name}`
             if (frame) {
               showLoader()
-              frame.addEventListener('load', () => hideLoader())
+              frame.addEventListener('load', () => {
+                frameLoaded = true
+                maybeHideLoader()
+              })
               frame.src = ep.embed
               frame.title = pendingTitle
             }
