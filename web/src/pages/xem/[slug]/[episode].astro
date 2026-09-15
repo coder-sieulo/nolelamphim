@@ -104,29 +104,28 @@ const specialLoader = slug === 'am-anh'
                 Bấm để phát
               </span>
             </button>
-
-            {
-              specialLoader && (
-                <div id="player-loader" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center gap-5" aria-live="polite" role="status">
-                  <div class="reel-loader relative w-24 h-24 md:w-28 md:h-28">
-                    <div class="reel-disc absolute inset-0 rounded-full border-2 border-[#C44BED]/30"></div>
-                    <div class="reel-disc absolute inset-0 rounded-full border-2 border-[#FF6B9D]/40"></div>
-                    <div class="reel-spoke absolute inset-[30%] rounded-full border border-white/40"></div>
-                    <div class="reel-spoke absolute inset-[30%] rounded-full border border-white/40 rotate-45"></div>
-                    <div class="reel-spoke absolute inset-[30%] rounded-full border border-white/40 rotate-90"></div>
-                    <div class="reel-core absolute inset-[42%] rounded-full bg-gradient-to-br from-[#FF6B9D] to-[#C44BED] shadow-[0_0_18px_rgba(196,75,237,0.6)]"></div>
-                  </div>
-                  <div class="flex flex-col items-center gap-1.5">
-                    <p class="text-sm font-semibold text-white film-flicker">Đang nạp phim</p>
-                    <p class="text-[11px] text-white/50 tracking-[0.35em] uppercase">Vui lòng chờ một chút</p>
-                  </div>
-                  <div class="film-bar w-40 h-1.5 rounded-full overflow-hidden bg-white/10 relative">
-                    <div class="film-bar-fill h-full rounded-full bg-gradient-to-r from-[#FF6B9D] via-[#C44BED] to-[#4A9EFF]"></div>
+          </div>
+          {
+            specialLoader && (
+              <div id="player-loader" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center gap-5" aria-live="polite" role="status">
+                <div class="horror-loader relative w-28 h-28 md:w-32 md:h-32">
+                  <div class="horror-ring absolute inset-0 rounded-full border-2 border-[#FF0033]/25"></div>
+                  <div class="horror-ring absolute inset-2 rounded-full border border-[#FF0033]/40"></div>
+                  <div class="horror-eye absolute inset-0 flex items-center justify-center">
+                    <div class="horror-pupil w-16 h-16 md:w-[4.5rem] md:h-[4.5rem] rounded-full bg-gradient-to-br from-[#FF0033] to-[#3d0000]"></div>
+                    <div class="horror-glint absolute w-5 h-5 rounded-full bg-white/30 blur-[2px] horror-glint-move"></div>
                   </div>
                 </div>
-              )
-            }
-          </div>
+                <div class="flex flex-col items-center gap-1.5">
+                  <p class="horror-title text-lg md:text-xl font-bold text-[#FF3344] tracking-wide">Đang nạp phim</p>
+                  <p class="text-[11px] text-red-200/30 tracking-[0.3em] uppercase">Đèn đã tắt... hãy bình tĩnh</p>
+                </div>
+                <div class="film-bar w-44 h-1 rounded-full overflow-hidden bg-[#FF0033]/10 relative">
+                  <div class="horror-bar h-full rounded-full bg-gradient-to-r from-[#5a0000] via-[#FF0033] to-[#ff6a00]"></div>
+                </div>
+              </div>
+            )
+          }
           {
             nextEp && (
               <a

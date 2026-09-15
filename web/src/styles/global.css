@@ -418,78 +418,84 @@ body::before {
   display: none;
 }
 
-/* ══ Loader trang xem phim — cuộn phim (reel) mô phỏng phòng chiếu ══ */
+/* ══ Loader trang xem phim — kinh dị (riêng phim am-anh) ══ */
 #player-loader {
-  background: radial-gradient(ellipse at center, rgba(10, 8, 24, 0.85) 0%, rgba(5, 4, 14, 0.96) 70%);
+  background:
+    radial-gradient(ellipse at center, rgba(40, 0, 8, 0.82) 0%, rgba(5, 0, 4, 0.97) 75%),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255, 0, 51, 0.03) 3px, rgba(255, 0, 51, 0.03) 4px);
   transition: opacity 0.3s ease;
 }
 #player-loader.reel-active {
-  animation: reel-fade-in 0.35s ease both;
+  animation: horror-fade-in 0.4s ease both;
 }
 
-.reel-loader .reel-disc {
-  opacity: 0;
-  animation: reel-fade 2.6s linear infinite;
+.horror-loader {
+  animation: horror-breath 2.2s ease-in-out infinite;
 }
-.reel-loader .reel-disc:nth-child(1) {
+.horror-ring {
+  animation: horror-rotate 3s linear infinite;
+}
+.horror-ring:nth-child(2) {
   border-style: dashed;
-  border-width: 3px;
-  animation-duration: 1.4s;
-}
-.reel-loader .reel-disc:nth-child(2) {
-  border-style: dashed;
-  border-width: 2px;
   animation-direction: reverse;
-  animation-delay: 0.7s;
+  animation-duration: 1.8s;
 }
-.reel-loader .reel-spoke {
-  position: absolute;
-  animation: reel-spin 3s linear infinite;
+.horror-pupil {
+  box-shadow:
+    0 0 22px rgba(255, 0, 51, 0.55),
+    inset 0 0 18px rgba(122, 0, 0, 0.8),
+    inset 0 0 4px rgba(255, 0, 51, 0.9);
+  animation: horror-dilate 1.5s ease-in-out infinite;
 }
-.reel-loader .reel-spoke:nth-child(5) {
-  animation-direction: reverse;
-  animation-duration: 2.4s;
-}
-.reel-core {
-  animation: reel-pulse 1.6s ease-in-out infinite;
-}
-
-.film-bar-fill {
-  width: 30%;
-  animation: film-bar 1.8s ease-in-out infinite;
+.horror-glint {
+  animation: horror-glint 2.6s linear infinite;
 }
 
-.film-flicker {
-  text-shadow: 0 0 12px rgba(196, 75, 237, 0.8);
-  animation: film-flicker 2.4s ease-in-out infinite;
+.horror-title {
+  text-shadow: 0 0 14px rgba(255, 0, 51, 0.75);
+  animation: horror-flicker 2.2s linear infinite;
 }
 
-@keyframes reel-fade-in {
+.horror-bar {
+  width: 32%;
+  animation: horror-bar 2s ease-in-out infinite;
+}
+
+@keyframes horror-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-@keyframes reel-fade {
-  0%, 100% { opacity: 0; }
-  50% { opacity: 1; }
-}
-@keyframes reel-spin {
+@keyframes horror-rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
-@keyframes reel-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 14px rgba(196, 75, 237, 0.5); }
-  50% { transform: scale(1.18); box-shadow: 0 0 26px rgba(196, 75, 237, 0.85); }
+@keyframes horror-breath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
 }
-@keyframes film-bar {
+@keyframes horror-dilate {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 16px rgba(255, 0, 51, 0.4), inset 0 0 14px rgba(122, 0, 0, 0.8); }
+  50% { transform: scale(1.15); box-shadow: 0 0 34px rgba(255, 0, 51, 0.8), inset 0 0 22px rgba(122, 0, 0, 0.9); }
+}
+@keyframes horror-glint {
+  0%, 100% { transform: translate(-6px, -6px); opacity: 0.2; }
+  50% { transform: translate(6px, 6px); opacity: 0.7; }
+}
+@keyframes horror-flicker {
+  0%, 100% { opacity: 1; }
+  6% { opacity: 0.55; }
+  8% { opacity: 1; }
+  34% { opacity: 0.7; }
+  36% { opacity: 1; }
+  70% { opacity: 0.45; }
+  72% { opacity: 1; }
+  91% { opacity: 0.6; }
+  93% { opacity: 1; }
+}
+@keyframes horror-bar {
   0% { transform: translateX(-110%); }
-  50% { transform: translateX(240%); }
+  50% { transform: translateX(315%); }
   100% { transform: translateX(-110%); }
-}
-@keyframes film-flicker {
-  0%, 92%, 100% { opacity: 1; }
-  94% { opacity: 0.55; }
-  96% { opacity: 0.9; }
-  98% { opacity: 0.4; }
 }
 
 .line-clamp-2 {
