@@ -418,6 +418,12 @@ body::before {
   display: none;
 }
 
+/* Khung player — thu nhỏ vừa mắt, căn giữa */
+.watch-player {
+  max-width: min(880px, 100%);
+  margin-inline: auto;
+}
+
 /* ══ Loader trang xem phim — kinh dị (riêng phim am-anh) ══ */
 #player-loader {
   background:

@@ -73,7 +73,8 @@ const specialLoader = slug === 'am-anh'
         data-ep-name={currentEp.name}
         data-servers={serverData.length > 0 ? JSON.stringify(serverData) : '[]'}
       >
-        <div class="relative rounded-2xl overflow-hidden bg-black glass-frame">
+        <div class="watch-player">
+          <div class="relative rounded-2xl overflow-hidden bg-black glass-frame">
           <div
             id="player-stage"
             class="aspect-video w-full relative"
@@ -138,6 +139,7 @@ const specialLoader = slug === 'am-anh'
               </a>
             )
           }
+        </div>
         </div>
 
         <div class="content-card px-5 py-4">
@@ -281,6 +283,10 @@ const specialLoader = slug === 'am-anh'
       playBtn?.addEventListener('click', () => {
         createFrame(pendingEmbed, pendingTitle)
       })
+
+      if (loaderEl && pendingEmbed) {
+        createFrame(pendingEmbed, pendingTitle)
+      }
 
       addRecent({
         id: movieId,
