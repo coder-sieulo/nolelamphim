@@ -69,38 +69,79 @@ const specialLoader = slug === 'am-anh'
         {slug === 'am-anh' && (
           <div id="horror-warning" class="fixed inset-0 z-[120] flex items-center justify-center p-6 pointer-events-auto">
             <div class="absolute inset-0 bg-[#080000]/92 backdrop-blur-sm"></div>
-            <div class="relative w-full max-w-lg rounded-2xl border border-[#ff2222]/25 bg-[#0d0004]/95 p-8 md:p-10 space-y-6 shadow-[0_0_80px_-20px_rgba(255,0,30,0.35)]">
-              {/* lamp flicker */}
-              <div class="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#FF0033]/10 via-transparent to-transparent pointer-events-none"></div>
-              <div class="space-y-4">
-                <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
-                  Bạn sắp xem một bộ phim kinh dị siêu biến thái về mặt tâm lý.
-                  Nếu bạn có bị giật mình mà ném bay cả điện thoại vào tường
-                  thì tự chịu tiền thay màn hình chứ web không đền.
-                </p>
-                <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
-                  Đặc biệt, đội ngũ Dev đang trùm chăn code cái dòng này
-                  cũng đang rất sợ, nên đêm nay có bị bóng đè thì tự đi mà niệm chú
-                  chứ tuyệt đối không được lên mạng chửi tụi tôi.
-                </p>
-                <p class="text-base md:text-lg font-bold text-[#FF3344] tracking-wide">
-                  Bạn có đồng ý không?
-                </p>
+            <div class="relative w-full max-w-lg rounded-2xl overflow-hidden">
+              {/* ── Bước 1: cảnh báo kinh dị ── */}
+              <div id="horror-step-alert" class="rounded-2xl border border-[#ff2222]/25 bg-[#0d0004]/95 p-8 md:p-10 space-y-6 shadow-[0_0_80px_-20px_rgba(255,0,30,0.35)]">
+                <div class="absolute inset-0 bg-gradient-to-b from-[#FF0033]/10 via-transparent to-transparent pointer-events-none"></div>
+                <div class="space-y-4">
+                  <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
+                    Bạn sắp xem một bộ phim kinh dị siêu biến thái về mặt tâm lý.
+                    Nếu bạn có bị giật mình mà ném bay cả điện thoại vào tường
+                    thì tự chịu tiền thay màn hình chứ web không đền.
+                  </p>
+                  <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
+                    Đặc biệt, đội ngũ Dev đang trùm chăn code cái dòng này
+                    cũng đang rất sợ, nên đêm nay có bị bóng đè thì tự đi mà niệm chú
+                    chứ tuyệt đối không được lên mạng chửi tụi tôi.
+                  </p>
+                  <p class="text-base md:text-lg font-bold text-[#FF3344] tracking-wide">
+                    Bạn có đồng ý không?
+                  </p>
+                </div>
+                <div class="flex gap-3">
+                  <button
+                    id="horror-agree"
+                    type="button"
+                    class="flex-1 rounded-xl px-5 py-3 text-sm font-bold tracking-wide bg-gradient-to-br from-[#FF0033] to-[#aa0011] text-white border border-[#FF3344]/40 hover:brightness-125 transition-all"
+                  >
+                    toi dong tinh
+                  </button>
+                  <button
+                    id="horror-decline"
+                    type="button"
+                    class="flex-1 rounded-xl px-5 py-3 text-sm font-bold tracking-wide bg-[#1a0006] text-[#ff8888] border border-[#ff2222]/25 hover:bg-[#2a0008] transition-all"
+                  >
+                    toi khong dong tinh
+                  </button>
+                </div>
               </div>
-              <div class="flex gap-3">
+
+              {/* ── Bước 2: hiện cờ 7 màu LGBT ── */}
+              <div id="horror-step-pride" class="hidden relative rounded-2xl border border-white/15 bg-[#0c0a12]/97 p-8 md:p-10 space-y-6 shadow-[0_0_60px_-18px_rgba(255,0,200,0.5)] text-center">
+                <div class="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/6 via-transparent to-transparent pointer-events-none"></div>
+                <div class="relative flex justify-center mb-5">
+                  <div class="pride-flag-svg relative">
+                    <svg width="260" height="150" viewBox="0 0 260 160" fill="none" aria-label="Cờ 7 màu" role="img">
+                      <defs>
+                        <clipPath id="pride-wave">
+                          <path d="M8 20 C 50 8, 90 30, 130 18 C 170 6, 215 28, 250 14 L 252 140 C 215 154, 170 132, 130 144 C 90 156, 50 134, 10 146 Z" />
+                        </clipPath>
+                      </defs>
+                      <g clip-path="url(#pride-wave)">
+                        <rect x="0" y="0" width="260" height="23" fill="#FF0000" transform="skewX(0)" />
+                        <rect x="0" y="23" width="260" height="23" fill="#FF7F00" />
+                        <rect x="0" y="46" width="260" height="23" fill="#FFFF00" />
+                        <rect x="0" y="69" width="260" height="23" fill="#00C21F" />
+                        <rect x="0" y="92" width="260" height="23" fill="#1A00C2" />
+                        <rect x="0" y="115" width="260" height="23" fill="#7B00C2" />
+                        <rect x="0" y="138" width="260" height="22" fill="#FF00B0" />
+                      </g>
+                      <rect x="-2" y="-2" width="258" height="158" rx="4" stroke="rgba(255,255,255,0.25)" fill="none" />
+                    </svg>
+                    <div class="pride-pole absolute -left-1 top-0 bottom-0 w-[5px] rounded bg-gradient-to-b from-white/70 to-white/30"></div>
+                  </div>
+                </div>
+                <p class="text-base md:text-lg leading-relaxed text-gray-100 font-medium">
+                  Cảm ơn bạn đã dũng cảm công khai xu hướng tính dục!
+                  <br />
+                  Chúc bạn xem phim ma vui vẻ cùng bạn đời.
+                </p>
                 <button
-                  id="horror-agree"
+                  id="horror-oke"
                   type="button"
-                  class="flex-1 rounded-xl px-5 py-3 text-sm font-bold tracking-wide bg-gradient-to-br from-[#FF0033] to-[#aa0011] text-white border border-[#FF3344]/40 hover:brightness-125 transition-all"
+                  class="inline-block rounded-xl px-10 py-3 text-sm font-bold tracking-wide text-white bg-white/10 border border-white/30 hover:bg-white/20 hover:scale-105 transition-all"
                 >
-                  toi dong tinh
-                </button>
-                <button
-                  id="horror-decline"
-                  type="button"
-                  class="flex-1 rounded-xl px-5 py-3 text-sm font-bold tracking-wide bg-[#1a0006] text-[#ff8888] border border-[#ff2222]/25 hover:bg-[#2a0008] transition-all"
-                >
-                  toi khong dong tinh
+                  Oke
                 </button>
               </div>
             </div>
@@ -263,17 +304,25 @@ const specialLoader = slug === 'am-anh'
       const warning = document.getElementById('horror-warning')
       if (warning) {
         const slug = page.dataset.slug || ''
+        const alertStep = document.getElementById('horror-step-alert')
+        const prideStep = document.getElementById('horror-step-pride')
         const agree = document.getElementById('horror-agree')
         const decline = document.getElementById('horror-decline')
-        agree?.addEventListener('click', () => {
+        const oke = document.getElementById('horror-oke')
+        function closeWarning() {
           warning.classList.add('hidden')
           document.body.classList.remove('overflow-hidden')
           const play = document.getElementById('player-play') as HTMLButtonElement | null
           play?.click()
+        }
+        agree?.addEventListener('click', () => {
+          alertStep?.classList.add('hidden')
+          prideStep?.classList.remove('hidden')
         })
         decline?.addEventListener('click', () => {
           window.location.href = `/phim/${slug}`
         })
+        oke?.addEventListener('click', closeWarning)
         document.body.classList.add('overflow-hidden')
       }
       const slug = page.dataset.slug || ''

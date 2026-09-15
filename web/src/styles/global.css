@@ -1281,3 +1281,14 @@ html[data-theme='light'][data-accent='sunset'] body::before {
       linear-gradient(180deg, #0b0a1c 0%, #0a0a14 50%, #0c0a1a 100%);
   }
 }
+
+/* ==== Cờ 7 màu LGBT (bước 2 cảnh báo am-anh) ==== */
+.pride-flag-svg {
+  transform-origin: 4px 50%;
+  animation: pride-waver 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.55));
+}
+@keyframes pride-waver {
+  0%, 100% { transform: rotate(-2.5deg) scaleX(1); }
+  50% { transform: rotate(2deg) scaleX(1.03); }
+}
