@@ -64,7 +64,50 @@ const specialLoader = slug === 'am-anh'
         </a>
       </div>
     ) : (
-      <div
+      <>
+        {/* ── Cảnh báo kinh dị (riêng am-anh) ── */}
+        {slug === 'am-anh' && (
+          <div id="horror-warning" class="fixed inset-0 z-[120] flex items-center justify-center p-6 pointer-events-auto">
+            <div class="absolute inset-0 bg-[#080000]/92 backdrop-blur-sm"></div>
+            <div class="relative w-full max-w-lg rounded-2xl border border-[#ff2222]/25 bg-[#0d0004]/95 p-8 md:p-10 space-y-6 shadow-[0_0_80px_-20px_rgba(255,0,30,0.35)]">
+              {/* lamp flicker */}
+              <div class="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#FF0033]/10 via-transparent to-transparent pointer-events-none"></div>
+              <div class="space-y-4">
+                <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
+                  Bạn sắp xem một bộ phim kinh dị siêu biến thái về mặt tâm lý.
+                  Nếu bạn có bị giật mình mà ném bay cả điện thoại vào tường
+                  thì tự chịu tiền thay màn hình chứ web không đền.
+                </p>
+                <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
+                  Đặc biệt, đội ngũ Dev đang trùm chăn code cái dòng này
+                  cũng đang rất sợ, nên đêm nay có bị bóng đè thì tự đi mà niệm chú
+                  chứ tuyệt đối không được lên mạng chửi tụi tôi.
+                </p>
+                <p class="text-base md:text-lg font-bold text-[#FF3344] tracking-wide">
+                  Bạn có đồng ý không?
+                </p>
+              </div>
+              <div class="flex gap-3">
+                <button
+                  id="horror-agree"
+                  type="button"
+                  class="flex-1 rounded-xl px-5 py-3 text-sm font-bold tracking-wide bg-gradient-to-br from-[#FF0033] to-[#aa0011] text-white border border-[#FF3344]/40 hover:brightness-125 transition-all"
+                >
+                  toi dong tinh
+                </button>
+                <button
+                  id="horror-decline"
+                  type="button"
+                  class="flex-1 rounded-xl px-5 py-3 text-sm font-bold tracking-wide bg-[#1a0006] text-[#ff8888] border border-[#ff2222]/25 hover:bg-[#2a0008] transition-all"
+                >
+                  toi khong dong tinh
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div
         class="watch-page px-4 md:px-8 py-6 space-y-4"
         data-slug={slug}
         data-episode={episode}
@@ -204,6 +247,7 @@ const specialLoader = slug === 'am-anh'
           }
         </div>
       </div>
+      </>
     )
   }
 
@@ -215,6 +259,23 @@ const specialLoader = slug === 'am-anh'
     registerPageInit(() => {
       const page = document.querySelector<HTMLElement>('.watch-page')
       if (!page) return () => {}
+
+      const warning = document.getElementById('horror-warning')
+      if (warning) {
+        const slug = page.dataset.slug || ''
+        const agree = document.getElementById('horror-agree')
+        const decline = document.getElementById('horror-decline')
+        agree?.addEventListener('click', () => {
+          warning.classList.add('hidden')
+          document.body.classList.remove('overflow-hidden')
+          const play = document.getElementById('player-play') as HTMLButtonElement | null
+          play?.click()
+        })
+        decline?.addEventListener('click', () => {
+          window.location.href = `/phim/${slug}`
+        })
+        document.body.classList.add('overflow-hidden')
+      }
       const slug = page.dataset.slug || ''
       const episode = page.dataset.episode || ''
       const movieName = page.dataset.movieName || ''
