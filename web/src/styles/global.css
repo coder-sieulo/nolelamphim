@@ -421,12 +421,23 @@ body::before {
 /* ══ Nền theme riêng theo phim — horror (am-anh) / blue (doraemon) ══ */
 /* Đảm bảo nền theme phủ: gắn trực tiếp lên html (nằm trên body), tránh
    bị stacking context của main (page-enter transform) che mất div -z */
-html[data-theme='blue'] {
+html[data-theme='light'] {
   background:
-    radial-gradient(ellipse at 18% 12%, rgba(74, 158, 255, 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 20%, rgba(30, 120, 220, 0.45) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 85%, rgba(0, 214, 200, 0.35) 0%, transparent 55%),
-    linear-gradient(180deg, #123a7a 0%, #0d2556 55%, #0a1d4a 100%);
+    radial-gradient(ellipse at 15% 10%, rgba(150, 195, 255, 0.5) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(0, 214, 200, 0.3) 0%, transparent 52%),
+    radial-gradient(ellipse at 80% 90%, rgba(255, 165, 210, 0.25) 0%, transparent 55%),
+    linear-gradient(180deg, #e6f3ff 0%, #eef8ff 45%, #f5fbff 100%);
+  color-scheme: light;
+}
+
+/* Hero banner: không dùng gradient đen #0a0a14 nữa, đổi thành pastel
+   để nền light đồng bộ (banner vẫn đậm dần ở mép dưới cho vừa mắt) */
+html[data-theme='light'] .from-bg-dark {
+  --tw-gradient-from: #9cc2e8;
+}
+html[data-theme='light'] .via-bg-dark\/30 {
+  --tw-gradient-via: rgba(156, 194, 232, 0.3);
+  --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
 }
 html[data-theme='horror'] {
   background:
@@ -448,10 +459,10 @@ html[data-theme] body {
     radial-gradient(ellipse at 80% 75%, rgba(180, 0, 40, 0.12) 0%, transparent 55%);
   animation: theme-heartbeat 3.2s ease-in-out infinite;
 }
-.theme-blue .theme-bg-veil {
+html[data-theme='light'] .theme-bg-veil {
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(74, 158, 255, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 75%, rgba(0, 214, 200, 0.2) 0%, transparent 55%);
+    radial-gradient(ellipse at 85% 12%, rgba(130, 185, 255, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 22% 88%, rgba(0, 214, 200, 0.16) 0%, transparent 55%);
   animation: theme-blue-pulse 4.5s ease-in-out infinite;
 }
 .theme-bg-fog {
@@ -462,16 +473,19 @@ html[data-theme] body {
   filter: blur(40px);
   animation: theme-fog-drift 14s ease-in-out infinite alternate;
 }
-.theme-blue .theme-bg-fog {
+html[data-theme='light'] .theme-bg-fog {
   background:
-    radial-gradient(ellipse 60% 40% at 22% 28%, rgba(74, 158, 255, 0.22) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 35% at 78% 68%, rgba(0, 214, 200, 0.2) 0%, transparent 70%),
-    radial-gradient(ellipse 45% 30% at 58% 22%, rgba(40, 130, 230, 0.18) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 40% at 20% 25%, rgba(130, 185, 255, 0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 80% 70%, rgba(0, 214, 200, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 30% at 60% 15%, rgba(255, 150, 200, 0.12) 0%, transparent 70%);
   filter: blur(40px);
   animation: theme-fog-drift 18s ease-in-out infinite alternate;
 }
 .theme-bg-vignette {
   background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.6) 100%);
+}
+html[data-theme='light'] .theme-bg-vignette {
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(120, 160, 210, 0.14) 100%);
 }
 .theme-bg-flicker {
   opacity: 0.5;
@@ -479,13 +493,10 @@ html[data-theme] body {
   background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.12) 2px, rgba(0, 0, 0, 0.12) 3px);
   animation: theme-flicker 4s linear infinite;
 }
-.theme-blue .theme-bg-vignette {
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(2, 8, 22, 0.35) 100%);
-}
-.theme-blue .theme-bg-flicker {
-  opacity: 0.22;
+html[data-theme='light'] .theme-bg-flicker {
+  opacity: 0.18;
   mix-blend-mode: normal;
-  background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(180, 220, 255, 0.06) 2px, rgba(180, 220, 255, 0.06) 3px);
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255, 255, 255, 0.7) 3px, rgba(255, 255, 255, 0.7) 4px);
   animation: theme-blue-flicker 6s ease-in-out infinite;
 }
 
@@ -780,8 +791,232 @@ html[data-theme] body {
   color: rgba(255, 255, 255, 0.2);
 }
 
-/* ---------- Mobile (touch) perf: giảm chi phí render ---------- */
+/* ══ LIGHT MODE — doraemon (cute) ══
+   Đảo toàn bộ ngôn ngữ glass sáng sang nền nhạt:
+   - chữ: trắng → navy đậm (đọc tốt trên nền pastel)
+   - glass: trắng mờ → trắng trong suốt cao hơn, viền pastel xanh
+   - blur trên nền sáng nhẹ nhàng hơn
+   Chỉ áp dụng khi html có data-theme='light' (do ThemeBG set). */
+html[data-theme='light'] {
+  --color-text-primary: #1d3a5f;
+  --color-text-secondary: rgba(29, 58, 95, 0.78);
+  --color-text-muted: rgba(29, 58, 95, 0.6);
+  --color-glass: rgba(255, 255, 255, 0.65);
+  --color-glass-hover: rgba(255, 255, 255, 0.85);
+  --color-glass-border: rgba(29, 78, 143, 0.16);
+  --color-glass-border-hover: rgba(74, 158, 255, 0.4);
+  --color-glass-shadow: rgba(76, 116, 170, 0.25);
+  --color-bg-deeper: #e2f1ff;
+  --color-bg-surface: #f2f8ff;
+  --color-bg-card: #ffffff;
+}
 
+html[data-theme='light'] body {
+  color: var(--color-text-primary);
+}
+
+/* body::before (gradient blob) — làm nhẹ cho nền sáng */
+html[data-theme='light'] body::before {
+  background:
+    radial-gradient(42% 38% at 12% 18%, rgba(255, 150, 200, 0.22) 0%, transparent 62%),
+    radial-gradient(40% 35% at 88% 12%, rgba(130, 185, 255, 0.35) 0%, transparent 62%),
+    radial-gradient(42% 38% at 78% 78%, rgba(150, 120, 255, 0.22) 0%, transparent 62%),
+    radial-gradient(38% 34% at 22% 88%, rgba(0, 214, 200, 0.16) 0%, transparent 62%),
+    linear-gradient(180deg, #dcefff 0%, #eaf6ff 50%, #f2faff 100%);
+}
+
+/* Scrollbar sáng hơn */
+html[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: rgba(74, 138, 205, 0.3);
+}
+html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 138, 205, 0.5);
+}
+
+/* Glass surfaces — nền trắng trong suốt, border pastel xanh */
+html[data-theme='light'] .liquid-glass,
+html[data-theme='light'] .glass-pane,
+html[data-theme='light'] .content-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.55) 45%, rgba(255, 255, 255, 0.72) 100%);
+  border-color: rgba(120, 175, 235, 0.35);
+  box-shadow:
+    0 12px 40px -16px rgba(76, 116, 170, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+html[data-theme='light'] .glass-tile {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.55) 45%, rgba(255, 255, 255, 0.72) 100%);
+  border-color: rgba(120, 175, 235, 0.32);
+  box-shadow:
+    0 4px 16px -6px rgba(76, 116, 170, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+html[data-theme='light'] .glass-tile:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(226, 241, 255, 0.85) 45%, rgba(226, 241, 255, 0.9) 100%);
+  border-color: rgba(74, 158, 255, 0.5);
+  box-shadow:
+    0 6px 22px -8px rgba(74, 138, 205, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+html[data-theme='light'] .glass-dropdown {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(240, 247, 255, 0.94) 45%, rgba(240, 247, 255, 0.96) 100%);
+  border-color: rgba(120, 175, 235, 0.4);
+  box-shadow:
+    0 16px 44px -12px rgba(60, 100, 155, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+html[data-theme='light'] .glass-tile-active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(210, 232, 255, 0.95) 45%, rgba(210, 232, 255, 1) 100%);
+  border-color: rgba(74, 158, 255, 0.6);
+  box-shadow:
+    0 4px 20px -6px rgba(74, 138, 205, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 0 0 1px rgba(74, 158, 255, 0.25);
+}
+
+html[data-theme='light'] .glass-chip {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.5));
+  border-color: rgba(120, 175, 235, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 4px rgba(76, 116, 170, 0.18);
+}
+
+html[data-theme='light'] .glass-frame {
+  border-color: rgba(120, 175, 235, 0.3);
+  box-shadow:
+    0 4px 20px -8px rgba(60, 100, 155, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+html[data-theme='light'] .group:hover .glass-frame {
+  border-color: rgba(74, 158, 255, 0.55);
+  box-shadow:
+    0 12px 32px -10px rgba(74, 138, 205, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 0 0 1px rgba(74, 158, 255, 0.35);
+}
+
+/* Episode panel — trong light giữ tông pastel tím hồng nhẹ */
+html[data-theme='light'] .episode-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(246, 240, 255, 0.75) 45%, rgba(240, 246, 255, 0.85) 100%);
+  box-shadow:
+    0 14px 42px -18px rgba(150, 100, 220, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+html[data-theme='light'] .episode-header {
+  background: linear-gradient(180deg, rgba(196, 130, 255, 0.14), rgba(255, 200, 220, 0.04));
+}
+html[data-theme='light'] .episode-panel::before {
+  background: linear-gradient(120deg, rgba(255, 130, 170, 0.5), rgba(196, 130, 255, 0.5), rgba(130, 190, 255, 0.5));
+}
+
+/* Nút tập phim */
+html[data-theme='light'] .ep-btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 45%, rgba(226, 241, 255, 0.8) 100%);
+  border-color: rgba(120, 175, 235, 0.35);
+  color: var(--color-text-secondary);
+  box-shadow:
+    0 3px 14px -6px rgba(76, 116, 170, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+html[data-theme='light'] .ep-btn:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(220, 230, 255, 0.9) 45%, rgba(210, 228, 255, 0.95) 100%);
+  border-color: rgba(196, 130, 255, 0.65);
+  color: #7b3ff2;
+  box-shadow:
+    0 4px 18px -8px rgba(150, 100, 220, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 0 0 1px rgba(196, 130, 255, 0.25);
+}
+
+/* Navbar scrolled — nền trắng đục rõ */
+html[data-theme='light'] #navbar.scrolled .liquid-glass {
+  background: rgba(242, 249, 255, 0.92);
+  box-shadow:
+    0 16px 48px -16px rgba(60, 100, 155, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* Tailwind utility flip: chữ + background mờ */
+html[data-theme='light'] .text-text-primary { color: #1d3a5f; }
+html[data-theme='light'] .text-text-secondary { color: rgba(29, 58, 95, 0.78); }
+html[data-theme='light'] .text-text-muted { color: rgba(29, 58, 95, 0.6); }
+
+/* Hover text-white → chuyển thành navy đậm để vẫn đọc được trên nền sáng */
+html[data-theme='light'] .hover\:text-white:hover { color: #14325c; }
+
+/* Episode server active dùng text-white trên glass-tile-active (giờ nền xanh nhạt) */
+html[data-theme='light'] .glass-tile-active.text-white { color: #14325c; }
+
+/* Input số tập đổi server — placeholder dễ đọc */
+html[data-theme='light'] input::placeholder,
+html[data-theme='light'] textarea::placeholder {
+  color: rgba(29, 58, 95, 0.5);
+}
+
+html[data-theme='light'] .bg-white\/5,
+html[data-theme='light'] .hover\:bg-white\/5:hover { background-color: rgba(74, 138, 205, 0.08); }
+html[data-theme='light'] .bg-white\/10,
+html[data-theme='light'] .hover\:bg-white\/10:hover { background-color: rgba(74, 138, 205, 0.14); }
+html[data-theme='light'] .bg-white\/15 { background-color: rgba(74, 138, 205, 0.18); }
+html[data-theme='light'] .bg-white\/20 { background-color: rgba(74, 138, 205, 0.22); }
+
+html[data-theme='light'] .border-white\/5 { border-color: rgba(120, 175, 235, 0.22); }
+html[data-theme='light'] .border-white\/10 { border-color: rgba(120, 175, 235, 0.32); }
+html[data-theme='light'] .border-white\/15 { border-color: rgba(120, 175, 235, 0.38); }
+html[data-theme='light'] .border-white\/20 { border-color: rgba(120, 175, 235, 0.45); }
+
+html[data-theme='light'] .bg-bg-card { background-color: #ffffff; }
+html[data-theme='light'] .shimmer {
+  background: linear-gradient(90deg, rgba(200, 222, 245, 0.3) 25%, rgba(226, 241, 255, 0.6) 50%, rgba(200, 222, 245, 0.3) 75%);
+}
+html[data-theme='light'] .poster-shell {
+  background: linear-gradient(180deg, rgba(200, 222, 245, 0.35), rgba(200, 222, 245, 0.1));
+}
+
+html[data-theme='light'] .star-empty {
+  color: rgba(29, 58, 95, 0.25);
+}
+
+html[data-theme='light'] ::selection {
+  background: rgba(74, 158, 255, 0.3);
+  color: #1d3a5f;
+}
+
+/* Mode switcher mobile nền đục sáng */
+html[data-theme='light'] .nav-mobile .liquid-glass {
+  background: rgba(242, 249, 255, 0.94);
+}
+
+/* Trong media touch (mobile), các nền đặc tối mặc định sẽ phủ — đảo sang sáng */
+html[data-theme='light'] #navbar .liquid-glass {
+  background: rgba(242, 249, 255, 0.92);
+}
+html[data-theme='light'] .liquid-glass,
+html[data-theme='light'] .content-card,
+html[data-theme='light'] .glass-pane,
+html[data-theme='light'] .glass-tile {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-theme='light'] body::before {
+  background:
+    radial-gradient(46% 40% at 78% 78%, rgba(150, 170, 255, 0.22) 0%, transparent 62%),
+    radial-gradient(40% 36% at 22% 88%, rgba(0, 214, 200, 0.14) 0%, transparent 62%),
+    linear-gradient(180deg, #e6f3ff 0%, #eef8ff 50%, #f5fbff 100%);
+}
+
+/* ---------- Mobile (touch) perf: giảm chi phí render ---------- */
 /* Thiết bị touch (điện thoại/máy tính bảng) không có hover chuột.
    backdrop-filter + gradient full-screen repaint cực tốn GPU trên mobile;
    desktop/laptop (hover: hover) vẫn giữ nguyên hiệu ứng 100%. */
