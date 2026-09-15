@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ReportButton from '../../../components/ReportButton.astro'
+import ThemeBG from '../../../components/ThemeBG.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../../lib/api'
 import { imgUrl } from '../../../lib/img'
 import { SITE_URL } from '../../../lib/site'
@@ -53,16 +54,7 @@ const specialLoader = slug === 'am-anh'
 <BaseLayout title={pageTitle} description={`Xem ${movie.name} ${currentEp ? `tập ${currentEp.name}` : ''} HD VietSub miễn phí tại Nô Lệ Làm Phim.`} ogImage={`${SITE_URL}/og/${slug}.png`}>
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
   {embedOrigin && <link rel="preconnect" href={embedOrigin} slot="head" />}
-  {
-    specialLoader && (
-      <div class="horror-bg fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden>
-        <div class="horror-bg-veil absolute inset-0"></div>
-        <div class="horror-bg-fog absolute -inset-10"></div>
-        <div class="horror-bg-vignette absolute inset-0"></div>
-        <div class="horror-bg-flicker absolute inset-0"></div>
-      </div>
-    )
-  }
+  <ThemeBG name={slug} />
   {
     !currentEp ? (
       <div class="px-4 md:px-8 py-20 flex flex-col items-center">

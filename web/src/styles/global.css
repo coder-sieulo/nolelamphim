@@ -418,44 +418,81 @@ body::before {
   display: none;
 }
 
-/* ══ Nền kinh dị cả trang — riêng phim am-anh ══ */
-.horror-bg {
+/* ══ Nền theme riêng theo phim — horror (am-anh) / blue (doraemon) ══ */
+.theme-bg {
   background: radial-gradient(ellipse at center, rgba(38, 2, 10, 0.55) 0%, rgba(10, 0, 4, 0.9) 100%);
 }
-.horror-bg-veil {
+.theme-blue {
+  background: radial-gradient(ellipse at center, rgba(6, 26, 58, 0.55) 0%, rgba(3, 8, 24, 0.92) 100%);
+}
+.theme-bg-veil {
   background:
     radial-gradient(ellipse at 20% 20%, rgba(255, 0, 51, 0.13) 0%, transparent 55%),
     radial-gradient(ellipse at 80% 75%, rgba(180, 0, 40, 0.12) 0%, transparent 55%);
-  animation: horror-heartbeat 3.2s ease-in-out infinite;
+  animation: theme-heartbeat 3.2s ease-in-out infinite;
 }
-.horror-bg-fog {
+.theme-blue .theme-bg-veil {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(74, 158, 255, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 75%, rgba(0, 214, 200, 0.14) 0%, transparent 55%);
+  animation: theme-blue-pulse 4.5s ease-in-out infinite;
+}
+.theme-bg-fog {
   background:
     radial-gradient(ellipse 60% 40% at 25% 30%, rgba(255, 60, 90, 0.12) 0%, transparent 70%),
     radial-gradient(ellipse 50% 35% at 75% 65%, rgba(160, 0, 40, 0.14) 0%, transparent 70%),
     radial-gradient(ellipse 45% 30% at 55% 20%, rgba(255, 0, 51, 0.08) 0%, transparent 70%);
   filter: blur(40px);
-  animation: horror-fog-drift 14s ease-in-out infinite alternate;
+  animation: theme-fog-drift 14s ease-in-out infinite alternate;
 }
-.horror-bg-vignette {
+.theme-blue .theme-bg-fog {
+  background:
+    radial-gradient(ellipse 60% 40% at 22% 28%, rgba(74, 158, 255, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 78% 68%, rgba(0, 214, 200, 0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 30% at 58% 22%, rgba(30, 120, 220, 0.12) 0%, transparent 70%);
+  filter: blur(40px);
+  animation: theme-fog-drift 18s ease-in-out infinite alternate;
+}
+.theme-bg-vignette {
   background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.6) 100%);
 }
-.horror-bg-flicker {
+.theme-bg-flicker {
   opacity: 0.5;
   mix-blend-mode: multiply;
   background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.12) 2px, rgba(0, 0, 0, 0.12) 3px);
-  animation: horror-flicker 4s linear infinite;
+  animation: theme-flicker 4s linear infinite;
+}
+.theme-blue .theme-bg-flicker {
+  animation: theme-blue-flicker 6s ease-in-out infinite;
 }
 
-@keyframes horror-heartbeat {
+@keyframes theme-heartbeat {
   0%, 100% { opacity: 0.55; }
   10% { opacity: 1; }
   16% { opacity: 0.6; }
   22% { opacity: 0.95; }
   30%, 100% { opacity: 0.5; }
 }
-@keyframes horror-fog-drift {
+@keyframes theme-fog-drift {
   0% { transform: translate3d(-3%, -2%, 0) scale(1); }
   100% { transform: translate3d(4%, 3%, 0) scale(1.15); }
+}
+@keyframes theme-flicker {
+  0%, 100% { opacity: 0.38; }
+  8% { opacity: 0.6; }
+  12% { opacity: 0.32; }
+  44% { opacity: 0.55; }
+  47% { opacity: 0.35; }
+  78% { opacity: 0.6; }
+  82% { opacity: 0.3; }
+}
+@keyframes theme-blue-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@keyframes theme-blue-flicker {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
 }
 
 /* Khung player — vừa mắt, căn giữa */

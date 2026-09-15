@@ -7,6 +7,7 @@ import Reveal from '../../components/Reveal.astro'
 import RatingBox from '../../components/RatingBox.astro'
 import ShareButton from '../../components/ShareButton.astro'
 import ReportButton from '../../components/ReportButton.astro'
+import ThemeBG from '../../components/ThemeBG.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../lib/api'
 import { imgUrl } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
@@ -98,6 +99,7 @@ const trailerEmbed = youtubeEmbedUrl(movie.trailer_url)
 <BaseLayout title={metaTitle} description={metaDescription} keywords={metaKeywords} ogImage={ogImage}>
   <script is:inline set:html={JSON.stringify(jsonLd)} type="application/ld+json" />
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
+  <ThemeBG name={slug} />
 
   <div class="px-4 md:px-8 py-6">
     <div class="relative h-[35vh] md:h-[45vh] rounded-2xl overflow-hidden mb-6 glass-frame">
