@@ -1,4 +1,7 @@
 import { registerPageInit } from './lifecycle'
+import { iconString } from '../lib/icon-strings'
+
+const discordIcon = () => iconString('discord', 'w-4 h-4')
 
 interface MeUser {
   id: string
@@ -20,9 +23,7 @@ function avatarUrl(user: MeUser): string | null {
 
 function loginDesktop() {
   return `<a href="/api/auth/discord" class="w-9 h-9 rounded-xl glass-tile flex items-center justify-center text-text-secondary hover:text-white transition-colors group" aria-label="Đăng nhập bằng Discord" title="Đăng nhập bằng Discord">
-    <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M20.32 4.37a19.8 19.8 0 0 0-4.93-1.51 13.78 13.78 0 0 0-.64 1.28 18.27 18.27 0 0 0-5.5 0 12.64 12.64 0 0 0-.64-1.28c-1.71.3-3.35.81-4.9 1.5C1.23 8.74.63 12.9 1.92 17.02A20.04 20.04 0 0 0 6.4 19.4c.69-1.25 1.12-2.4 1.44-3.65l.02-.02-.8-.27a7.94 7.94 0 0 1-.38-.18l.02-.02a1.54 1.54 0 0 1 .13-.1 14.1 14.1 0 0 0 12.35 0l.14.1v.02l-.02.02c-.13.06-.25.12-.38.18l-.02.02c.32 1.26.75 2.4 1.44 3.65a20 20 0 0 0 4.5-2.37c1.53-4.8-.26-8.93-2.46-12.65ZM8.02 14.92c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Zm7.96 0c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Z"/>
-    </svg>
+    ${discordIcon()}
   </a>`
 }
 
@@ -43,7 +44,7 @@ function userDesktop(user: MeUser) {
         <p class="text-[11px] text-text-muted truncate">@${user.username}</p>
       </div>
       <a id="auth-logout" href="#" class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors" role="menuitem">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        ${iconString('logout', 'w-4 h-4')}
         Đăng xuất
       </a>
     </div>
@@ -52,9 +53,7 @@ function userDesktop(user: MeUser) {
 
 function loginMobile() {
   return `<a href="/api/auth/discord" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
-    <svg class="w-4 h-4 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M20.32 4.37a19.8 19.8 0 0 0-4.93-1.51 13.78 13.78 0 0 0-.64 1.28 18.27 18.27 0 0 0-5.5 0 12.64 12.64 0 0 0-.64-1.28c-1.71.3-3.35.81-4.9 1.5C1.23 8.74.63 12.9 1.92 17.02A20.04 20.04 0 0 0 6.4 19.4c.69-1.25 1.12-2.4 1.44-3.65l-.02-.02-.8-.27a7.94 7.94 0 0 1-.38-.18l.02-.02a1.54 1.54 0 0 1 .13-.1 14.1 14.1 0 0 0 12.35 0l.14.1v.02l-.02.02c-.13.06-.25.12-.38.18l-.02.02c.32 1.26.75 2.4 1.44 3.65a20 20 0 0 0 4.5-2.37c1.53-4.8-.26-8.93-2.46-12.65ZM8.02 14.92c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Zm7.96 0c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Z"/>
-    </svg>
+    <span class="text-[#5865F2]">${discordIcon()}</span>
     Đăng nhập Discord
   </a>`
 }

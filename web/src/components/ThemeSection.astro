@@ -1,6 +1,7 @@
 ---
 import { getMoviesByCategory, searchMovies, getNewMovies, getMoviesByListPath } from '../lib/api'
 import { imgUrl } from '../lib/img'
+import { FaArrowRight } from 'react-icons/fa6'
 
 interface ThemeConfig {
   label: string
@@ -114,9 +115,7 @@ const themes = await Promise.all(
           <div class={`absolute inset-0 bg-gradient-to-br ${theme.gradient} transition-opacity duration-300 group-hover:opacity-90`} />
           <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
           <span class="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-300">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            <FaArrowRight className="w-3.5 h-3.5" />
           </span>
           <div class="absolute inset-x-0 bottom-0 p-4">
             <p class="text-white text-base md:text-lg font-bold drop-shadow">{theme.label}</p>

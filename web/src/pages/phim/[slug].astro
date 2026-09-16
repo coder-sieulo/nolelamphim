@@ -12,6 +12,7 @@ import { getMovieDetail, getMovieEpisodes } from '../../lib/api'
 import { imgUrl } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
 import { breadcrumbLd } from '../../lib/seo'
+import { FaPlay, FaArrowLeft, FaXmark } from 'react-icons/fa6'
 
 const slug = Astro.params.slug ?? ''
 
@@ -134,9 +135,7 @@ const trailerEmbed = youtubeEmbedUrl(movie.trailer_url)
                 class="px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 glass-tile text-text-secondary hover:text-white"
                 data-embed={trailerEmbed}
               >
-                <svg class="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <FaPlay className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" />
                 Trailer
               </button>
             )}
@@ -274,9 +273,7 @@ const trailerEmbed = youtubeEmbedUrl(movie.trailer_url)
           href="/"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl glass-tile text-text-secondary text-xs"
         >
-          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-          </svg>
+          <FaArrowLeft className="w-3.5 h-3.5" />
           Quay lại
         </a>
       </div>
@@ -299,9 +296,7 @@ const trailerEmbed = youtubeEmbedUrl(movie.trailer_url)
           class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/70 text-white/80 flex items-center justify-center hover:bg-black/90 transition-colors"
           aria-label="Đóng trailer"
         >
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-          </svg>
+          <FaXmark className="w-4 h-4" />
         </button>
         <iframe
           id="trailer-frame"

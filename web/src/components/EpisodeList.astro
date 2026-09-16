@@ -2,6 +2,7 @@
 import type { EpisodeServer } from '../lib/types'
 import { PER_PAGE } from '../lib/constants'
 import { pageList } from '../lib/pagination'
+import { FaPlay } from 'react-icons/fa6'
 
 interface Props {
   slug: string
@@ -39,7 +40,7 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
     <div class="episode-header flex items-center justify-between gap-3 px-5 py-3 border-b border-white/10">
       <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
         <span class="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-[#FF6B9D] to-[#C44BED] text-white shadow-[0_2px_10px_rgba(196,75,237,0.4)]">
-          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <FaPlay className="w-3.5 h-3.5" />
         </span>
         <span class="episode-title-text">Tập phim</span>
         {totalPages > 1 && (

@@ -1,5 +1,7 @@
 ---
 import { SITE_URL } from '../lib/site'
+import { FiShare2, FiLink } from 'react-icons/fi'
+import { FaSquareFacebook } from 'react-icons/fa6'
 
 interface Props {
   slug: string
@@ -16,16 +18,12 @@ const url = `${SITE_URL}/phim/${slug}`
     aria-label="Chia sẻ"
     title="Chia sẻ phim"
   >
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.395-2.86 3 3 0 00-5.395 2.86zm0 0l6.632 3.316m0 0a3 3 0 105.395 2.86 3 3 0 00-5.395-2.86z" />
-    </svg>
+    <FiShare2 className="w-4 h-4" />
   </button>
 
   <div class="share-popover dropdown absolute right-0 top-12 z-50 w-48 rounded-xl glass-tile p-2 flex flex-col gap-1">
     <button class="share-copy flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-text-secondary hover:bg-white/10 hover:text-white transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-4 4a4 4 0 01-5.656-5.656l1.586-1.586M10.172 13.828a4 4 0 010-5.656l4-4a4 4 0 015.656 5.656l-1.586 1.586" />
-      </svg>
+      <FiLink className="w-4 h-4" />
       <span class="share-copy-label">Copy liên kết</span>
     </button>
     <a
@@ -34,9 +32,7 @@ const url = `${SITE_URL}/phim/${slug}`
       target="_blank"
       rel="noopener noreferrer"
     >
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-      </svg>
+      <FaSquareFacebook className="w-4 h-4" />
       Chia sẻ Facebook
     </a>
   </div>

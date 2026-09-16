@@ -9,6 +9,7 @@ import beVietnamPro600Woff2 from '@fontsource/be-vietnam-pro/files/be-vietnam-pr
 import Navbar from '../components/Navbar.astro'
 import Footer from '../components/Footer.astro'
 import { SITE_NAME, SITE_URL } from '../lib/site'
+import { FaChevronUp } from 'react-icons/fa6'
 
 interface Props {
   title?: string
@@ -91,9 +92,7 @@ Astro.response.headers.set(
 
     <div id="scroll-progress" aria-hidden class="fixed top-0 left-0 right-0 h-[3px] z-[70] origin-left bg-gradient-to-r from-[#FF6B9D] via-[#C44BED] to-[#4A9EFF]" style="transform: scaleX(0)"></div>
     <button id="back-to-top" class="back-to-top fixed bottom-6 right-6 z-50 w-11 h-11 rounded-full glass-tile flex items-center justify-center text-text-secondary hover:text-white" aria-label="Lên đầu trang">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-      </svg>
+      <FaChevronUp className="w-5 h-5" />
     </button>
 
     <script src="../scripts/app.ts"></script>

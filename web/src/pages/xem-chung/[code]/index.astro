@@ -3,6 +3,8 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ThemeBG from '../../../components/ThemeBG.astro'
 import { getSessionUser } from '../../../lib/auth'
 import { getRoom } from '../../../lib/rooms'
+import { FaDiscord, FaTv, FaCirclePlay, FaClock, FaStop, FaComment, FaSliders, FaLock } from 'react-icons/fa6'
+import { FiLogOut } from 'react-icons/fi'
 
 const code = (Astro.params.code || '').toUpperCase()
 
@@ -21,14 +23,12 @@ const isHost = !!user && user.sub === room.hostId
   <main class="px-4 md:px-8 py-6 space-y-4" data-room-page data-code={code} data-host={String(isHost)}>
     <div id="xc-login-overlay" class="hidden fixed inset-0 z-50 flex-col items-center justify-center gap-4 bg-black/75 backdrop-blur-sm">
       <div class="content-card px-8 py-8 text-center max-w-sm mx-4">
-        <div class="w-14 h-14 rounded-full glass-tile flex items-center justify-center text-2xl mb-3 mx-auto">🔒</div>
+        <div class="w-14 h-14 rounded-full glass-tile flex items-center justify-center mb-3 mx-auto text-[#FF6B9D]"><FaLock className="w-6 h-6" /></div>
         <h2 class="text-lg font-bold text-text-primary">Đăng nhập để xem cùng nhau</h2>
         <p class="text-sm text-text-secondary mt-2 mb-5">Bạn cần đăng nhập Discord để tham gia phòng, chat và đồng bộ phim.</p>
         <a href="/api/auth/discord"
           class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.036A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.373-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.1.248.198.374.292a.077.077 0 0 1-.006.129c-.597.345-1.226.635-1.873.892a.077.077 0 0 0-.04.106c.36.699.772 1.364 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-          </svg>
+          <FaDiscord className="w-5 h-5" />
           Đăng nhập bằng Discord
         </a>
         <a href="/xem-chung" class="block mt-3 text-xs text-text-muted hover:text-white transition-colors">← Quay lại trang Xem Chung</a>
@@ -36,7 +36,7 @@ const isHost = !!user && user.sub === room.hostId
     </div>
     <div class="flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl glass-tile flex items-center justify-center text-xl">📺</div>
+        <div class="w-10 h-10 rounded-xl glass-tile flex items-center justify-center text-[#FF6B9D]"><FaTv className="w-5 h-5" /></div>
         <div>
           <h1 class="text-lg font-bold text-text-primary">Phòng <span class="font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]">#{code}</span></h1>
           <p id="xc-status" class="text-xs text-text-muted">Đang tải...</p>
@@ -56,8 +56,8 @@ const isHost = !!user && user.sub === room.hostId
         <div class="content-card p-2 md:p-3">
           <div id="player-stage" class="aspect-video w-full relative rounded-xl overflow-hidden bg-black">
             <div id="xc-now-playing" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-6 text-center">
-              <div class="w-16 h-16 rounded-full glass-tile flex items-center justify-center">
-                <svg class="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <div class="w-16 h-16 rounded-full glass-tile flex items-center justify-center text-[#FF6B9D]">
+                <FaCirclePlay className="w-7 h-7" />
               </div>
               <p id="xc-no-movie-text" class="text-sm text-text-secondary">Chưa có phim nào được phát trong phòng này.</p>
               <p class="text-xs text-text-muted">Host sẽ chọn phim và ấn phát — mọi người xem cùng một nhịp thời gian.</p>
@@ -87,7 +87,7 @@ const isHost = !!user && user.sub === room.hostId
 
         <!-- Host controls -->
         <div id="xc-host-panel" class="content-card px-5 py-4 space-y-3 hidden">
-          <h3 class="text-sm font-bold text-text-primary">🎛 Host</h3>
+          <h3 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaSliders className="w-3.5 h-3.5 text-[#FF6B9D]" /> Host</h3>
           <div class="relative">
             <input
               id="xc-lookup"
@@ -99,9 +99,9 @@ const isHost = !!user && user.sub === room.hostId
             <div id="xc-lookup-res" class="hidden absolute z-40 mt-2 w-full max-h-72 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <button id="xc-play-now" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-40 transition-all">▶ Phát ngay (10s)</button>
-            <button id="xc-schedule" type="button" class="px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-secondary hover:text-white disabled:opacity-40 transition-all">⏰ Đặt giờ chiếu</button>
-            <button id="xc-stop" type="button" class="px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-muted hover:text-white disabled:opacity-40 transition-all">■ Kết thúc</button>
+            <button id="xc-play-now" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-40 transition-all"><FaCirclePlay className="w-3.5 h-3.5" /> Phát ngay (10s)</button>
+            <button id="xc-schedule" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-secondary hover:text-white disabled:opacity-40 transition-all"><FaClock className="w-3.5 h-3.5" /> Đặt giờ chiếu</button>
+            <button id="xc-stop" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-muted hover:text-white disabled:opacity-40 transition-all"><FaStop className="w-3 h-3" /> Kết thúc</button>
           </div>
           <div id="xc-schedule-pick" class="hidden flex items-center gap-2">
             <input id="xc-schedule-dt" type="datetime-local" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-text-primary flex-1 min-w-0" />
@@ -114,16 +114,14 @@ const isHost = !!user && user.sub === room.hostId
       <!-- Chat column -->
       <div class="content-card flex flex-col min-h-[30rem] lg:min-h-0 lg:h-[calc(100vh-12rem)]">
         <div class="flex items-center justify-between px-5 py-3 border-b border-white/5">
-          <h3 class="text-sm font-bold text-text-primary">💬 Chat</h3>
+          <h3 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaComment className="w-3.5 h-3.5 text-[#FF6B9D]" /> Chat</h3>
           <span id="xc-members-pop" class="text-xs text-text-muted"></span>
         </div>
         <div id="xc-login-gate" class="hidden flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
           <p class="text-sm text-text-secondary">Đăng nhập Discord để tham gia chat và xem.</p>
           <a href="/api/auth/discord"
             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.036A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.373-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.1.248.198.374.292a.077.077 0 0 1-.006.129c-.597.345-1.226.635-1.873.892a.077.077 0 0 0-.04.106c.36.699.772 1.364 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-            </svg>
+            <FaDiscord className="w-5 h-5" />
             Đăng nhập bằng Discord
           </a>
         </div>
@@ -176,7 +174,7 @@ const isHost = !!user && user.sub === room.hostId
         if (room.status === 'playing') return `● Đang chiếu • ${n} người`
         if (room.status === 'scheduled' && room.movie) {
           const remain = Math.max(0, Math.round((room.startTime - Date.now()) / 1000))
-          return `⏰ Bắt đầu lúc ${new Date(room.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • còn ${remain}s • ${n} người`
+          return `Bắt đầu lúc ${new Date(room.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • còn ${remain}s • ${n} người`
         }
         return room.movie ? `Sẵn sàng • ${n} người` : `Chưa chiếu • ${n} người`
       }

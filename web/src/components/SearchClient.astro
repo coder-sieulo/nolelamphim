@@ -1,6 +1,7 @@
 ---
 import MovieCard from './MovieCard.astro'
 import type { Movie } from '../lib/types'
+import { FaMagnifyingGlass, FaXmark, FaChevronDown, FaFilterCircleXmark } from 'react-icons/fa6'
 
 interface Props {
   initialQuery?: string
@@ -46,9 +47,7 @@ const filterConfig = [
 
   <div class="relative mb-5">
     <div class="glass-tile group rounded-2xl md:rounded-3xl px-4 md:px-5 py-4 flex items-center gap-3 transition-shadow focus-within:ring-2 focus-within:ring-[#C44BED]/40 focus-within:ring-offset-2 focus-within:ring-offset-transparent">
-      <svg class="w-5 h-5 shrink-0 text-text-muted group-focus-within:text-[#C44BED] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
+      <FaMagnifyingGlass className="w-5 h-5 shrink-0 text-text-muted group-focus-within:text-[#C44BED] transition-colors" />
       <input
         id="search-input"
         type="text"
@@ -65,14 +64,10 @@ const filterConfig = [
         class="flex-1 min-w-0 bg-transparent text-text-primary outline-none placeholder:text-text-muted text-[15px] md:text-base"
       />
       <button id="search-clear" class="hidden text-text-muted hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5" aria-label="Xoá từ khoá" type="button">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-        </svg>
+        <FaXmark className="w-4 h-4" />
       </button>
       <button id="search-submit" type="button" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl liquid-glass text-sm font-medium text-white shrink-0 hover:bg-white/10 transition-colors" aria-label="Tìm kiếm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+        <FaMagnifyingGlass className="w-4 h-4" />
         Tìm
       </button>
     </div>
@@ -100,9 +95,7 @@ const filterConfig = [
           >
             <span class="filter-chip-label flex items-center gap-1.5">
               <span class="filter-chip-text">{label}</span>
-              <svg class="filter-chevron w-3 h-3 transition-transform duration-200" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 10l5 5 5-5z" />
-              </svg>
+              <FaChevronDown className="filter-chevron w-3 h-3 transition-transform duration-200" />
             </span>
           </button>
           <div
@@ -119,7 +112,7 @@ const filterConfig = [
 
     <button type="button" id="filter-clear" class="hidden px-3 py-2 rounded-xl text-[11px] font-medium text-text-muted hover:text-white glass-tile" aria-label="Xoá bộ lọc">
       <span class="flex items-center gap-1">
-        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        <FaFilterCircleXmark className="w-3 h-3" />
         Xoá lọc
       </span>
     </button>
@@ -143,9 +136,7 @@ const filterConfig = [
         <div id="search-empty">
           <div class="content-card px-8 py-14 flex flex-col items-center text-center">
             <div class="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mb-4">
-              <svg class="w-7 h-7 text-text-muted" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-              </svg>
+              <FaMagnifyingGlass className="w-7 h-7 text-text-muted" />
             </div>
             <p class="text-text-secondary text-sm">Chưa có kết quả. Thử nhập từ khoá hoặc chọn bộ lọc.</p>
           </div>
@@ -194,6 +185,7 @@ const filterConfig = [
   } from '../lib/api'
   import { SEARCH_LIMIT, SUGGESTION_LIMIT } from '../lib/constants'
   import { registerPageInit } from '../scripts/lifecycle'
+  import { iconString } from '../lib/icon-strings'
 
   registerPageInit(() => {
     const root = document.querySelector<HTMLElement>('.search-client')
@@ -317,9 +309,7 @@ const filterConfig = [
       resultsEl.innerHTML = `
         <div class="content-card px-8 py-14 flex flex-col items-center text-center">
           <div class="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mb-4">
-            <svg class="w-7 h-7 text-text-muted" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-            </svg>
+            ${iconString('search', 'w-7 h-7 text-text-muted')}
           </div>
           <p class="text-text-secondary text-sm">${escapeHTML(message)}</p>
           ${

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { SITE_URL } from '../lib/site'
+import { FaDna } from 'react-icons/fa6'
 
 const title = 'Phim DNA — Khám phá DNA phim của bạn'
 const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim" cá nhân. Bạn là Nhà Thám Hiểm Lãng Mạn hay Chiến Binh Đêm? Xem ngay!'
@@ -11,7 +12,7 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
 
     <!-- LANDING -->
     <div id="dna-landing" class="flex flex-col items-center justify-center text-center gap-6 py-16">
-      <div class="text-6xl mb-2">🧬</div>
+      <div class="text-6xl mb-2"><FaDna /></div>
       <h1 class="text-3xl sm:text-4xl font-bold text-text-primary leading-tight">Phim DNA</h1>
       <p class="text-text-secondary text-sm sm:text-base max-w-md leading-relaxed">
         Mỗi người có một "DNA phim" riêng. Trả lời 5 câu hỏi ngắn — chúng tôi sẽ phân tích thể loại yêu thích của bạn và gợi ý phim hợp nhất.

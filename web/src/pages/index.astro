@@ -10,6 +10,7 @@ import Reveal from '../components/Reveal.astro'
 import { getNewMovies, getSubteam, getMoviesByCategory } from '../lib/api'
 import { imgUrl } from '../lib/img'
 import { HERO_IMAGE_LIMIT } from '../lib/constants'
+import { FaCircleCheck } from 'react-icons/fa6'
 
 export const prerender = true
 export const revalidate = 60
@@ -59,9 +60,7 @@ const heroImage = heroMovies[0] ? heroMovies[0].poster_url || heroMovies[0].thum
         <div class="py-20 flex flex-col items-center justify-center">
           <div class="content-card px-8 py-12 flex flex-col items-center">
             <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-text-muted" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
+              <FaCircleCheck className="w-6 h-6 text-text-muted" />
             </div>
             <p class="text-text-secondary text-sm">Không thể tải dữ liệu phim mới</p>
             <p class="text-text-muted text-xs mt-1 mb-4">Kiểm tra kết nối mạng rồi thử lại</p>

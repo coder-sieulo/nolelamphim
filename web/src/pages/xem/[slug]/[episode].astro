@@ -6,6 +6,7 @@ import { getMovieDetail, getMovieEpisodes } from '../../../lib/api'
 import { imgUrl } from '../../../lib/img'
 import { SITE_URL } from '../../../lib/site'
 import { breadcrumbLd } from '../../../lib/seo'
+import { FaCirclePlay } from 'react-icons/fa6'
 
 const slug = Astro.params.slug ?? ''
 const episode = Astro.params.episode ?? ''
@@ -185,9 +186,7 @@ const specialLoader = isHorror
               <div class="absolute inset-0 bg-black/35 group-hover:bg-black/20 transition-colors"></div>
               <div class="absolute inset-0 flex items-center justify-center">
                 <div class="w-16 h-16 md:w-20 md:h-20 rounded-full glass-tile flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <svg class="w-7 h-7 md:w-8 md:h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
+                  <FaCirclePlay className="w-7 h-7 md:w-8 md:h-8 text-white ml-1" />
                 </div>
               </div>
               <span class="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full glass-tile text-[11px] font-semibold text-white">

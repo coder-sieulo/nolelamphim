@@ -1,13 +1,12 @@
 ---
+import { FaStar } from 'react-icons/fa6'
+
 interface Props {
   slug: string
   name?: string
 }
 
 const { slug } = Astro.props
-
-const STAR_PATH =
-  'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'
 ---
 
 <div
@@ -25,9 +24,7 @@ const STAR_PATH =
           class="rating-star p-0.5 transition-transform duration-150 hover:scale-110"
           data-value={n}
         >
-          <svg class="w-5 h-5 star-empty transition-colors duration-150" fill="currentColor" viewBox="0 0 24 24">
-            <path d={STAR_PATH} />
-          </svg>
+          <FaStar className="w-5 h-5 star-empty transition-colors duration-150" />
         </button>
       ))
     }

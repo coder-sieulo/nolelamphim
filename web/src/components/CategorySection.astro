@@ -1,6 +1,7 @@
 ---
 import MovieCard from './MovieCard.astro'
 import type { Movie } from '../lib/types'
+import { FaCalendarXmark } from 'react-icons/fa6'
 
 interface Props {
   slug: string
@@ -35,9 +36,7 @@ const isEmpty = items.length === 0
       isEmpty ? (
         <div class="py-10 flex flex-col items-center justify-center text-center">
           <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3">
-            <svg class="w-5 h-5 text-text-muted" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z" />
-            </svg>
+            <FaCalendarXmark className="w-5 h-5 text-text-muted" />
           </div>
           <p class="text-text-muted text-xs">Không thể tải phim thể loại này ngay lúc này</p>
           <a href={`/the-loai/${slug}`} class="mt-3 px-4 py-1.5 rounded-xl glass-tile text-[11px] text-text-secondary hover:text-white transition-colors">
