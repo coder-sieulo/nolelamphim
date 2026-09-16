@@ -1,0 +1,441 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ThemeBG from '../../../components/ThemeBG.astro'
+import { getSessionUser } from '../../../lib/auth'
+import { getRoom } from '../../../lib/rooms'
+
+const code = (Astro.params.code || '').toUpperCase()
+
+const user = await getSessionUser(Astro.cookies)
+const room = await getRoom(code)
+
+if (!room) {
+  return Astro.redirect('/404', 404)
+}
+
+const isHost = !!user && user.sub === room.hostId
+---
+
+<BaseLayout title={`Xem Chung #${code}`} description="Phòng xem phim cùng nhau trên Nô Lệ Làm Phim." noIndex>
+  <ThemeBG name="xem-chung" />
+  <main class="px-4 md:px-8 py-6 space-y-4" data-room-page data-code={code} data-host={String(isHost)}>
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl glass-tile flex items-center justify-center text-xl">📺</div>
+        <div>
+          <h1 class="text-lg font-bold text-text-primary">Phòng <span class="font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]">#{code}</span></h1>
+          <p id="xc-status" class="text-xs text-text-muted">Đang tải...</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="xc-share" type="button" class="px-4 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors">
+          Sao chép link mời
+        </button>
+        <a href="/xem-chung" class="px-4 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors">Thoát</a>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-[1fr_340px] gap-4 items-start">
+      <div class="space-y-4 min-w-0">
+        <!-- Player -->
+        <div class="content-card p-2 md:p-3">
+          <div id="player-stage" class="aspect-video w-full relative rounded-xl overflow-hidden bg-black">
+            <div id="xc-now-playing" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-6 text-center">
+              <div class="w-16 h-16 rounded-full glass-tile flex items-center justify-center">
+                <svg class="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <p id="xc-no-movie-text" class="text-sm text-text-secondary">Chưa có phim nào được phát trong phòng này.</p>
+              <p class="text-xs text-text-muted">Host sẽ chọn phim và ấn phát — mọi người xem cùng một nhịp thời gian.</p>
+            </div>
+            <img id="xc-frame" alt="" class="hidden absolute inset-0 w-full h-full object-contain" decoding="async" />
+            <div id="xc-countdown" class="hidden absolute inset-0 z-20 flex-col items-center justify-center bg-black/85">
+              <p class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]" id="xc-countdown-num">10</p>
+              <p class="text-xs text-text-muted mt-2">Sắp bắt đầu...</p>
+            </div>
+            <div id="xc-buffering" class="hidden absolute inset-0 z-30 items-center justify-center bg-black/60">
+              <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#C44BED] animate-spin"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Now playing info -->
+        <div id="xc-movie-info" class="content-card px-5 py-4 hidden">
+          <div class="flex items-center gap-3">
+            <img id="xc-thumb" alt="" class="w-16 h-[4.5rem] rounded-lg object-cover shrink-0" />
+            <div class="min-w-0">
+              <h2 id="xc-movie-name" class="font-bold text-text-primary text-sm truncate"></h2>
+              <p id="xc-ep-name" class="text-xs text-text-muted"></p>
+              <p id="xc-clock" class="text-xs text-text-secondary font-mono mt-1"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Host controls -->
+        <div id="xc-host-panel" class="content-card px-5 py-4 space-y-3 hidden">
+          <h3 class="text-sm font-bold text-text-primary">🎛 Host</h3>
+          <div class="relative">
+            <input
+              id="xc-lookup"
+              type="text"
+              placeholder="Gõ tên phim để chọn..."
+              autocomplete="off"
+              class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50"
+            />
+            <div id="xc-lookup-res" class="hidden absolute z-40 mt-2 w-full max-h-72 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="xc-play-now" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-40 transition-all">▶ Phát ngay (10s)</button>
+            <button id="xc-schedule" type="button" class="px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-secondary hover:text-white disabled:opacity-40 transition-all">⏰ Đặt giờ chiếu</button>
+            <button id="xc-stop" type="button" class="px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-muted hover:text-white disabled:opacity-40 transition-all">■ Kết thúc</button>
+          </div>
+          <div id="xc-schedule-pick" class="hidden flex items-center gap-2">
+            <input id="xc-schedule-dt" type="datetime-local" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-text-primary flex-1 min-w-0" />
+            <button id="xc-schedule-confirm" type="button" class="px-4 py-2 rounded-xl glass-tile-active text-xs font-bold text-white">Đặt</button>
+          </div>
+          <p id="xc-host-error" class="hidden text-xs text-red-400"></p>
+        </div>
+      </div>
+
+      <!-- Chat column -->
+      <div class="content-card flex flex-col min-h-[30rem] lg:min-h-0 lg:h-[calc(100vh-12rem)]">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-white/5">
+          <h3 class="text-sm font-bold text-text-primary">💬 Chat</h3>
+          <span id="xc-members-pop" class="text-xs text-text-muted"></span>
+        </div>
+        <div id="xc-chat" class="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-[18rem]"></div>
+        <form id="xc-chat-form" class="flex gap-2 p-3 border-t border-white/5">
+          <input id="xc-chat-input" type="text" maxlength="500" placeholder="Nhắn gì đó..." autocomplete="off"
+            class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50" />
+          <button type="submit" class="px-4 py-2 rounded-xl glass-tile-active text-xs font-bold text-white">Gửi</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import { registerPageInit } from '../../../scripts/lifecycle'
+
+    interface Member { id: string; username: string; global_name?: string | null; avatar?: string | null }
+    interface ChatMsg { id: string; userId: string; username: string; avatar?: string | null; text: string; ts: number }
+    interface Movie { slug: string; movieName: string; epName: string; episode: string; thumb: string; hash: string; host: string; frameDur: number; frameCount: number; frameUrl: string }
+    interface Room {
+      code: string; status: string; hostId: string; members: Member[];
+      movie: Movie | null; startTime: number; endedAt: number;
+      chat: ChatMsg[]; muted: Record<string, boolean>; banned: Record<string, boolean>;
+    }
+
+    function escapeHTML(s: string): string {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
+    }
+
+    function avatarUrl(id: string, avatar?: string | null): string {
+      return avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=64` : '/logo.png'
+    }
+
+    registerPageInit(() => {
+      const page = document.querySelector<HTMLElement>('[data-room-page]')
+      if (!page) return () => {}
+      const code = page.dataset.code || ''
+
+      let room: Room | null = null
+      let isHost = page.dataset.host === 'true'
+      let _userId = ''
+      let selectedMovie: { slug: string; movieName: string; episode: string; epName: string; thumb: string; embed: string } | null = null
+
+      const $ = (id: string) => document.getElementById(id)
+
+      function statusText(): string {
+        if (!room) return 'Đang tải...'
+        const n = room.members.length
+        if (room.status === 'ended') return 'Phòng đã kết thúc'
+        if (room.status === 'playing') return `● Đang chiếu • ${n} người`
+        if (room.status === 'scheduled' && room.movie) {
+          const remain = Math.max(0, Math.round((room.startTime - Date.now()) / 1000))
+          return `⏰ Bắt đầu lúc ${new Date(room.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • còn ${remain}s • ${n} người`
+        }
+        return room.movie ? `Sẵn sàng • ${n} người` : `Chưa chiếu • ${n} người`
+      }
+
+      function fmtClock(ms: number): string {
+        const s = Math.floor(ms / 1000)
+        const d = Math.floor((ms % 1000) / 100)
+        const pad = (x: number) => String(x).padStart(2, '0')
+        return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}.${d}`
+      }
+
+      async function whoami() {
+        try {
+          const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
+          const d = await r.json()
+          userId = d.user?.sub || ''
+        } catch { userId = '' }
+      }
+
+      async function refresh(): Promise<boolean> {
+        try {
+          const r = await fetch(`/api/xem-chung/${code}`, { credentials: 'same-origin' })
+          const d = await r.json()
+          if (!d.ok) { window.location.href = '/xem-chung'; return false }
+          room = d.room
+          isHost = !!d.isHost
+          $('xc-host-panel')?.classList.toggle('hidden', !isHost)
+          return true
+        } catch { return false }
+      }
+
+      function renderAll() {
+        const st = $('xc-status')
+        if (st) st.textContent = statusText()
+        const members = $('xc-members-pop')
+        if (members && room) members.textContent = room.members.map((m) => m.global_name || m.username).join(', ') || '—'
+        const movie = room?.movie
+        const info = $('xc-movie-info')
+        const nowPlaying = $('xc-now-playing')
+        const noText = $('xc-no-movie-text')
+        const frame = $('xc-frame') as HTMLImageElement | null
+        if (!movie) {
+          if (nowPlaying) nowPlaying.classList.remove('hidden')
+          if (noText) noText.textContent = 'Chưa có phim nào được phát trong phòng này.'
+          if (info) info.classList.add('hidden')
+          if (frame) frame.classList.add('hidden')
+          $('xc-countdown')?.classList.add('hidden')
+          return
+        }
+        if (info) info.classList.remove('hidden')
+        if (noText) noText.textContent = 'Đang chờ phát theo lịch của host.'
+        const th = $('xc-thumb') as HTMLImageElement | null
+        if (th && movie.thumb) th.src = movie.thumb
+        const mn = $('xc-movie-name')
+        if (mn) mn.textContent = movie.movieName
+        const en = $('xc-ep-name')
+        if (en) en.textContent = `${movie.epName} • ${movie.movieName}`
+        renderChat()
+      }
+
+      function renderChat() {
+        const box = $('xc-chat')
+        if (!box || !room) return
+        box.innerHTML = room.chat.map((m) => `
+          <div class="flex items-start gap-2">
+            <img src="${avatarUrl(m.userId, m.avatar)}" alt="" class="w-6 h-6 rounded-full shrink-0" loading="lazy" />
+            <div class="min-w-0">
+              <div class="flex items-baseline gap-2">
+                <span class="text-[11px] font-bold ${m.userId === room?.hostId ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]' : 'text-text-secondary'}">${escapeHTML(m.username)}${m.userId === room?.hostId ? ' • host' : ''}</span>
+                <span class="text-[10px] text-text-muted">${new Date(m.ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                ${isHost && m.userId !== room?.hostId ? `
+                  <button class="xc-mute text-[10px] px-1.5 py-0.5 rounded glass-tile text-text-muted hover:text-white" data-id="${m.userId}" title="Mute">🔇</button>
+                  <button class="xc-ban text-[10px] px-1.5 py-0.5 rounded glass-tile text-text-muted hover:text-red-400" data-id="${m.userId}" title="Cấm">🚫</button>
+                ` : ''}
+              </div>
+              <p class="text-sm text-text-primary break-words">${escapeHTML(m.text)}</p>
+            </div>
+          </div>
+        `).join('')
+        box.scrollTop = box.scrollHeight
+        box.querySelectorAll<HTMLButtonElement>('.xc-mute').forEach((b) => b.addEventListener('click', () => mod(b.dataset.id || '', 'mute')))
+        box.querySelectorAll<HTMLButtonElement>('.xc-ban').forEach((b) => b.addEventListener('click', () => mod(b.dataset.id || '', 'ban')))
+      }
+
+      async function mod(targetId: string, action: 'mute' | 'ban') {
+        const r = await fetch(`/api/xem-chung/${code}/mod`, {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: targetId, action }),
+        }).catch(() => null)
+        if (!r) return
+        const d = await r.json()
+        if (d.room) { room = d.room; renderAll() }
+      }
+
+      // ── Slideshow clock player ──
+      let timer = 0
+
+      const frameEl = () => $('xc-frame') as HTMLImageElement | null
+      const buffering = () => $('xc-buffering')
+
+      function playingNow(): boolean {
+        if (!room || !room.movie || room.status === 'ended' || room.status === 'open') return false
+        if (room.startTime <= 0) return false
+        return room.startTime <= Date.now()
+      }
+
+      function drawFrame() {
+        const f = frameEl()
+        const nowPlaying = $('xc-now-playing')
+        const cd = $('xc-countdown')
+        if (!playingNow()) {
+          if (nowPlaying) nowPlaying.classList.remove('hidden')
+          if (f) f.classList.add('hidden')
+          return
+        }
+        // countdown display (negative = playing)
+        if (room && room.startTime > Date.now() && room.status === 'scheduled') {
+          const remain = Math.max(0, Math.ceil((room.startTime - Date.now()) / 1000))
+          const num = $('xc-countdown-num')
+          if (num) num.textContent = String(remain)
+          if (cd) { cd.classList.remove('hidden'); cd.classList.add('flex'); cd.classList.add('flex-col'); }
+          if (nowPlaying) nowPlaying.classList.add('hidden')
+          return
+        }
+        if (cd) { cd.classList.add('hidden'); cd.classList.remove('flex'); }
+        if (nowPlaying) nowPlaying.classList.add('hidden')
+        if (!room || !room.movie || !f) return
+        const dur = Math.round(room.movie.frameDur * 1000) || 6006
+        const elapsed = Date.now() - room.startTime
+        const n = Math.max(1, Math.floor(elapsed / dur) + 1)
+        if (n > room.movie.frameCount) {
+          const st = $('xc-status')
+          if (st) st.textContent = `✓ Phim đã phát xong • ${room.members.length} người`
+          return
+        }
+        const url = room.movie.frameUrl.replace('{N}', String(n))
+        if (f.dataset.src === url) return
+        f.dataset.src = url
+        const buf = buffering()
+        if (buf) { buf.classList.remove('hidden'); buf.classList.add('flex'); }
+        f.src = url
+        f.onload = () => {
+          if (buf) { buf.classList.add('hidden'); buf.classList.remove('flex'); }
+        }
+        f.classList.remove('hidden')
+        // prefetch next frame
+        if (n + 1 <= room.movie.frameCount) {
+          const nx = new Image()
+          nx.src = room.movie.frameUrl.replace('{N}', String(n + 1))
+        }
+      }
+
+      function tickClock() {
+        if (playingNow() && room?.movie) {
+          const cl = $('xc-clock')
+          if (cl) cl.textContent = fmtClock(Date.now() - room.startTime)
+        }
+      }
+
+      // ── Host: lookup movie ──
+      const lookup = $('xc-lookup') as HTMLInputElement | null
+      const lookupRes = $('xc-lookup-res')
+      let lookupTimer = 0
+      if (lookup) {
+        lookup.addEventListener('input', () => {
+          window.clearTimeout(lookupTimer)
+          lookupTimer = window.setTimeout(async () => {
+            const q = lookup.value.trim()
+            if (!q || !lookupRes) { lookupRes?.classList.add('hidden'); return }
+            const r = await fetch(`/api/xem-chung/lookup?q=${encodeURIComponent(q)}`, { credentials: 'same-origin' }).catch(() => null)
+            if (!r) return
+            const d = await r.json()
+            const res = (d.results || []).slice(0, 5)
+            if (!lookupRes) return
+            if (!res.length) {
+              lookupRes.innerHTML = '<p class="px-4 py-2 text-xs text-text-muted">Không tìm thấy phim.</p>'
+              lookupRes.classList.remove('hidden')
+              return
+            }
+            lookupRes.innerHTML = res.map((mv: any) => `
+              <button type="button" class="xc-pick block w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors" data-slug="${mv.slug}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb)}">
+                <span class="block text-sm text-text-primary truncate">${escapeHTML(mv.name)}</span>
+                <span class="block text-[11px] text-text-muted">${mv.episodes.length} tập</span>
+              </button>
+            `).join('')
+            lookupRes.classList.remove('hidden')
+            lookupRes.querySelectorAll<HTMLButtonElement>('.xc-pick').forEach((b) => {
+              b.addEventListener('click', async () => {
+                const song = { slug: b.dataset.slug || '', name: b.dataset.name || '', thumb: b.dataset.thumb || '' }
+                lookupRes.classList.add('hidden')
+                lookup.value = song.name
+                // load episodes into quick list
+                const r = await fetch(`/api/episodes?slug=${song.slug}`, { credentials: 'same-origin' }).catch(() => null)
+                if (!r) return
+                const d = await r.json()
+                const episodes = d.status ? (d.episodes || []).flatMap((s: any) => s.list.map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed }))) : []
+                if (!episodes.length) return
+                selectedMovie = { ...song, movieName: song.name, episode: episodes[0].slug, epName: episodes[0].name, embed: episodes[0].embed }
+                $('xc-host-error')?.classList.add('hidden')
+                const hostErr = $('xc-host-error')
+                if (hostErr) hostErr.textContent = `Đã chọn: ${song.name} (${episodes.length} tập) — mặc định tập đầu.`
+                $('xc-play-now')?.removeAttribute('disabled')
+                $('xc-schedule')?.removeAttribute('disabled')
+              })
+            })
+          }, 350)
+        })
+      }
+
+      function hostErr(msg: string) {
+        const el = $('xc-host-error')
+        if (!el) return
+        el.textContent = msg
+        el.classList.remove('hidden')
+      }
+
+      async function startMovie(scheduleStart: number) {
+        if (!selectedMovie) return hostErr('Chọn phim trước.')
+        const r = await fetch(`/api/xem-chung/${code}/movie`, {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...selectedMovie, scheduleStart }),
+        }).catch(() => null)
+        if (!r) return hostErr('Lỗi kết nối server.')
+        const d = await r.json()
+        if (!d.ok) return hostErr(d.error || 'Thất bại.')
+        $('xc-schedule-pick')?.classList.add('hidden')
+        room = d.room
+        renderAll()
+      }
+
+      $('xc-play-now')?.addEventListener('click', () => startMovie(Date.now() + 10_000))
+      $('xc-schedule')?.addEventListener('click', () => $('xc-schedule-pick')?.classList.toggle('hidden'))
+      $('xc-schedule-confirm')?.addEventListener('click', () => {
+        const dt = ($('xc-schedule-dt') as HTMLInputElement | null)?.value
+        if (!dt) return hostErr('Chọn thời gian chiếu.')
+        const at = new Date(dt).getTime()
+        if (at <= Date.now()) return hostErr('Thời gian phải ở tương lai.')
+        startMovie(at)
+      })
+      $('xc-stop')?.addEventListener('click', async () => {
+        const r = await fetch(`/api/xem-chung/${code}/end`, { method: 'POST', credentials: 'same-origin' }).catch(() => null)
+        if (!r) return
+        const d = await r.json()
+        if (d.room) { room = d.room; renderAll() }
+      })
+
+      // chat
+      $('xc-chat-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const inp = $('xc-chat-input') as HTMLInputElement | null
+        if (!inp || !inp.value.trim()) return
+        const text = inp.value
+        inp.value = ''
+        const r = await fetch(`/api/xem-chung/${code}/chat`, {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        }).catch(() => null)
+        if (!r) return
+        const d = await r.json()
+        if (d.room) { room = d.room; renderChat() }
+      })
+
+      $('xc-share')?.addEventListener('click', () => {
+        navigator.clipboard?.writeText(window.location.href).then(() => {
+          const btn = $('xc-share')
+          if (btn) { const o = btn.textContent; btn.textContent = 'Đã chép ✓'; window.setTimeout(() => { btn.textContent = o }, 1600) }
+        }).catch(() => {})
+      })
+
+      void whoami()
+      void refresh().then((ok) => { if (ok) renderAll() })
+
+      window.setInterval(() => { drawFrame(); tickClock() }, 250)
+      window.setInterval(() => {
+        void refresh().then((ok) => { if (ok) renderAll() })
+      }, 3000)
+
+      return () => {
+        window.clearInterval(timer)
+        window.clearTimeout(lookupTimer)
+      }
+    })
+  </script>
+</BaseLayout>
