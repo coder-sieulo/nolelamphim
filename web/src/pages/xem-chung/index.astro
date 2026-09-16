@@ -23,7 +23,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
             </div>
           </div>
           <button id="xc-create" type="button"
-            class="w-full px-5 py-3 rounded-xl text-sm font-bold tracking-wide bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 transition-all disabled:opacity-50">
+            class="w-full px-5 py-3 rounded-xl text-sm font-bold tracking-wide bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
             Tạo phòng mới
           </button>
         </div>
@@ -45,10 +45,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
               autocomplete="off"
               maxlength="6"
               placeholder="ABC123"
-              class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary uppercase tracking-widest placeholder:text-text-muted placeholder:normal-case focus:outline-none focus:border-[#C44BED]/50"
+              class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary uppercase tracking-widest placeholder:text-text-muted placeholder:normal-case focus:outline-none focus:border-[#C44BED]/50 disabled:opacity-50"
             />
             <button type="submit"
-              class="px-5 py-3 rounded-xl text-sm font-bold glass-tile-active text-white hover:brightness-110 transition-all">
+              class="px-5 py-3 rounded-xl text-sm font-bold glass-tile-active text-white hover:brightness-110 transition-all disabled:opacity-50">
               Vào
             </button>
           </form>
@@ -67,7 +67,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
         </a>
       </div>
 
-      <div id="xc-my" class="hidden mt-8">
+      <div id="xc-profile" class="hidden mt-6 p-4 rounded-xl glass-tile flex items-center gap-3">
+        <img id="xc-avatar" alt="" class="w-11 h-11 rounded-full" />
+        <div class="min-w-0">
+          <p id="xc-name" class="text-sm font-bold text-text-primary truncate"></p>
+          <p id="xc-logged" class="text-xs text-emerald-400">✓ Đã đăng nhập — bạn có thể tạo hoặc vào phòng</p>
+        </div>
+      </div>
+
+      <div id="xc-my" class="hidden mt-6">
         <h3 class="text-sm font-bold text-text-primary mb-3">Phòng của tôi</h3>
         <div id="xc-my-list" class="grid gap-2"></div>
       </div>
@@ -83,10 +91,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
       const createBtn = document.getElementById('xc-create') as HTMLButtonElement | null
       const joinForm = document.getElementById('xc-join') as HTMLFormElement | null
       const codeInput = document.getElementById('xc-code') as HTMLInputElement | null
+      const joinSubmit = joinForm?.querySelector<HTMLButtonElement>('button[type="submit"]') ?? null
       const errorEl = document.getElementById('xc-error') as HTMLElement | null
       const loginNote = document.getElementById('xc-login-note') as HTMLElement | null
+      const profileBox = document.getElementById('xc-profile') as HTMLElement | null
+      const avatarEl = document.getElementById('xc-avatar') as HTMLImageElement | null
+      const nameEl = document.getElementById('xc-name') as HTMLElement | null
       const myBox = document.getElementById('xc-my') as HTMLElement | null
       const myList = document.getElementById('xc-my-list') as HTMLElement | null
+
+      let authed = false
 
       function showErr(msg: string) {
         if (!errorEl) return
@@ -94,17 +108,40 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
         errorEl.classList.remove('hidden')
       }
 
-      async function whoami(): Promise<boolean> {
+      interface MeUser { id: string; username: string; global_name?: string | null; avatar?: string | null }
+
+      async function whoami(): Promise<MeUser | null> {
         try {
           const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
           const d = await r.json()
-          return !!(d.user && d.user.sub)
+          return d.user?.id ? d.user as MeUser : null
         } catch {
-          return false
+          return null
+        }
+      }
+
+      function setAuthed(authedState: boolean, user: MeUser | null) {
+        authed = authedState
+        const disable = !authed
+        if (createBtn) createBtn.disabled = disable
+        if (codeInput) codeInput.disabled = disable
+        if (joinSubmit) joinSubmit.disabled = disable
+        if (loginNote) loginNote.classList.toggle('hidden', authed)
+        if (!profileBox) return
+        profileBox.classList.toggle('hidden', !authed)
+        if (authed && avatarEl && nameEl && user) {
+          avatarEl.src = user.avatar
+            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=96`
+            : '/logo.png'
+          nameEl.textContent = user.global_name || user.username
         }
       }
 
       async function go(code: string) {
+        if (!authed) {
+          showErr('Bạn chưa đăng nhập. Hãy đăng nhập Discord để vào phòng.')
+          return
+        }
         if (!/^[A-Z0-9]{4,8}$/.test(code)) {
           showErr('Mã phòng không hợp lệ.')
           return
@@ -116,15 +153,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
         window.location.href = `/xem-chung/${d.room.code}`
       }
 
-      async function loadMy() {
+      async function loadMy(user: MeUser) {
         if (!myBox || !myList) return
         try {
-          const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
-          const d = await r.json()
-          if (!(d.user && d.user.sub)) {
-            loginNote?.classList.remove('hidden')
-            return
-          }
           const res = await fetch('/api/xem-chung/mine', { credentials: 'same-origin' })
           const data = await res.json()
           const codes: string[] = data?.codes || []
@@ -143,13 +174,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
       }
 
       createBtn?.addEventListener('click', async () => {
+        if (!authed) {
+          showErr('Bạn chưa đăng nhập. Hãy đăng nhập Discord để tạo phòng.')
+          return
+        }
         createBtn.disabled = true
         createBtn.textContent = 'Đang tạo...'
         const r = await fetch('/api/xem-chung', { method: 'POST', credentials: 'same-origin' }).catch(() => null)
         if (!r) {
           createBtn.disabled = false
           createBtn.textContent = 'Tạo phòng mới'
-          return showErr('Không kết nối được server. Bạn đã đăng nhập Discord chưa?')
+          return showErr('Không kết nối được server.')
         }
         const d = await r.json()
         createBtn.disabled = false
@@ -163,7 +198,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
         if (codeInput) go(codeInput.value.trim().toUpperCase())
       })
 
-      loadMy()
+      void whoami().then((user) => {
+        setAuthed(!!user, user)
+        if (user) void loadMy(user)
+      })
     })
   </script>
 </BaseLayout>
