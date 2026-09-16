@@ -7,6 +7,9 @@ export default defineConfig({
   output: 'server',
   adapter: vercel({}),
   site: 'https://nolelamphim.vercel.app',
+  security: {
+    checkOrigin: false,
+  },
   prefetch: true,
   vite: {
     plugins: [/** @type {any} */ (tailwindcss())],
