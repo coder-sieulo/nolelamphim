@@ -128,8 +128,9 @@ export async function createRoom(user: SessionPayload): Promise<Room | null> {
 export async function getRoom(code: string): Promise<Room | null> {
   const r = redis()
   if (!r) return null
-  const raw = await r.get<string>(roomKey(code))
+  const raw = await r.get<Room | string>(roomKey(code))
   if (!raw) return null
+  if (typeof raw === 'object') return raw as Room
   try {
     return JSON.parse(raw) as Room
   } catch {
