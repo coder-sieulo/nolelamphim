@@ -90,123 +90,47 @@ const activeIndex = links.findIndex((l) => isActive(pathname, l.href))
       </div>
     </div>
 
-    <div class="mode-switch relative hidden sm:block shrink-0">
-      <button
-        type="button"
-        data-mode-toggle
-        class="relative w-14 h-14 md:w-16 md:h-16 rounded-full liquid-glass flex items-center justify-center text-text-secondary hover:text-white transition-colors"
-        aria-haspopup="listbox"
-        aria-expanded="false"
+    <div class="hidden sm:flex items-center gap-2 shrink-0">
+      <a
+        href="/xem-chung"
+        id="nav-xem-chung"
+        class="relative w-14 h-14 md:w-16 md:h-16 rounded-full liquid-glass flex items-center justify-center text-[#FF6B9D] hover:text-white transition-colors group"
+        aria-label="Xem Chung"
+        title="Xem Chung — phòng xem phim cùng nhau"
       >
-        <span
-          data-mode-dot
-          class="absolute top-2.5 right-2.5 md:top-3 md:right-3 w-2.5 h-2.5 rounded-full pointer-events-none transition-all duration-300"
-          style="background: #4A9EFF"
-        ></span>
-        <svg
-          data-mode-chevron
-          class="w-5 h-5 pointer-events-none transition-transform duration-300"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
+        <span class="text-xl md:text-2xl group-hover:scale-110 transition-transform">📺</span>
+        <span class="absolute top-2.5 right-2.5 md:top-3 md:right-3 w-2.5 h-2.5 rounded-full pointer-events-none bg-[#FF6B9D]/80"></span>
+      </a>
+      <a
+        href="/api/auth/discord"
+        id="auth-login-round"
+        class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#5865F2] hover:brightness-110 flex items-center justify-center text-white transition-all group"
+        aria-label="Đăng nhập bằng Discord"
+        title="Đăng nhập bằng Discord"
+      >
+        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M20.32 4.37a19.8 19.8 0 0 0-4.93-1.51 13.78 13.78 0 0 0-.64 1.28 18.27 18.27 0 0 0-5.5 0 12.64 12.64 0 0 0-.64-1.28c-1.71.3-3.35.81-4.9 1.5C1.23 8.74.63 12.9 1.92 17.02A20.04 20.04 0 0 0 6.4 19.4c.69-1.25 1.12-2.4 1.44-3.65l-.02-.02-.8-.27a7.94 7.94 0 0 1-.38-.18l.02-.02a1.54 1.54 0 0 1 .13-.1 14.1 14.1 0 0 0 12.35 0l.14.1v.02l-.02.02c-.13.06-.25.12-.38.18l-.02.02c.32 1.26.75 2.4 1.44 3.65a20 20 0 0 0 4.5-2.37c1.53-4.8-.26-8.93-2.46-12.65ZM8.02 14.92c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Zm7.96 0c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Z"/>
         </svg>
-      </button>
-
-      <div
-        data-mode-menu
-        class="mode-menu w-44 liquid-glass rounded-2xl p-1.5 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out"
-        role="listbox"
-      >
-        <button
-          type="button"
-          data-mode-option
-          data-mode="normal"
-          role="option"
-          aria-selected="true"
-          class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/5 transition-colors"
-        >
-          <span class="flex items-center gap-2.5">
-            <span class="w-2 h-2 rounded-full bg-[#4A9EFF]"></span>
-            Normal
-          </span>
-          <svg
-            data-check
-            class="w-4 h-4 text-emerald-400"
-            style="opacity: 0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        </button>
-        <button
-          type="button"
-          data-mode-option
-          data-mode="tu-tien"
-          role="option"
-          aria-selected="false"
-          disabled
-          class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted cursor-not-allowed transition-colors disabled:opacity-60"
-          title="Sắp ra mắt"
-        >
-            <span class="flex items-center gap-2.5">
-              <span class="w-2 h-2 rounded-full bg-gradient-to-br from-[#C44BED] to-[#FFB03C] opacity-40"></span>
-              Tu Tiên
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/20">
-                Sắp ra mắt
-              </span>
-            </span>
-          <svg
-            data-check
-            class="w-4 h-4 text-emerald-400"
-            style="opacity: 0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        </button>
-      </div>
+      </a>
     </div>
     </div>
 
     <div id="nav-mobile" class="nav-mobile md:hidden overflow-hidden transition-all duration-300 ease-out">
       <div class="liquid-glass mt-2 rounded-2xl px-3 py-2 flex flex-col gap-1">
         <div class="flex items-center justify-between gap-3 px-3 py-2.5 mb-1 border-b border-white/5">
-          <span class="text-xs font-bold uppercase tracking-wider text-text-secondary">Mode</span>
-          <div class="flex items-center gap-1 glass-tile rounded-xl p-1">
-            <button
-              type="button"
-              data-mode-option
-              data-mode="normal"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors text-text-secondary hover:text-white"
-            >
-              Normal
-            </button>
-            <button
-              type="button"
-              data-mode-option
-              data-mode="tu-tien"
-              disabled
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors text-text-muted cursor-not-allowed disabled:opacity-60"
-              title="Sắp ra mắt"
-            >
-              Tu Tiên
-            </button>
-          </div>
+          <a href="/xem-chung" class="flex items-center gap-2 flex-1 px-3 py-2.5 rounded-xl glass-tile text-[#FF6B9D] text-sm font-medium hover:text-white hover:bg-white/5 transition-colors">
+            📺 Xem Chung
+          </a>
+          <a
+            href="/api/auth/discord"
+            id="auth-login-round-mobile"
+            class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#5865F2] text-white text-sm font-medium hover:brightness-110 transition-all"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M20.32 4.37a19.8 19.8 0 0 0-4.93-1.51 13.78 13.78 0 0 0-.64 1.28 18.27 18.27 0 0 0-5.5 0 12.64 12.64 0 0 0-.64-1.28c-1.71.3-3.35.81-4.9 1.5C1.23 8.74.63 12.9 1.92 17.02A20.04 20.04 0 0 0 6.4 19.4c.69-1.25 1.12-2.4 1.44-3.65l-.02-.02-.8-.27a7.94 7.94 0 0 1-.38-.18l.02-.02a1.54 1.54 0 0 1 .13-.1 14.1 14.1 0 0 0 12.35 0l.14.1v.02l-.02.02c-.13.06-.25.12-.38.18l-.02.02c.32 1.26.75 2.4 1.44 3.65a20 20 0 0 0 4.5-2.37c1.53-4.8-.26-8.93-2.46-12.65ZM8.02 14.92c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Zm7.96 0c-.88 0-1.6-.8-1.6-1.79s.71-1.8 1.6-1.8 1.6.8 1.6 1.8-.72 1.8-1.6 1.8Z"/>
+            </svg>
+            Discord
+          </a>
         </div>
         {
           links.map((link, i) => {

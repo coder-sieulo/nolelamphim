@@ -174,8 +174,18 @@ async function renderAuth() {
   bindMobile(user)
 }
 
+function setLoginRounds(user: MeUser | null) {
+  const desktop = document.getElementById('auth-login-round')
+  const mobile = document.getElementById('auth-login-round-mobile')
+  const style = user ? 'none' : ''
+  if (desktop) desktop.style.display = style
+  if (mobile) mobile.style.display = style
+}
+
 registerPageInit(() => {
   ac = new AbortController()
-  renderAuth()
+  renderAuth().then(() => {
+    setLoginRounds(cachedState.state === 'user' ? cachedState.user : null)
+  })
   return () => ac.abort()
 })
