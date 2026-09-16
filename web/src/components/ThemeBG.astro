@@ -1,9 +1,10 @@
 ---
 interface Props {
   name?: string
+  variant?: string
 }
-const { name = '' } = Astro.props
-const variant = name === 'doraemon' || name === 'dao-hai-tac' ? 'light' : name === 'am-anh' ? 'horror' : name === 'tham-tu-lung-danh-conan' ? 'noir' : ''
+const { name = '', variant = '' } = Astro.props
+const resolvedVariant = variant || (name === 'doraemon' || name === 'dao-hai-tac' ? 'light' : name === 'am-anh' ? 'horror' : name === 'tham-tu-lung-danh-conan' ? 'noir' : '')
 const accent = name === 'dao-hai-tac' ? 'sunset' : name === 'doraemon' ? 'sky' : ''
 ---
 

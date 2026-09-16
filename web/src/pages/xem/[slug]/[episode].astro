@@ -47,14 +47,17 @@ const breadcrumb = [
   { name: currentEp?.name ?? episode, path: `/xem/${slug}/${episode}` },
 ]
 
-// Loader reel đặc biệt — chỉ riêng bộ phim này
-const specialLoader = slug === 'am-anh'
+// Kinh dị — áp dụng cho mọi phim có tag Kinh Dị
+const isHorror = (movie.category ?? []).some((c) => c.slug === 'kinh-di')
+
+// Loader reel đặc biệt
+const specialLoader = isHorror
 ---
 
 <BaseLayout title={pageTitle} description={`Xem ${movie.name} ${currentEp ? `tập ${currentEp.name}` : ''} HD VietSub miễn phí tại Nô Lệ Làm Phim.`} ogImage={`${SITE_URL}/og/${slug}.png`}>
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
   {embedOrigin && <link rel="preconnect" href={embedOrigin} slot="head" />}
-  <ThemeBG name={slug} />
+  <ThemeBG name={slug} variant={isHorror ? 'horror' : undefined} />
   {
     !currentEp ? (
       <div class="px-4 md:px-8 py-20 flex flex-col items-center">
@@ -65,8 +68,8 @@ const specialLoader = slug === 'am-anh'
       </div>
     ) : (
       <>
-        {/* ── Cảnh báo kinh dị (riêng am-anh) ── */}
-        {slug === 'am-anh' && (
+        {/* ── Cảnh báo kinh dị ── */}
+        {isHorror && (
           <div id="horror-warning" class="fixed inset-0 z-[120] flex items-center justify-center p-6 pointer-events-auto">
             <div class="absolute inset-0 bg-[#080000]/92 backdrop-blur-sm"></div>
             <div class="relative w-full max-w-lg rounded-2xl overflow-hidden">
@@ -310,7 +313,7 @@ const specialLoader = slug === 'am-anh'
         const decline = document.getElementById('horror-decline')
         const oke = document.getElementById('horror-oke')
         function closeWarning() {
-          warning.classList.add('hidden')
+          warning?.classList.add('hidden')
           document.body.classList.remove('overflow-hidden')
           const play = document.getElementById('player-play') as HTMLButtonElement | null
           play?.click()
