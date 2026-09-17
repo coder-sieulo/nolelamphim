@@ -114,6 +114,15 @@ body::before {
   z-index: 50;
 }
 
+/* Dropdown menu tài khoản (auth) — dùng class riêng vì .liquid-glass
+   ép position:relative ghi đè utility `absolute` của Tailwind */
+.user-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 50;
+}
+
 /* Specular "cap" highlight — dải sáng cong ở nửa trên */
 .liquid-glass::before,
 .content-card::before {
