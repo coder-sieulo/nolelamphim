@@ -93,7 +93,7 @@ const isHost = !!user && user.sub === room.hostId
         <!-- Host controls -->
         <div id="xc-host-panel" class="content-card px-5 py-4 space-y-3 hidden">
           <h3 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaSliders className="w-3.5 h-3.5 text-[#FF6B9D]" /> Host</h3>
-          <div class="relative">
+          <div>
             <input
               id="xc-lookup"
               type="text"
@@ -101,7 +101,7 @@ const isHost = !!user && user.sub === room.hostId
               autocomplete="off"
               class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50"
             />
-            <div id="xc-lookup-res" class="hidden absolute z-40 mt-2 w-full max-h-80 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
+            <div id="xc-lookup-res" class="hidden mt-2 w-full max-h-72 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
           </div>
           <div id="xc-ep-picker" class="hidden space-y-3">
             <div class="flex items-center gap-3 p-3 rounded-xl glass-tile">
@@ -364,7 +364,13 @@ const isHost = !!user && user.sub === room.hostId
         const nowPlaying = $('xc-now-playing')
         const cd = $('xc-countdown')
         if (!playingNow()) {
-          if (f) { f.classList.add('hidden'); if (f.src) f.removeAttribute('src') }
+          // Phim đã chọn nhưng chưa tới giờ (scheduled) — chỉ ẩn, GIỮ iframe src
+          // để không phải load lại từ đầu (tránh lệch đồng hồ làm reset phim).
+          const keepAlive = !!room?.movie && (room.status === 'scheduled' || room.status === 'playing')
+          if (f) {
+            f.classList.add('hidden')
+            if (!keepAlive && f.src) f.removeAttribute('src')
+          }
           if (nowPlaying) nowPlaying.classList.remove('hidden')
           if (cd) { cd.classList.add('hidden'); cd.classList.remove('flex'); cd.classList.remove('flex-col'); }
           const buf = buffering()
