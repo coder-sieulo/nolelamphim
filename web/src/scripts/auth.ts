@@ -22,23 +22,21 @@ function avatarUrl(user: MeUser): string | null {
 }
 
 function loginDesktop() {
-  return `<a href="/api/auth/discord" class="w-9 h-9 rounded-xl glass-tile flex items-center justify-center text-text-secondary hover:text-white transition-colors group" aria-label="Đăng nhập bằng Discord" title="Đăng nhập bằng Discord">
-    ${discordIcon()}
-  </a>`
+  return ''
 }
 
 function userDesktop(user: MeUser) {
   const img = avatarUrl(user)
   const name = user.global_name || user.username
   return `<div class="relative" id="auth-menu-wrap">
-    <button id="auth-menu-btn" type="button" class="w-9 h-9 rounded-xl glass-tile flex items-center justify-center overflow-hidden text-text-secondary hover:text-white transition-colors group" aria-haspopup="true" aria-expanded="false" aria-label="Tài khoản ${name}">
+    <button id="auth-menu-btn" type="button" class="w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden glass-tile flex items-center justify-center text-text-secondary hover:text-white transition-colors group" aria-haspopup="true" aria-expanded="false" aria-label="Tài khoản ${name}">
       ${
         img
-          ? `<img src="${img}" alt="" width="36" height="36" class="w-full h-full object-cover" />`
-          : `<span class="w-4 h-4 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D]"></span>`
+          ? `<img src="${img}" alt="" width="64" height="64" class="w-full h-full object-cover" />`
+          : `<span class="w-6 h-6 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D]"></span>`
       }
     </button>
-    <div id="auth-menu" class="hidden absolute right-0 top-11 z-50 w-48 rounded-xl liquid-glass p-1.5 shadow-2xl">
+    <div id="auth-menu" class="hidden absolute right-0 top-[4.5rem] z-50 w-48 rounded-xl liquid-glass p-1.5 shadow-2xl">
       <div class="px-3 py-2 border-b border-white/5 mb-1">
         <p class="text-sm font-semibold text-text-primary truncate">${name}</p>
         <p class="text-[11px] text-text-muted truncate">@${user.username}</p>
@@ -100,7 +98,8 @@ function discardCache() {
 function bindDesktop(user: MeUser | null) {
   const container = document.getElementById('auth-btn-desktop')
   if (!container) return
-  container.innerHTML = user ? userDesktop(user) : loginDesktop()
+  container.classList.toggle('hidden', !user)
+  container.innerHTML = user ? userDesktop(user) : ''
   if (!user) return
 
   const btn = document.getElementById('auth-menu-btn')

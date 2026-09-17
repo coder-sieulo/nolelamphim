@@ -87,7 +87,6 @@ const activeIndex = links.findIndex((l) => isActive(pathname, l.href))
         <a id="nav-loading-dna" href="/phim-dna" class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6B9D]/25 to-[#C44BED]/25 border border-[#C44BED]/30 flex items-center justify-center text-[#FF6B9D] hover:text-white transition-colors" aria-label="Phim DNA" title="Phim DNA">
           <FaDna className="w-4 h-4" />
         </a>
-        <div id="auth-btn-desktop" class="w-9 h-9"></div>
       </div>
     </div>
 
@@ -111,6 +110,7 @@ const activeIndex = links.findIndex((l) => isActive(pathname, l.href))
       >
         <FaDiscord className="w-6 h-6 md:w-7 md:h-7 group-hover:scale-110 transition-transform" />
       </a>
+      <div id="auth-btn-desktop" class="hidden"></div>
     </div>
     </div>
 
