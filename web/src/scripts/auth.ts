@@ -36,7 +36,7 @@ function userDesktop(user: MeUser) {
           : `<span class="w-6 h-6 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D]"></span>`
       }
     </button>
-    <div id="auth-menu" class="hidden user-menu w-48 rounded-xl liquid-glass p-1.5 shadow-2xl">
+    <div id="auth-menu" class="user-menu dropdown w-48 rounded-xl glass-dropdown p-1.5 shadow-2xl">
       <div class="px-3 py-2 border-b border-white/5 mb-1">
         <p class="text-sm font-semibold text-text-primary truncate">${name}</p>
         <p class="text-[11px] text-text-muted truncate">@${user.username}</p>
@@ -108,15 +108,15 @@ function bindDesktop(user: MeUser | null) {
   const wrap = document.getElementById('auth-menu-wrap')
 
   const close = () => {
-    menu?.classList.add('hidden')
+    menu?.classList.remove('open')
     btn?.setAttribute('aria-expanded', 'false')
   }
   btn?.addEventListener('click', (e) => {
     e.stopPropagation()
-    const isOpen = !menu?.classList.contains('hidden')
+    const isOpen = menu?.classList.contains('open')
     if (isOpen) close()
     else {
-      menu?.classList.remove('hidden')
+      menu?.classList.add('open')
       btn?.setAttribute('aria-expanded', 'true')
     }
   })
