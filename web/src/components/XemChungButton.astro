@@ -1,0 +1,190 @@
+---
+import type { EpisodeServer } from '../lib/types'
+import { FaTv } from 'react-icons/fa6'
+
+interface Props {
+  slug: string
+  name: string
+  thumb?: string
+  servers: EpisodeServer[]
+}
+
+const { slug, name, servers } = Astro.props
+const thumb = Astro.props.thumb || ''
+
+const serverNames = servers.map((s) => s.server_name.trim())
+const firstServer = servers[0]?.list ?? []
+const dataServers = JSON.stringify(
+  servers.map((s) => ({ name: s.server_name.trim(), items: s.list.map((e) => ({ name: e.name, slug: e.slug, embed: e.embed })) })),
+)
+const dataMovie = JSON.stringify({ slug, name, thumb })
+---
+
+<div class="xc-quick relative" data-slug={slug} data-servers={dataServers} data-movie={dataMovie} data-has-multiple={servers.length > 1}>
+  <button
+    type="button"
+    class="xc-quick-trigger w-9 h-9 rounded-full glass-tile flex items-center justify-center text-[#FF6B9D] hover:bg-[#FF6B9D]/15 hover:text-white hover:border-[#FF6B9D]/30 transition-colors"
+    aria-label="Tạo phòng xem chung"
+    title="Tạo phòng xem chung phim này"
+  >
+    <FaTv className="w-4 h-4" />
+  </button>
+
+  <div class="xc-quick-panel dropdown absolute right-0 top-12 z-50 w-64 rounded-xl glass-dropdown p-3 shadow-2xl">
+    <div class="flex items-center gap-2.5 mb-3">
+      <img alt="" class="xc-quick-thumb w-9 h-[3.25rem] rounded-md object-cover shrink-0 bg-bg-card glass-frame" src={thumb || '/logo.png'} />
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-text-primary truncate">{name}</p>
+        <p class="text-[11px] text-text-muted">Chọn tập để tạo phòng mới</p>
+      </div>
+    </div>
+
+    <div class="xc-quick-servers hidden flex gap-1.5 flex-wrap mb-2">
+      {serverNames.map((sname, i) => (
+        <button
+          type="button"
+          class="xc-quick-server px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border"
+          data-server={i}
+        >
+          {sname}
+        </button>
+      ))}
+    </div>
+
+    <div class="flex items-center justify-between mb-1.5">
+      <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide px-1">Tập phim</p>
+      <p class="xc-quick-count text-[11px] text-text-muted"></p>
+    </div>
+    <div class="xc-quick-grid grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto p-1"></div>
+
+    <p class="xc-quick-msg hidden mt-2 text-[11px] text-red-400"></p>
+  </div>
+</div>
+
+<script>
+  import { registerPageInit } from '../scripts/lifecycle'
+
+  interface QuickEp { name: string; slug: string; embed: string }
+
+  registerPageInit(() => {
+    const ac = new AbortController()
+
+    document.querySelectorAll<HTMLElement>('.xc-quick').forEach(async (box) => {
+      let servers: { name: string; items: QuickEp[] }[] = []
+      try {
+        servers = JSON.parse(box.dataset.servers || '[]')
+      } catch {
+        servers = []
+      }
+      let movie: { slug: string; name: string; thumb: string } = { slug: '', name: '', thumb: '' }
+      try {
+        movie = JSON.parse(box.dataset.movie || '{}')
+      } catch {}
+      const trigger = box.querySelector<HTMLButtonElement>('.xc-quick-trigger')
+      const panel = box.querySelector<HTMLElement>('.xc-quick-panel')
+      const grid = box.querySelector<HTMLElement>('.xc-quick-grid')
+      const msg = box.querySelector<HTMLElement>('.xc-quick-msg')
+      const countEl = box.querySelector<HTMLElement>('.xc-quick-count')
+      const serverBtns = Array.from(box.querySelectorAll<HTMLButtonElement>('.xc-quick-server'))
+      const serversWrap = box.querySelector<HTMLElement>('.xc-quick-servers')
+
+      let serverIdx = 0
+      let busy = false
+
+      function current() {
+        return servers[serverIdx] || servers[0] || { name: '', items: [] }
+      }
+
+      function render() {
+        if (!grid) return
+        const items = current().items
+        grid.innerHTML = items.length
+          ? items
+              .map(
+                (ep, i) =>
+                  `<button type="button" class="xc-quick-ep ${i === 0 ? 'bg-white/10 text-white' : 'glass-tile text-text-secondary hover:bg-white/10 hover:text-white'} px-1 py-2 rounded-lg text-[11px] font-medium truncate" data-index="${i}" title="${ep.name}">${ep.name}</button>`,
+              )
+              .join('')
+          : '<p class="col-span-5 text-center text-[11px] text-text-muted py-4">Chưa có tập</p>'
+        if (countEl) countEl.textContent = `${items.length} tập`
+        grid.querySelectorAll<HTMLButtonElement>('.xc-quick-ep').forEach((b) => {
+          b.addEventListener('click', () => {
+            grid.querySelectorAll('.xc-quick-ep').forEach((x) => x.classList.remove('bg-white/10', 'text-white'))
+            b.classList.add('bg-white/10', 'text-white')
+          })
+        })
+      }
+
+      serverBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          serverIdx = Number(btn.dataset.server)
+          serverBtns.forEach((b) => {
+            const active = b === btn
+            b.className = `xc-quick-server px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
+              active ? 'glass-tile-active text-white border-white/20' : 'glass-tile text-text-secondary border-white/10'
+            }`
+          })
+          render()
+        }, { signal: ac.signal })
+      })
+
+      trigger?.addEventListener('click', async () => {
+        if (!panel) return
+        if (!panel.classList.contains('open')) {
+          render()
+          const multi = box.dataset.hasMultiple === 'true' && servers.length > 1
+          if (serversWrap) serversWrap.classList.toggle('hidden', !multi)
+          serverBtns.forEach((btn, i) => {
+            const active = i === serverIdx
+            btn.className = `xc-quick-server px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
+              active ? 'glass-tile-active text-white border-white/20' : 'glass-tile text-text-secondary border-white/10'
+            }`
+          })
+        }
+        panel.classList.toggle('open')
+      }, { signal: ac.signal })
+
+      document.addEventListener('click', (e) => {
+        if (!box.contains(e.target as Node)) panel?.classList.remove('open')
+      }, { signal: ac.signal })
+
+      async function createWith(ep: QuickEp) {
+        if (busy) return
+        busy = true
+        if (msg) { msg.textContent = ''; msg.classList.add('hidden') }
+        const r = await fetch('/api/xem-chung/from-movie', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug: movie.slug,
+            movieName: movie.name,
+            episode: ep.slug,
+            epName: ep.name,
+            thumb: movie.thumb,
+            embed: ep.embed,
+          }),
+        }).catch(() => null)
+        busy = false
+        if (!r) {
+          if (msg) { msg.textContent = 'Không kết nối được server.'; msg.classList.remove('hidden') }
+          return
+        }
+        const d = await r.json()
+        if (!d.ok || !d.room) {
+          if (msg) { msg.textContent = d.error || 'Tạo phòng thất bại.'; msg.classList.remove('hidden') }
+          return
+        }
+        window.location.href = `/xem-chung/${d.room.code}`
+      }
+
+      grid?.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.xc-quick-ep')
+        if (!b) return
+        const ep = current().items[Number(b.dataset.index || 0)]
+        if (ep) void createWith(ep)
+      }, { signal: ac.signal })
+    })
+
+    return () => ac.abort()
+  })
+</script>

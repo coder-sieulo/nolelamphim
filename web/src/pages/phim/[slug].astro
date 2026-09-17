@@ -6,6 +6,7 @@ import EpisodeList from '../../components/EpisodeList.astro'
 import Reveal from '../../components/Reveal.astro'
 import RatingBox from '../../components/RatingBox.astro'
 import ShareButton from '../../components/ShareButton.astro'
+import XemChungButton from '../../components/XemChungButton.astro'
 import ReportButton from '../../components/ReportButton.astro'
 import ThemeBG from '../../components/ThemeBG.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../lib/api'
@@ -140,6 +141,7 @@ const trailerEmbed = youtubeEmbedUrl(movie.trailer_url)
               </button>
             )}
             <RatingBox slug={slug} name={movie.name} />
+            <XemChungButton slug={slug} name={movie.name} thumb={image || ''} servers={episodes} />
             <ShareButton slug={slug} name={movie.name} />
             <ReportButton slug={slug} name={movie.name} />
             <FavoriteButton id={movie._id} name={movie.name} slug={slug} thumb={movie.thumb_url || ''} vote={movie.tmdb?.vote_average} />

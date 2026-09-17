@@ -288,6 +288,25 @@ const isHost = !!user && user.sub === room.hostId
         if (mn) mn.textContent = movie.movieName
         const en = $('xc-ep-name')
         if (en) en.textContent = `${movie.epName} • ${movie.movieName}`
+        // Preset từ trang phim: phim đã chọn sẵn (chưa phát), host chỉ bấm Phát/Đặt giờ
+        if (room && isHost && room.status === 'open' && room.movie && !selectedMovie) {
+          const m = room.movie
+          const preset: { slug: string; movieName: string; episode: string; epName: string; thumb: string; embed: string } = {
+            slug: m.slug,
+            movieName: m.movieName,
+            episode: m.episode,
+            epName: m.epName,
+            thumb: m.thumb,
+            embed: m.embed,
+          }
+          selectedMovie = preset
+          pickEpisodes = [{ name: preset.epName, slug: preset.episode, embed: preset.embed }]
+          renderEpPicker({ slug: preset.slug, name: preset.movieName, thumb: preset.thumb })
+          const first = epGrid?.querySelector<HTMLButtonElement>('.xc-ep-btn[data-index="0"]')
+          first?.classList.add('bg-white/10', 'text-white')
+          $('xc-play-now')?.removeAttribute('disabled')
+          $('xc-schedule')?.removeAttribute('disabled')
+        }
         const resync = $('xc-resync') as HTMLButtonElement | null
         if (resync && room) resync.disabled = room.status !== 'playing'
         // ready đếm: host auto-ready, khách cần bấm
@@ -406,6 +425,11 @@ const isHost = !!user && user.sub === room.hostId
         if (playingNow() && room?.movie) {
           const cl = $('xc-clock')
           if (cl) cl.textContent = fmtClock(nowMs() - room.startTime)
+        }
+        // Cập nhật đếm ngược "còn Xs" trên trạng thái phòng mượt theo từng tick
+        if (room && room.status === 'scheduled' && room.movie) {
+          const stEl = $('xc-status')
+          if (stEl) stEl.textContent = statusText()
         }
       }
 

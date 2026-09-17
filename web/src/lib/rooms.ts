@@ -201,6 +201,25 @@ export async function setMovie(
   return room
 }
 
+// Chọn phim sẵn cho phòng nhưng CHƯA phát — host vào phòng chỉ cần bấm
+// "Phát ngay" / "Đặt giờ chiếu". Dùng cho luồng tạo phòng nhanh từ trang phim.
+export async function presetMovie(
+  code: string,
+  userId: string,
+  movie: RoomMovie,
+): Promise<Room | null> {
+  const room = await getRoom(code)
+  if (!room) return null
+  if (room.hostId !== userId) return null
+  room.movie = movie
+  room.startTime = 0
+  room.endedAt = 0
+  room.ready = {}
+  room.status = 'open'
+  await saveRoom(room)
+  return room
+}
+
 export async function endRoom(code: string, userId: string): Promise<Room | null> {
   const room = await getRoom(code)
   if (!room) return null
