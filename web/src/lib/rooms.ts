@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis'
-import type { SessionPayload } from './auth'
+import { isGuestSub } from './auth'
+import type { SessionPayload, ViewerIdentity } from './auth'
 
 export interface RoomMember {
   id: string
@@ -7,6 +8,7 @@ export interface RoomMember {
   global_name?: string | null
   avatar?: string | null
   joinedAt: number
+  guest?: boolean
 }
 
 export interface RoomMovie {
@@ -88,13 +90,14 @@ function roomKey(code: string): string {
   return ROOM_KEY.replace('{code}', code)
 }
 
-function publicUser(user: Pick<SessionPayload, 'sub' | 'username' | 'global_name' | 'avatar'>): RoomMember {
+function publicUser(user: ViewerIdentity | SessionPayload): RoomMember {
   return {
     id: user.sub,
     username: user.username,
     global_name: user.global_name ?? null,
     avatar: user.avatar ?? null,
     joinedAt: Date.now(),
+    guest: 'isGuest' in user ? user.isGuest : isGuestSub(user.sub),
   }
 }
 
@@ -148,7 +151,7 @@ export async function saveRoom(room: Room): Promise<boolean> {
   return true
 }
 
-export async function joinRoom(code: string, user: SessionPayload): Promise<Room | null> {
+export async function joinRoom(code: string, user: ViewerIdentity): Promise<Room | null> {
   const room = await getRoom(code)
   if (!room) return null
   if (room.status === 'ended') return null
@@ -157,7 +160,7 @@ export async function joinRoom(code: string, user: SessionPayload): Promise<Room
     room.members.push(publicUser(user))
     await saveRoom(room)
     const r = redis()
-    await r?.sadd(memberKey(user.sub), code)
+    if (!user.isGuest) await r?.sadd(memberKey(user.sub), code)
   }
   return room
 }
@@ -170,16 +173,19 @@ export async function leaveRoom(code: string, userId: string): Promise<Room | nu
   const r = redis()
   if (room.members.length !== initial) {
     if (room.hostId === userId) {
-      const next = room.members[0]
+      const next = room.members.find((m) => !m.guest) ?? room.members[0]
       if (next) {
         room.hostId = next.id
         room.muted = {}
         room.banned = {}
+      } else {
+        room.status = 'ended'
+        room.endedAt = Date.now()
       }
     }
     await saveRoom(room)
   }
-  await r?.srem(memberKey(userId), code)
+  if (!isGuestSub(userId)) await r?.srem(memberKey(userId), code)
   return room
 }
 
@@ -233,7 +239,7 @@ export async function endRoom(code: string, userId: string): Promise<Room | null
 
 export async function addChat(
   code: string,
-  user: SessionPayload,
+  user: ViewerIdentity,
   text: string,
 ): Promise<Room | null> {
   const room = await getRoom(code)

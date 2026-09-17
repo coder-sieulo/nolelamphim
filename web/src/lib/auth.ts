@@ -118,6 +118,49 @@ export function getSessionUser(cookies: AstroCookies): Promise<SessionPayload | 
   return verifySession(token)
 }
 
+// Khán giả xem phòng: có thể là user Discord (session) hoặc "guest" định danh
+// qua header được client tự tạo + cache ở localStorage — chỉ đủ quyền xem/chat/sẵn sàng,
+// KHÔNG được làm host, KIỂM SOÁT host (movie/mod/end/lookup/create/mine).
+export interface ViewerIdentity {
+  sub: string
+  username: string
+  global_name?: string | null
+  avatar?: string | null
+  isGuest: boolean
+}
+
+const GUEST_PREFIX = 'nllp-guest:'
+const GUEST_ID_RE = /^[a-zA-Z0-9]{12,32}$/
+const GUEST_NAME_RE = /^[\p{L}\p{N} _-]{1,40}$/u
+
+export function validGuestId(id: string): boolean {
+  return GUEST_ID_RE.test(id)
+}
+
+export function guestSub(id: string): string {
+  return GUEST_PREFIX + id
+}
+
+export function isGuestSub(sub: string): boolean {
+  return sub.startsWith(GUEST_PREFIX)
+}
+
+export function resolveViewer(
+  cookies: AstroCookies,
+  request: Request,
+): Promise<ViewerIdentity | null> {
+  const session = getSessionUser(cookies)
+  return session.then((s) => {
+    if (s) return { ...s, isGuest: false }
+    const id = request.headers.get('x-guest-id') || ''
+    const rawName = request.headers.get('x-guest-name') || ''
+    if (!validGuestId(id)) return null
+    const name = rawName.trim().slice(0, 40)
+    if (!GUEST_NAME_RE.test(name)) return null
+    return { sub: guestSub(id), username: name, global_name: name, avatar: null, isGuest: true }
+  })
+}
+
 export function setSessionCookie(
   cookies: AstroCookies,
   token: string,

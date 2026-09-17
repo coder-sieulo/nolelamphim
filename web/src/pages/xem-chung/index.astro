@@ -90,7 +90,6 @@ import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
       const createBtn = document.getElementById('xc-create') as HTMLButtonElement | null
       const joinForm = document.getElementById('xc-join') as HTMLFormElement | null
       const codeInput = document.getElementById('xc-code') as HTMLInputElement | null
-      const joinSubmit = joinForm?.querySelector<HTMLButtonElement>('button[type="submit"]') ?? null
       const errorEl = document.getElementById('xc-error') as HTMLElement | null
       const loginNote = document.getElementById('xc-login-note') as HTMLElement | null
       const profileBox = document.getElementById('xc-profile') as HTMLElement | null
@@ -100,6 +99,24 @@ import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
       const myList = document.getElementById('xc-my-list') as HTMLElement | null
 
       let authed = false
+
+      // Guest: cache danh tính xem ké trên trình duyệt
+      const GUEST_KEY = 'nllp_guest'
+      function loadGuest(): { id: string; name: string } {
+        try {
+          const raw = localStorage.getItem(GUEST_KEY)
+          if (raw) {
+            const g = JSON.parse(raw)
+            if (g && /^[a-zA-Z0-9]{12,32}$/.test(g.id) && g.name) return g
+          }
+        } catch {}
+        const id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('')
+        const name = 'Khách-' + Math.floor(1000 + Math.random() * 9000)
+        const g = { id, name }
+        try { localStorage.setItem(GUEST_KEY, JSON.stringify(g)) } catch {}
+        return g
+      }
+      const guest = loadGuest()
 
       function showErr(msg: string) {
         if (!errorEl) return
@@ -121,11 +138,14 @@ import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
 
       function setAuthed(authedState: boolean, user: MeUser | null) {
         authed = authedState
-        const disable = !authed
-        if (createBtn) createBtn.disabled = disable
-        if (codeInput) codeInput.disabled = disable
-        if (joinSubmit) joinSubmit.disabled = disable
-        if (loginNote) loginNote.classList.toggle('hidden', authed)
+        if (createBtn) createBtn.disabled = !authed
+        if (loginNote) {
+          // Cho phép guest VÀO phòng; chỉ tạo phòng/làm host mới cần đăng nhập.
+          loginNote.classList.toggle('hidden', authed)
+          loginNote.innerHTML = `<p class="text-sm text-text-secondary mb-3">Vào với tư cách <b class="text-text-primary">${escapeName(guest.name)}</b> (xem + chat được). Đăng nhập Discord để <b class="text-text-primary">tạo phòng / làm host</b>.</p>
+            <a href="/api/auth/discord" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">
+            Đăng nhập bằng Discord</a>`
+        }
         if (!profileBox) return
         profileBox.classList.toggle('hidden', !authed)
         if (authed && avatarEl && nameEl && user) {
@@ -136,16 +156,19 @@ import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
         }
       }
 
+      function escapeName(s: string): string {
+        return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
+      }
+
       async function go(code: string) {
-        if (!authed) {
-          showErr('Bạn chưa đăng nhập. Hãy đăng nhập Discord để vào phòng.')
-          return
-        }
         if (!/^[A-Z0-9]{4,8}$/.test(code)) {
           showErr('Mã phòng không hợp lệ.')
           return
         }
-        const r = await fetch(`/api/xem-chung/${code}/join`, { method: 'POST', credentials: 'same-origin' }).catch(() => null)
+        const r = await fetch(`/api/xem-chung/${code}/join`, {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'x-guest-id': guest.id, 'x-guest-name': guest.name },
+        }).catch(() => null)
         if (!r) return showErr('Không kết nối được server.')
         const d = await r.json()
         if (!d.ok || !d.room) return showErr(d.error || 'Không thể vào phòng.')

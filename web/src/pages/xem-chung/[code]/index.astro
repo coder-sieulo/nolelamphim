@@ -40,6 +40,7 @@ const isHost = !!user && user.sub === room.hostId
         <div>
           <h1 class="text-lg font-bold text-text-primary">Phòng <span class="font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]">#{code}</span></h1>
           <p id="xc-status" class="text-xs text-text-muted">Đang tải...</p>
+          <p id="xc-guest-note" class="hidden mt-1.5 text-[11px] text-[#FF6B9D]"></p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -187,6 +188,28 @@ const isHost = !!user && user.sub === room.hostId
       return avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=64` : '/logo.png'
     }
 
+    // ── Guest: danh tính xem ké được tạo 1 lần + cache localStorage ──
+    const GUEST_KEY = 'nllp_guest'
+    function loadGuest(): { id: string; name: string } {
+      try {
+        const raw = localStorage.getItem(GUEST_KEY)
+        if (raw) {
+          const g = JSON.parse(raw)
+          if (g && /^[a-zA-Z0-9]{12,32}$/.test(g.id) && g.name) return g
+        }
+      } catch {}
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('')
+      const name = 'Khách-' + Math.floor(1000 + Math.random() * 9000)
+      const g = { id, name }
+      try { localStorage.setItem(GUEST_KEY, JSON.stringify(g)) } catch {}
+      return g
+    }
+    const guest = loadGuest()
+    const guestHeaders = (): Record<string, string> => ({
+      'x-guest-id': guest.id,
+      'x-guest-name': guest.name,
+    })
+
     registerPageInit(() => {
       const page = document.querySelector<HTMLElement>('[data-room-page]')
       if (!page) return () => {}
@@ -239,29 +262,29 @@ const isHost = !!user && user.sub === room.hostId
       }
 
       async function whoami() {
+        let discordUser = false
         try {
           const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
           const d = await r.json()
           _userId = d.user?.id || d.user?.sub || ''
+          discordUser = !!_userId
         } catch { _userId = '' }
-        const loggedIn = !!_userId
+        // Guest: coi như "đã xác minh người xem" để mở chat/ready, nhưng KHÔNG phải host.
+        if (!discordUser) _userId = 'nllp-guest:' + guest.id
         const overlay = $('xc-login-overlay')
-        if (overlay) {
-          overlay.classList.toggle('hidden', loggedIn)
-          overlay.classList.toggle('flex', !loggedIn)
-          overlay.classList.toggle('flex-col', !loggedIn)
-        }
+        if (overlay) overlay.classList.add('hidden')
         const gate = $('xc-login-gate')
         const chatBox = $('xc-chat')
         const chatFormEl = $('xc-chat-form')
         const hostPanelEl = $('xc-host-panel')
-        if (gate) gate.classList.toggle('hidden', loggedIn)
-        if (chatBox) chatBox.classList.toggle('hidden', !loggedIn)
-        if (chatFormEl) chatFormEl.classList.toggle('hidden', !loggedIn)
-        if (hostPanelEl && !loggedIn) hostPanelEl.classList.add('hidden')
-        if (!loggedIn && room && room.status === 'scheduled' && room.movie) {
-          const noText = $('xc-no-movie-text')
-          if (noText) noText.textContent = 'Đăng nhập Discord để xem cùng mọi người.'
+        const guestNote = $('xc-guest-note')
+        if (gate) gate.classList.add('hidden')
+        if (chatBox) chatBox.classList.remove('hidden')
+        if (chatFormEl) chatFormEl.classList.remove('hidden')
+        if (hostPanelEl) hostPanelEl.classList.add('hidden')
+        if (guestNote) {
+          if (discordUser) guestNote.classList.add('hidden')
+          else guestNote.innerHTML = `Đang xem với tư cách <b>${escapeHTML(guest.name)}</b> — đăng nhập Discord để làm host & tạo phòng.`
         }
       }
 
@@ -583,7 +606,7 @@ const isHost = !!user && user.sub === room.hostId
         const was = !!(room && (room.ready || {})[_userId])
         const r = await fetch(`/api/xem-chung/${code}/ready`, {
           method: 'POST', credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...guestHeaders() },
           body: JSON.stringify({ ready: !was }),
         }).catch(() => null)
         if (!r) return
@@ -619,7 +642,7 @@ const isHost = !!user && user.sub === room.hostId
         inp.value = ''
         const r = await fetch(`/api/xem-chung/${code}/chat`, {
           method: 'POST', credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...guestHeaders() },
           body: JSON.stringify({ text }),
         }).catch(() => null)
         if (!r) return
@@ -637,6 +660,11 @@ const isHost = !!user && user.sub === room.hostId
       void whoami()
       void syncClock()
       void refresh().then((ok) => { if (ok) renderAll() })
+      // Tự thêm mình vào phòng (kể cả guest qua link share) để count member + ready chuẩn.
+      fetch(`/api/xem-chung/${code}/join`, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', ...guestHeaders() },
+      }).catch(() => {})
       window.setInterval(() => { void syncClock() }, 60_000)
 
       window.setInterval(() => { drawFrame(); tickClock() }, 250)

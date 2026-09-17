@@ -1,12 +1,12 @@
 import type { APIRoute } from 'astro'
-import { getSessionUser } from '../../../../lib/auth'
+import { resolveViewer } from '../../../../lib/auth'
 import { addChat } from '../../../../lib/rooms'
 
 export const POST: APIRoute = async ({ params, request, cookies }) => {
   const code = (params.code || '').toUpperCase()
-  const user = await getSessionUser(cookies)
+  const user = await resolveViewer(cookies, request)
   if (!user) {
-    return new Response(JSON.stringify({ ok: false, error: 'Chưa đăng nhập.' }), {
+    return new Response(JSON.stringify({ ok: false, error: 'Chưa xác định được người xem.' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     })
