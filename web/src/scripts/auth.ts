@@ -170,6 +170,7 @@ async function renderAuth() {
   if (ac.signal.aborted) return
   bindDesktop(user)
   bindMobile(user)
+  setLoginRounds(user)
 }
 
 function setLoginRounds(user: MeUser | null) {
@@ -182,8 +183,6 @@ function setLoginRounds(user: MeUser | null) {
 
 registerPageInit(() => {
   ac = new AbortController()
-  renderAuth().then(() => {
-    setLoginRounds(cachedState.state === 'user' ? cachedState.user : null)
-  })
+  void renderAuth()
   return () => ac.abort()
 })
