@@ -15,11 +15,12 @@ export interface RoomMovie {
   episode: string
   epName: string
   thumb: string
-  host: string
-  hash: string
-  frameDur: number
-  frameCount: number
-  frameUrl: string
+  embed: string
+  host?: string
+  hash?: string
+  frameDur?: number
+  frameCount?: number
+  frameUrl?: string
 }
 
 export interface RoomChat {
@@ -44,6 +45,7 @@ export interface Room {
   chat: RoomChat[]
   muted: Record<string, boolean>
   banned: Record<string, boolean>
+  ready: Record<string, boolean>
   createdAt: number
 }
 
@@ -118,6 +120,7 @@ export async function createRoom(user: SessionPayload): Promise<Room | null> {
     chat: [],
     muted: {},
     banned: {},
+    ready: {},
     createdAt: Date.now(),
   }
   await r.set(roomKey(code), JSON.stringify(room), { ex: TTL_SEC })
@@ -192,6 +195,7 @@ export async function setMovie(
   room.movie = movie
   room.startTime = startTime
   room.endedAt = 0
+  room.ready = {}
   room.status = startTime > 0 ? 'scheduled' : 'playing'
   await saveRoom(room)
   return room
@@ -203,6 +207,7 @@ export async function endRoom(code: string, userId: string): Promise<Room | null
   if (room.hostId !== userId) return null
   room.status = 'ended'
   room.endedAt = Date.now()
+  room.ready = {}
   await saveRoom(room)
   return room
 }
@@ -226,6 +231,28 @@ export async function addChat(
     ts: Date.now(),
   })
   if (room.chat.length > 200) room.chat = room.chat.slice(-200)
+  await saveRoom(room)
+  return room
+}
+
+export async function setReady(
+  code: string,
+  userId: string,
+  ready: boolean,
+): Promise<Room | null> {
+  const room = await getRoom(code)
+  if (!room) return null
+  if (!room.members.some((m) => m.id === userId)) return null
+  if (!room.ready) room.ready = {}
+  room.ready[userId] = ready
+  // Auto-ignite: khi toàn bộ khán giả (trừ host) đã sẵn sàng và phim được chọn → rút ngắn countdown còn 3s để mọi người cùng "kích nổ".
+  if (ready && room.movie && room.status === 'scheduled' && room.startTime > Date.now() + 3000) {
+    const audience = room.members.filter((m) => m.id !== room.hostId)
+    const allReady = audience.every((m) => (room.ready || {})[m.id])
+    if (allReady) {
+      room.startTime = Date.now() + 3000
+    }
+  }
   await saveRoom(room)
   return room
 }
@@ -269,39 +296,4 @@ export async function myRooms(userId: string): Promise<string[]> {
   const r = redis()
   if (!r) return []
   return r.smembers(memberKey(userId))
-}
-
-export async function resolveEpisodeSource(embed: string): Promise<RoomMovie | null> {
-  try {
-    const u = new URL(embed)
-    const hash = u.pathname.split('/').filter(Boolean).pop() || ''
-    if (!hash) return null
-    const host = u.host
-    const masterUrl = `https://${host}/stream/${hash}/master.m3u8`
-    const res = await fetch(masterUrl, { headers: { referer: `${u.origin}/` } })
-    if (!res.ok) return null
-    const text = await res.text()
-    const inf = text.split('\n').filter((l) => l.trim().startsWith('#EXTINF'))
-    const frameDur = inf.length
-      ? parseFloat((inf[0].match(/[\d.]+/) || ['6.006'])[0])
-      : 6.006
-    const frameCount = inf.length
-    const firstSeg = text.split('\n').find((l) => l.trim() && !l.trim().startsWith('#'))
-    if (!firstSeg) return null
-    const base = firstSeg.trim().replace(/\d+\.png$/, '')
-    return {
-      slug: '',
-      movieName: '',
-      episode: '',
-      epName: '',
-      thumb: '',
-      host,
-      hash,
-      frameDur,
-      frameCount,
-      frameUrl: `${base}{N}.png`,
-    }
-  } catch {
-    return null
-  }
 }

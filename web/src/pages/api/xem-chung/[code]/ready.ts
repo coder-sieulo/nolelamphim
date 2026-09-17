@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro'
 import { getSessionUser } from '../../../../lib/auth'
-import { setMovie } from '../../../../lib/rooms'
+import { setReady } from '../../../../lib/rooms'
 
 export const POST: APIRoute = async ({ params, request, cookies }) => {
   const code = (params.code || '').toUpperCase()
@@ -11,15 +11,7 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     })
   }
-  let body: {
-    embed: string
-    slug?: string
-    movieName?: string
-    episode?: string
-    epName?: string
-    thumb?: string
-    scheduleStart?: number | null
-  }
+  let body: { ready?: boolean }
   try {
     body = await request.json()
   } catch {
@@ -28,25 +20,10 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     })
   }
-  if (!body.embed) {
-    return new Response(JSON.stringify({ ok: false, error: 'Thiếu nguồn phim.' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-  const movie = {
-    slug: body.slug || '',
-    movieName: body.movieName || '',
-    episode: body.episode || '',
-    epName: body.epName || '',
-    thumb: body.thumb || '',
-    embed: body.embed,
-  }
-  const scheduled = Number(body.scheduleStart) || 0
-  const room = await setMovie(code, user.sub, movie, scheduled)
+  const room = await setReady(code, user.sub, body.ready === true)
   if (!room) {
-    return new Response(JSON.stringify({ ok: false, error: 'Chỉ host mới có thể chiếu phim.' }), {
-      status: 403,
+    return new Response(JSON.stringify({ ok: false, error: 'Phòng không tồn tại.' }), {
+      status: 404,
       headers: { 'Content-Type': 'application/json' },
     })
   }
