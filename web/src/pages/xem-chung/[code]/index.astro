@@ -101,11 +101,24 @@ const isHost = !!user && user.sub === room.hostId
               autocomplete="off"
               class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50"
             />
-            <div id="xc-lookup-res" class="hidden absolute z-40 mt-2 w-full max-h-72 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
+            <div id="xc-lookup-res" class="hidden absolute z-40 mt-2 w-full max-h-80 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
+          </div>
+          <div id="xc-ep-picker" class="hidden space-y-3">
+            <div class="flex items-center gap-3 p-3 rounded-xl glass-tile">
+              <img id="xc-pick-thumb" alt="" class="w-16 h-[4.5rem] rounded-lg object-cover shrink-0" />
+              <div class="min-w-0">
+                <p id="xc-pick-name" class="text-sm font-bold text-text-primary truncate"></p>
+                <p id="xc-pick-meta" class="text-[11px] text-text-muted"></p>
+              </div>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1.5 px-1">Chọn tập</p>
+              <div id="xc-ep-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-1"></div>
+            </div>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <button id="xc-play-now" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-40 transition-all"><FaCirclePlay className="w-3.5 h-3.5" /> Phát ngay (10s)</button>
-            <button id="xc-schedule" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-secondary hover:text-white disabled:opacity-40 transition-all"><FaClock className="w-3.5 h-3.5" /> Đặt giờ chiếu</button>
+            <button id="xc-play-now" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-40 transition-all" disabled><FaCirclePlay className="w-3.5 h-3.5" /> Phát ngay (10s)</button>
+            <button id="xc-schedule" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-secondary hover:text-white disabled:opacity-40 transition-all" disabled><FaClock className="w-3.5 h-3.5" /> Đặt giờ chiếu</button>
             <button id="xc-stop" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-muted hover:text-white disabled:opacity-40 transition-all"><FaStop className="w-3 h-3" /> Kết thúc</button>
           </div>
           <div id="xc-schedule-pick" class="hidden flex items-center gap-2">
@@ -394,6 +407,9 @@ const isHost = !!user && user.sub === room.hostId
       const lookup = $('xc-lookup') as HTMLInputElement | null
       const lookupRes = $('xc-lookup-res')
       let lookupTimer = 0
+      let pickEpisodes: { name: string; slug: string; embed: string }[] = []
+      const epPicker = $('xc-ep-picker')
+      const epGrid = $('xc-ep-grid')
       if (lookup) {
         lookup.addEventListener('input', () => {
           window.clearTimeout(lookupTimer)
@@ -403,7 +419,7 @@ const isHost = !!user && user.sub === room.hostId
             const r = await fetch(`/api/xem-chung/lookup?q=${encodeURIComponent(q)}`, { credentials: 'same-origin' }).catch(() => null)
             if (!r) return
             const d = await r.json()
-            const res = (d.results || []).slice(0, 5)
+            const res = (d.results || []).slice(0, 6)
             if (!lookupRes) return
             if (!res.length) {
               lookupRes.innerHTML = '<p class="px-4 py-2 text-xs text-text-muted">Không tìm thấy phim.</p>'
@@ -411,32 +427,68 @@ const isHost = !!user && user.sub === room.hostId
               return
             }
             lookupRes.innerHTML = res.map((mv: any) => `
-              <button type="button" class="xc-pick block w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors" data-slug="${mv.slug}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb)}">
-                <span class="block text-sm text-text-primary truncate">${escapeHTML(mv.name)}</span>
-                <span class="block text-[11px] text-text-muted">${mv.episodes.length} tập</span>
+              <button type="button" class="xc-pick block w-full text-left px-3 py-2.5 hover:bg-white/5 transition-colors" data-slug="${escapeHTML(mv.slug)}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb || '')}">
+                <span class="flex items-center gap-3">
+                  ${mv.thumb ? `<img src="${escapeHTML(mv.thumb)}" alt="" loading="lazy" decoding="async" class="w-9 h-13 rounded-md object-cover shrink-0 bg-bg-card glass-frame" />` : '<span class="w-9 shrink-0"></span>'}
+                  <span class="min-w-0">
+                    <span class="block text-sm text-text-primary truncate">${escapeHTML(mv.name)}</span>
+                    <span class="block text-[11px] text-text-muted">${mv.episodes.length} tập</span>
+                  </span>
+                </span>
               </button>
             `).join('')
             lookupRes.classList.remove('hidden')
             lookupRes.querySelectorAll<HTMLButtonElement>('.xc-pick').forEach((b) => {
               b.addEventListener('click', async () => {
-                const song = { slug: b.dataset.slug || '', name: b.dataset.name || '', thumb: b.dataset.thumb || '' }
+                const mv = { slug: b.dataset.slug || '', name: b.dataset.name || '', thumb: b.dataset.thumb || '' }
                 lookupRes.classList.add('hidden')
-                lookup.value = song.name
-                // load episodes into quick list
-                const r = await fetch(`/api/episodes?slug=${song.slug}`, { credentials: 'same-origin' }).catch(() => null)
+                lookup.value = mv.name
+                selectedMovie = null
+                // load episodes into picker
+                const r = await fetch(`/api/episodes?slug=${encodeURIComponent(mv.slug)}`, { credentials: 'same-origin' }).catch(() => null)
                 if (!r) return
                 const d = await r.json()
                 const episodes = d.status ? (d.episodes || []).flatMap((s: any) => s.list.map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed }))) : []
-                if (!episodes.length) return
-                selectedMovie = { ...song, movieName: song.name, episode: episodes[0].slug, epName: episodes[0].name, embed: episodes[0].embed }
+                pickEpisodes = episodes
                 $('xc-host-error')?.classList.add('hidden')
-                const hostErr = $('xc-host-error')
-                if (hostErr) hostErr.textContent = `Đã chọn: ${song.name} (${episodes.length} tập) — mặc định tập đầu.`
-                $('xc-play-now')?.removeAttribute('disabled')
-                $('xc-schedule')?.removeAttribute('disabled')
+                if (!episodes.length) {
+                  $('xc-ep-picker')?.classList.add('hidden')
+                  hostErr('Không lấy được tập phim.')
+                  return
+                }
+                renderEpPicker(mv)
               })
             })
           }, 350)
+        })
+      }
+
+      function renderEpPicker(mv: { slug: string; name: string; thumb: string }) {
+        if (!epPicker || !epGrid) return
+        const thumbEl = $('xc-pick-thumb') as HTMLImageElement | null
+        const nameEl = $('xc-pick-name')
+        const metaEl = $('xc-pick-meta')
+        if (thumbEl) thumbEl.src = mv.thumb || '/logo.png'
+        if (nameEl) nameEl.textContent = mv.name
+        if (metaEl) metaEl.textContent = `${pickEpisodes.length} nguồn/tập`
+        epGrid.innerHTML = pickEpisodes.map((ep, i) => `
+          <button type="button" class="xc-ep-btn px-1.5 py-2 rounded-lg text-[11px] font-medium glass-tile text-text-secondary hover:text-white hover:bg-white/10 transition-colors truncate" data-index="${i}" title="${escapeHTML(ep.name)}">
+            ${escapeHTML(ep.name)}
+          </button>
+        `).join('')
+        epPicker.classList.remove('hidden')
+        epGrid.querySelectorAll<HTMLButtonElement>('.xc-ep-btn').forEach((b) => {
+          b.addEventListener('click', () => {
+            const ep = pickEpisodes[Number(b.dataset.index || 0)]
+            if (!ep) return
+            selectedMovie = { slug: mv.slug, movieName: mv.name, episode: ep.slug, epName: ep.name, thumb: mv.thumb, embed: ep.embed }
+            epGrid.querySelectorAll('.xc-ep-btn').forEach((x) => {
+              x.classList.remove('bg-white/10', 'text-white')
+            })
+            b.classList.add('bg-white/10', 'text-white')
+            $('xc-play-now')?.removeAttribute('disabled')
+            $('xc-schedule')?.removeAttribute('disabled')
+          })
         })
       }
 
@@ -458,6 +510,7 @@ const isHost = !!user && user.sub === room.hostId
         const d = await r.json()
         if (!d.ok) return hostErr(d.error || 'Thất bại.')
         $('xc-schedule-pick')?.classList.add('hidden')
+        $('xc-ep-picker')?.classList.add('hidden')
         room = d.room
         renderAll()
       }
