@@ -63,11 +63,24 @@ const isHost = !!user && user.sub === room.hostId
               <p class="text-xs text-text-muted">Host sẽ chọn phim và ấn phát — mọi người xem cùng một nhịp thời gian.</p>
             </div>
             <iframe id="xc-frame" title="Phát phim" class="hidden absolute inset-0 w-full h-full border-0" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
-            <div id="xc-countdown" class="hidden absolute inset-0 z-20 flex-col items-center justify-center bg-black/85">
-              <p class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]" id="xc-countdown-num">10</p>
-              <p class="text-xs text-text-muted mt-2">Sắp bắt đầu...</p>
-              <button id="xc-ready" type="button" class="xc-ready-btn mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold glass-tile text-text-secondary hover:text-white transition-all">✅ Tôi đã sẵn sàng</button>
-              <p id="xc-ready-count" class="hidden text-[11px] text-text-muted mt-2"></p>
+            <div id="xc-countdown" class="hidden absolute inset-0 z-20 flex-col items-center justify-center bg-[#08081a]/90">
+              <div class="relative flex items-center justify-center w-40 h-40 md:w-48 md:h-48">
+                <svg class="xc-countdown-ring absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4" />
+                  <circle id="xc-countdown-ring-bar" cx="50" cy="50" r="46" fill="none" stroke="url(#xc-countdown-grad)" stroke-width="4" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="0" />
+                  <defs>
+                    <linearGradient id="xc-countdown-grad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#FF6B9D" />
+                      <stop offset="100%" stop-color="#C44BED" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span id="xc-countdown-num" class="text-6xl md:text-7xl font-black text-white drop-shadow-[0_0_28px_rgba(196,75,237,0.55)] tracking-tight leading-none">10</span>
+              </div>
+              <p class="text-sm md:text-base font-semibold text-white mt-4">Sắp bắt đầu...</p>
+              <p class="text-[11px] text-text-muted mt-1">Bấm sẵn sàng để khởi động sớm hơn</p>
+              <button id="xc-ready" type="button" class="xc-ready-btn mt-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold glass-tile-active text-white hover:brightness-110 transition-all">✅ Tôi đã sẵn sàng</button>
+              <p id="xc-ready-count" class="hidden text-[11px] text-emerald-400 font-medium mt-2"></p>
             </div>
             <div id="xc-buffering" class="hidden absolute inset-0 z-30 items-center justify-center bg-black/60">
               <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#C44BED] animate-spin"></div>
@@ -188,6 +201,8 @@ const isHost = !!user && user.sub === room.hostId
 
       // ── NTP: đo chênh lệch đồng hồ server ~ client ──
       let clockOffset = 0
+      let cdWindowStart = 0
+      let cdWindowTarget = 0
       async function syncClock(): Promise<void> {
         try {
           const t0 = Date.now()
@@ -401,6 +416,16 @@ const isHost = !!user && user.sub === room.hostId
           const remain = Math.max(0, Math.ceil((room.startTime - nowMs()) / 1000))
           const num = $('xc-countdown-num')
           if (num) num.textContent = String(remain)
+          // Ring tỉ lệ: bắt đầu từ 100% và rút dần về 0 khi tới giờ chiếu
+          if (cdWindowTarget !== room.startTime) {
+            cdWindowTarget = room.startTime
+            cdWindowStart = nowMs()
+          }
+          const total = Math.max(1, cdWindowTarget - cdWindowStart)
+          const elapsed = Math.max(0, nowMs() - cdWindowStart)
+          const frac = Math.min(1, elapsed / total)
+          const ringBar = $('xc-countdown-ring-bar') as unknown as SVGCircleElement | null
+          if (ringBar) ringBar.style.strokeDashoffset = String(Math.round(289 * (1 - frac)))
           if (cd) { cd.classList.remove('hidden'); cd.classList.add('flex'); cd.classList.add('flex-col'); }
           if (nowPlaying) nowPlaying.classList.add('hidden')
           return
