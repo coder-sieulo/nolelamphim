@@ -172,17 +172,8 @@ export async function leaveRoom(code: string, userId: string): Promise<Room | nu
   room.members = room.members.filter((m) => m.id !== userId)
   const r = redis()
   if (room.members.length !== initial) {
-    if (room.hostId === userId) {
-      const next = room.members.find((m) => !m.guest)
-      if (next) {
-        room.hostId = next.id
-        room.muted = {}
-        room.banned = {}
-      }
-      // Không còn member đăng nhập (toàn guest): KHÔNG kết thúc phòng —
-      // phim đang/phát theo lịch vẫn chạy tiếp để khán giả guest xem tiếp.
-      // hostId giữ nguyên (sub Discord thật, guest không thể giả mạo để điều khiển).
-    }
+    // KHÔNG chuyển host khi host rời — chỉ admin mới có quyền host.
+    // Phim đang theo lịch vẫn chạy tiếp để khán giả còn lại xem.
     await saveRoom(room)
   }
   if (!isGuestSub(userId)) await r?.srem(memberKey(userId), code)

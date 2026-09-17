@@ -1,13 +1,13 @@
 import type { APIRoute } from 'astro'
-import { getSessionUser } from '../../../../lib/auth'
+import { getSessionUser, isAdmin } from '../../../../lib/auth'
 import { setMute, setBan } from '../../../../lib/rooms'
 
 export const POST: APIRoute = async ({ params, request, cookies }) => {
   const code = (params.code || '').toUpperCase()
   const user = await getSessionUser(cookies)
-  if (!user) {
-    return new Response(JSON.stringify({ ok: false, error: 'Chưa đăng nhập.' }), {
-      status: 401,
+  if (!user || !isAdmin(user)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Chỉ admin mới có quyền host.' }), {
+      status: 403,
       headers: { 'Content-Type': 'application/json' },
     })
   }

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro'
-import { getSessionUser } from '../../../lib/auth'
+import { getSessionUser, isAdmin } from '../../../lib/auth'
 import { createRoom } from '../../../lib/rooms'
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -7,6 +7,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!user) {
     return new Response(JSON.stringify({ ok: false, error: 'Bạn phải đăng nhập để tạo phòng.' }), {
       status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  if (!isAdmin(user)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Chỉ admin mới được tạo phòng.' }), {
+      status: 403,
       headers: { 'Content-Type': 'application/json' },
     })
   }

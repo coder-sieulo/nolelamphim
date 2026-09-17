@@ -70,6 +70,17 @@ const dataMovie = JSON.stringify({ slug, name, thumb })
     const ac = new AbortController()
 
     document.querySelectorAll<HTMLElement>('.xc-quick').forEach(async (box) => {
+      // Chỉ admin mới được tạo phòng (host) — ẩn luôn nút cho người khác.
+      try {
+        const r = await fetch('/api/auth/me', { credentials: 'same-origin', signal: ac.signal })
+        const d = await r.json()
+        if (!d.admin) {
+          box.classList.add('hidden')
+          return
+        }
+      } catch {
+        return
+      }
       let servers: { name: string; items: QuickEp[] }[] = []
       try {
         servers = JSON.parse(box.dataset.servers || '[]')

@@ -284,7 +284,7 @@ const isHost = !!user && user.sub === room.hostId
         if (hostPanelEl) hostPanelEl.classList.add('hidden')
         if (guestNote) {
           if (discordUser) guestNote.classList.add('hidden')
-          else guestNote.innerHTML = `Đang xem với tư cách <b>${escapeHTML(guest.name)}</b> — đăng nhập Discord để làm host & tạo phòng.`
+          else guestNote.innerHTML = `Đang xem với tư cách <b>${escapeHTML(guest.name)}</b> — chỉ admin mới được host phòng.`
         }
       }
 

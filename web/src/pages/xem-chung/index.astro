@@ -126,25 +126,26 @@ import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
 
       interface MeUser { id: string; username: string; global_name?: string | null; avatar?: string | null }
 
-      async function whoami(): Promise<MeUser | null> {
+      async function whoami(): Promise<{ user: MeUser | null; admin: boolean }> {
         try {
           const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
           const d = await r.json()
-          return d.user?.id ? d.user as MeUser : null
+          return { user: d.user?.id ? d.user as MeUser : null, admin: !!d.admin }
         } catch {
-          return null
+          return { user: null, admin: false }
         }
       }
 
-      function setAuthed(authedState: boolean, user: MeUser | null) {
+      function setAuthed(authedState: boolean, user: MeUser | null, admin = false) {
         authed = authedState
-        if (createBtn) createBtn.disabled = !authed
+        const canCreate = authed && admin
+        if (createBtn) createBtn.disabled = !canCreate
         if (loginNote) {
-          // Cho phép guest VÀO phòng; chỉ tạo phòng/làm host mới cần đăng nhập.
-          loginNote.classList.toggle('hidden', authed)
-          loginNote.innerHTML = `<p class="text-sm text-text-secondary mb-3">Vào với tư cách <b class="text-text-primary">${escapeName(guest.name)}</b> (xem + chat được). Đăng nhập Discord để <b class="text-text-primary">tạo phòng / làm host</b>.</p>
-            <a href="/api/auth/discord" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">
-            Đăng nhập bằng Discord</a>`
+          // Chỉ admin tạo phòng/làm host; người khác vào xem dưới tư cách guest.
+          loginNote.classList.toggle('hidden', canCreate)
+          const guestOrUser = authed ? escapeName(user?.global_name || user?.username || '') : escapeName(guest.name)
+          loginNote.innerHTML = `<p class="text-sm text-text-secondary mb-3">Vào với tư cách <b class="text-text-primary">${guestOrUser}</b> (xem + chat được). Chỉ admin mới được tạo phòng / làm host.</p>
+            ${authed ? '' : '<a href="/api/auth/discord" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">Đăng nhập bằng Discord</a>'}`
         }
         if (!profileBox) return
         profileBox.classList.toggle('hidden', !authed)
@@ -220,8 +221,8 @@ import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
         if (codeInput) go(codeInput.value.trim().toUpperCase())
       })
 
-      void whoami().then((user) => {
-        setAuthed(!!user, user)
+void whoami().then(({ user, admin }) => {
+        setAuthed(!!user, user, admin)
         if (user) void loadMy(user)
       })
     })

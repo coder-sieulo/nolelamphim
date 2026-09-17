@@ -161,6 +161,20 @@ export function resolveViewer(
   })
 }
 
+// Admin = danh sách Discord ID được khai báo trong env `ADMIN_IDS`
+// (phân tách bằng dấu phẩy). Chỉ admin mới được host/tạo phòng; người
+// vào sau chỉ xem + chat, mãi mãi không thành host.
+const ADMIN_ENV = 'ADMIN_IDS'
+
+export function isAdmin(user: { sub: string } | null | undefined): boolean {
+  if (!user) return false
+  const ids = env(ADMIN_ENV)
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+  return ids.includes(user.sub)
+}
+
 export function setSessionCookie(
   cookies: AstroCookies,
   token: string,

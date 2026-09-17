@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro'
 import { searchMovies, getMovieEpisodes } from '../../../lib/api'
-import { getSessionUser } from '../../../lib/auth'
+import { getSessionUser, isAdmin } from '../../../lib/auth'
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   const q = (url.searchParams.get('q') || '').trim()
@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     })
   }
   const user = await getSessionUser(cookies)
-  if (!user) {
+  if (!user || !isAdmin(user)) {
     return new Response(JSON.stringify({ results: [] }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
