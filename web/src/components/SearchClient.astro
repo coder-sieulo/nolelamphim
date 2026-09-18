@@ -56,10 +56,6 @@ const filterConfig = [
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
-        role="combobox"
-        aria-expanded="false"
-        aria-controls="search-suggestions"
-        aria-autocomplete="list"
         aria-label="Tìm kiếm phim"
         class="flex-1 min-w-0 bg-transparent text-text-primary outline-none placeholder:text-text-muted text-[15px] md:text-base"
       />
@@ -71,13 +67,6 @@ const filterConfig = [
         Tìm
       </button>
     </div>
-
-    <div
-      id="search-suggestions"
-      role="listbox"
-      aria-label="Gợi ý tìm kiếm"
-      class="dropdown absolute top-full left-0 right-0 mt-2 z-40 w-full rounded-2xl glass-dropdown p-1.5 shadow-2xl max-h-[60vh] overflow-y-auto"
-    ></div>
   </div>
 
   <div id="recent-searches" class="flex items-center gap-2 mb-5 flex-wrap" aria-label="Tìm kiếm gần đây"></div>
@@ -170,7 +159,6 @@ const filterConfig = [
 
 <script>
   import { gridHTML, escapeHTML } from '../scripts/cards'
-  import { imgUrl } from '../lib/img'
   import { arrowButtonsHTML } from '../scripts/pagination'
   import { getRecentSearches, saveRecentSearches } from '../scripts/store'
   import {
@@ -183,7 +171,7 @@ const filterConfig = [
     getCountries,
     getYears,
   } from '../lib/api'
-  import { SEARCH_LIMIT, SUGGESTION_LIMIT } from '../lib/constants'
+  import { SEARCH_LIMIT } from '../lib/constants'
   import { registerPageInit } from '../scripts/lifecycle'
   import { iconString } from '../lib/icon-strings'
 
@@ -210,7 +198,6 @@ const filterConfig = [
     const input = document.getElementById('search-input') as HTMLInputElement
     const clearBtn = document.getElementById('search-clear')
     const submitBtn = document.getElementById('search-submit')
-    const suggestionsEl = document.getElementById('search-suggestions') as HTMLElement
     const recentEl = document.getElementById('recent-searches') as HTMLElement
     const resultsEl = document.getElementById('search-results') as HTMLElement
     const loadingEl = document.getElementById('search-loading') as HTMLElement
@@ -232,16 +219,10 @@ const filterConfig = [
     let years: { slug: string; name: string }[] = []
     let openDropdown: string | null = null
     let recentSearches: string[] = getRecentSearches()
-    let suggestions: { slug: string; name: string; origin_name?: string; year?: number; thumb_url?: string }[] = []
-    let suggestionQuery = ''
-    let showSuggestions = false
     let activeFilter: { type: string; label: string; value: string } | null = initialFilter
     let sortBy: 'name' | 'year' | null = null
 
     let searchTimer: ReturnType<typeof setTimeout> | undefined
-    let suggestTimer: ReturnType<typeof setTimeout> | undefined
-    let highlightIndex = -1
-    let highlights: { slug: string; name: string } | undefined
 
     const filterLabelMap = (type: string, label: string) =>
       type === 'category' ? `Thể loại: ${label}` : type === 'country' ? `Quốc gia: ${label}` : `Năm: ${label}`
@@ -290,7 +271,6 @@ const filterConfig = [
         query = q
         input.value = q
         clearBtn?.classList.toggle('hidden', !q)
-        closeSuggestions()
         activeFilter = f ? decodeFilter(f) : null
         paintChips()
         paintRecent()
@@ -448,96 +428,7 @@ const filterConfig = [
       }
     }
 
-    async function loadSuggestions() {
-      const q = query.trim()
-      if (!q) return
-      if (suggestTimer) clearTimeout(suggestTimer)
-      suggestTimer = setTimeout(async () => {
-        try {
-          const data = await searchMovies(q, 1, SUGGESTION_LIMIT)
-          suggestionQuery = q
-          suggestions = Array.isArray(data.items) ? data.items.slice(0, 8) : []
-          showSuggestions = suggestions.length > 0 && suggestionQuery === q && document.activeElement === input
-          paintSuggestions()
-        } catch {
-          suggestions = []
-          paintSuggestions()
-        }
-      }, 220)
-    }
-
-    function setInputExpanded(open: boolean) {
-      input.setAttribute('aria-expanded', open ? 'true' : 'false')
-    }
-
-    function highlightQuery(text: string, q: string): string {
-      const clean = q.trim()
-      if (!clean) return escapeHTML(text)
-      const idx = text.toLowerCase().indexOf(clean.toLowerCase())
-      if (idx === -1) return escapeHTML(text)
-      return `${escapeHTML(text.slice(0, idx))}<mark class="bg-transparent bg-gradient-to-r from-[#C44BED]/30 to-[#4A9EFF]/30 text-white rounded px-0.5">${escapeHTML(text.slice(idx, idx + clean.length))}</mark>${escapeHTML(text.slice(idx + clean.length))}`
-    }
-
-    function paintSuggestions() {
-      if (!showSuggestions || suggestions.length === 0) {
-        closeSuggestions()
-        return
-      }
-      highlightIndex = Math.min(highlightIndex, suggestions.length - 1)
-      highlights = highlightIndex >= 0 ? { slug: suggestions[highlightIndex].slug, name: suggestions[highlightIndex].name } : undefined
-      suggestionsEl.innerHTML =
-        suggestions
-          .map(
-            (m, i) => `
-              <a
-                href="/phim/${escapeHTML(m.slug)}"
-                role="option"
-                id="sug-${i}"
-                aria-selected="${i === highlightIndex}"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${i === highlightIndex ? 'bg-white/10' : 'hover:bg-white/5'} text-text-secondary hover:text-white"
-              >
-                ${m.thumb_url ? `<div class="relative w-9 h-13 rounded-md overflow-hidden shrink-0 bg-bg-card glass-frame poster-shell"><img src="${escapeHTML(imgUrl(m.thumb_url, 300))}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" /></div>` : '<div class="w-9 shrink-0"></div>'}
-                <div class="min-w-0">
-                  <p class="text-sm text-text-primary truncate">${highlightQuery(m.name, suggestionQuery)}</p>
-                  ${m.origin_name ? `<p class="text-[11px] text-text-muted truncate">${escapeHTML(m.origin_name)}</p>` : ''}
-                </div>
-                ${m.year ? `<span class="ml-auto text-[11px] text-text-muted shrink-0 tabular-nums">${m.year}</span>` : ''}
-              </a>
-            `,
-          )
-          .join('') +
-        `<div class="suggest-footer px-3 py-2.5 mt-1 border-t border-white/10 flex items-center justify-between">
-          <span class="text-[11px] text-text-muted">Nhấn Enter để xem tất cả</span>
-          <span class="flex items-center gap-0.5 text-[10px] text-text-muted">
-            <kbd class="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono">↑↓</kbd>
-            <span>điều hướng</span>
-          </span>
-        </div>`
-      suggestionsEl.classList.add('open')
-      setInputExpanded(true)
-      updateActiveDescendant()
-    }
-
-    function updateActiveDescendant() {
-      if (highlightIndex >= 0) {
-        input.setAttribute('aria-activedescendant', `sug-${highlightIndex}`)
-      } else {
-        input.removeAttribute('aria-activedescendant')
-      }
-    }
-
-    function closeSuggestions() {
-      suggestionsEl.innerHTML = ''
-      suggestionsEl.classList.remove('open')
-      showSuggestions = false
-      highlightIndex = -1
-      highlights = undefined
-      setInputExpanded(false)
-      input.removeAttribute('aria-activedescendant')
-      if (suggestTimer) clearTimeout(suggestTimer)
-    }
-
-    function recordSearch(q: string) {
+    async function recordSearch(q: string) {
       const v = q.trim()
       if (!v) return
       const next = [v, ...recentSearches.filter((x) => x !== v)].slice(0, 8)
@@ -566,7 +457,6 @@ const filterConfig = [
           input.value = query
           clearBtn?.classList.toggle('hidden', !query)
           recordSearch(query)
-          closeSuggestions()
           runSearch(1, true)
         })
       })
@@ -636,7 +526,6 @@ const filterConfig = [
       clearBtn?.classList.add('hidden')
       paintChips()
       paintRecent()
-      paintSuggestions()
       fetchByFilter(activeFilter, 1, { push: true })
     }
 
@@ -658,72 +547,17 @@ const filterConfig = [
         paintChips()
       }
       paintRecent()
-      closeSuggestions()
       if (searchTimer) clearTimeout(searchTimer)
-      if (!query.trim()) {
-        searchTimer = setTimeout(() => runSearch(1), 120)
-        return
-      }
-      loadSuggestions()
       searchTimer = setTimeout(() => runSearch(1), 400)
     })
 
     input?.addEventListener('keydown', (e) => {
-      if (showSuggestions && suggestions.length > 0) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault()
-          highlightIndex = (highlightIndex + 1) % suggestions.length
-          paintHighlightOnly()
-          return
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault()
-          highlightIndex = highlightIndex <= 0 ? suggestions.length - 1 : highlightIndex - 1
-          paintHighlightOnly()
-          return
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault()
-          closeSuggestions()
-          return
-        }
-      }
       if (e.key === 'Enter') {
         e.preventDefault()
         if (query.trim()) {
           recordSearch(query)
-          const selected = highlights
-          closeSuggestions()
-          if (selected) {
-            location.href = `/phim/${selected.slug}`
-            return
-          }
           runSearch(1, true)
         }
-      }
-    })
-
-    function paintHighlightOnly() {
-      suggestionsEl.querySelectorAll<HTMLElement>('[role="option"]').forEach((el, i) => {
-        const on = i === highlightIndex
-        if (i < suggestions.length) {
-          el.classList.toggle('bg-white/10', on)
-          el.classList.toggle('hover:bg-white/5', !on)
-          el.setAttribute('aria-selected', on ? 'true' : 'false')
-          if (on) {
-            const m = suggestions[i]
-            highlights = { slug: m.slug, name: m.name }
-            el.scrollIntoView({ block: 'nearest' })
-          }
-        }
-      })
-      updateActiveDescendant()
-    }
-
-    input?.addEventListener('focus', () => {
-      if (query.trim() && suggestions.length > 0) {
-        showSuggestions = true
-        paintSuggestions()
       }
     })
 
@@ -731,7 +565,6 @@ const filterConfig = [
       query = ''
       input.value = ''
       clearBtn.classList.add('hidden')
-      closeSuggestions()
       runSearch(1, true)
       paintRecent()
       input.focus()
@@ -739,7 +572,6 @@ const filterConfig = [
 
     submitBtn?.addEventListener('click', () => {
       recordSearch(query)
-      closeSuggestions()
       runSearch(1, true)
     })
 
@@ -791,31 +623,9 @@ const filterConfig = [
       })
     })
 
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement
-      if (!root.contains(target)) {
-        closeSuggestions()
-      }
-    }, { signal: ac.signal })
-
-    input?.addEventListener(
-      'focusout',
-      (e) => {
-        const related = e.relatedTarget as HTMLElement | null
-        if (related && suggestionsEl.contains(related)) return
-        setTimeout(() => {
-          if (document.activeElement === input) return
-          if (document.activeElement && input.parentElement?.contains(document.activeElement)) return
-          closeSuggestions()
-        }, 120)
-      },
-      { signal: ac.signal },
-    )
-
     loadMeta()
     paintChips()
     paintRecent()
-    paintSuggestions()
     renderResults()
     renderPagination()
     sortRow.classList.toggle('hidden', results.length === 0)
