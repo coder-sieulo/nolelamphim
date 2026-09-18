@@ -11,14 +11,34 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     })
   }
-  const room = await joinRoom(code, user)
-  if (!room) {
-    return new Response(JSON.stringify({ ok: false, error: 'Không thể vào phòng.' }), {
-      status: 404,
+  const out = await joinRoom(code, user)
+  if (out.ok === 'joined') {
+    return new Response(JSON.stringify({ ok: true, room: out.room }), {
       headers: { 'Content-Type': 'application/json' },
     })
   }
-  return new Response(JSON.stringify({ ok: true, room }), {
+  if (out.ok === 'blocked') {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        blocked: true,
+        error: 'Buổi công chiếu đã bắt đầu — ai vào muộn sẽ xem từ buổi sau. Chỉ admin và người đã có mặt từ trước giờ chiếu mới vào được.',
+        room: out.room,
+      }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+  }
+  if (out.ok === 'banned') {
+    return new Response(JSON.stringify({ ok: false, error: 'Bạn đã bị cấm khỏi phòng.' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  return new Response(JSON.stringify({ ok: false, error: 'Phòng không tồn tại hoặc đã kết thúc.' }), {
+    status: 404,
     headers: { 'Content-Type': 'application/json' },
   })
 }

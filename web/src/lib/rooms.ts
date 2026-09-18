@@ -51,7 +51,7 @@ export interface Room {
   createdAt: number
 }
 
-const TTL_SEC = 60 * 60 * 24 * 7
+const TTL_SEC = 60 * 60 * 24 * 30
 const MEMBER_KEY = 'xemchung:member:{id}'
 const ROOM_KEY = 'xemchung:room:{code}'
 
@@ -136,12 +136,32 @@ export async function getRoom(code: string): Promise<Room | null> {
   if (!r) return null
   const raw = await r.get<Room | string>(roomKey(code))
   if (!raw) return null
-  if (typeof raw === 'object') return raw as Room
-  try {
-    return JSON.parse(raw) as Room
-  } catch {
-    return null
+  let room: Room | null = null
+  if (typeof raw === 'object') room = raw as Room
+  else {
+    try {
+      room = JSON.parse(raw) as Room
+    } catch {
+      return null
+    }
   }
+  // Trạng thái theo thời gian thực — chỉ ghi lại khi thay đổi để tránh ghi Redis liên tục.
+  const live = liveStatus(room)
+  if (live !== room.status) {
+    room.status = live
+    await saveRoom(room)
+  }
+  return room
+}
+
+// Trạng thái hiệu lực theo thời gian thực, không cần job nền:
+// - Có giờ chiếu trong tương lai  → 'scheduled' (đang chờ công chiếu)
+// - Đã tới giờ chiếu              → 'playing' (đang phát)
+// - Đã kết thúc                   → 'ended'
+export function liveStatus(room: Room, now = Date.now()): RoomStatus {
+  if (room.endedAt || room.status === 'ended') return 'ended'
+  if (room.movie && room.startTime > 0) return now >= room.startTime ? 'playing' : 'scheduled'
+  return 'open'
 }
 
 export async function saveRoom(room: Room): Promise<boolean> {
@@ -151,18 +171,31 @@ export async function saveRoom(room: Room): Promise<boolean> {
   return true
 }
 
-export async function joinRoom(code: string, user: ViewerIdentity): Promise<Room | null> {
+type JoinOutcome =
+  | { ok: 'joined'; room: Room }
+  | { ok: 'blocked'; room: Room }
+  | { ok: 'ended'; room: Room | null }
+  | { ok: 'banned'; room: Room | null }
+
+export async function joinRoom(code: string, user: ViewerIdentity): Promise<JoinOutcome> {
   const room = await getRoom(code)
-  if (!room) return null
-  if (room.status === 'ended') return null
-  if (room.banned[user.sub]) return null
+  if (!room) return { ok: 'ended', room: null }
+  const host = room.hostId === user.sub || false
+  if (room.status === 'ended') return { ok: 'ended', room }
+  if (room.banned[user.sub] && !host) return { ok: 'banned', room }
+  // Buổi công chiếu: đã tới giờ + phim đang phát → chỉ admin/người đã có mặt từ trước mới vào được.
+  // Người mới bấm liên kết giữa buổi sẽ bị chặn (đúng kiểu xem phim tại rạp).
+  if (room.status === 'playing') {
+    const member = room.members.some((m) => m.id === user.sub)
+    if (!host && !member) return { ok: 'blocked', room }
+  }
   if (!room.members.some((m) => m.id === user.sub)) {
     room.members.push(publicUser(user))
     await saveRoom(room)
     const r = redis()
     if (!user.isGuest) await r?.sadd(memberKey(user.sub), code)
   }
-  return room
+  return { ok: 'joined', room }
 }
 
 export async function leaveRoom(code: string, userId: string): Promise<Room | null> {
@@ -190,10 +223,9 @@ export async function setMovie(
   if (!room) return null
   if (room.hostId !== userId) return null
   room.movie = movie
-  room.startTime = startTime
+  room.startTime = startTime > 0 ? startTime : Date.now()
   room.endedAt = 0
   room.ready = {}
-  room.status = startTime > 0 ? 'scheduled' : 'playing'
   await saveRoom(room)
   return room
 }

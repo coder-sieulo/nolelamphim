@@ -34,6 +34,20 @@ const isHost = !!user && user.sub === room.hostId
         <a href="/xem-chung" class="block mt-3 text-xs text-text-muted hover:text-white transition-colors">← Quay lại trang Xem Chung</a>
       </div>
     </div>
+    <div id="xc-blocked-overlay" class="hidden fixed inset-0 z-50 flex-col items-center justify-center gap-4 bg-black/75 backdrop-blur-sm">
+      <div class="content-card px-8 py-8 text-center max-w-sm mx-4">
+        <div class="w-14 h-14 rounded-full glass-tile flex items-center justify-center mb-3 mx-auto text-[#FF6B9D]"><FaLock className="w-6 h-6" /></div>
+        <h2 class="text-lg font-bold text-text-primary">Buổi công chiếu đã bắt đầu</h2>
+        <p class="text-sm text-text-secondary mt-2 mb-2">Suất này đã lên sóng — ai vào muộn không xem ghé được giữa chừng.</p>
+        <p id="xc-blocked-info" class="text-xs text-text-muted mb-5"></p>
+        <a href="/xem-chung"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 transition-all">
+          <FaTv className="w-5 h-5" />
+          Đến buổi công chiếu khác
+        </a>
+        <a href="/xem-chung" class="block mt-3 text-xs text-text-muted hover:text-white transition-colors">← Quay lại trang Xem Chung</a>
+      </div>
+    </div>
     <div class="flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl glass-tile flex items-center justify-center text-[#FF6B9D]"><FaTv className="w-5 h-5" /></div>
@@ -60,8 +74,8 @@ const isHost = !!user && user.sub === room.hostId
               <div class="w-16 h-16 rounded-full glass-tile flex items-center justify-center text-[#FF6B9D]">
                 <FaCirclePlay className="w-7 h-7" />
               </div>
-              <p id="xc-no-movie-text" class="text-sm text-text-secondary">Chưa có phim nào được phát trong phòng này.</p>
-              <p class="text-xs text-text-muted">Host sẽ chọn phim và ấn phát — mọi người xem cùng một nhịp thời gian.</p>
+              <p id="xc-no-movie-text" class="text-sm text-text-secondary">Chưa có suất chiếu nào trong phòng này.</p>
+              <p class="text-xs text-text-muted">Admin sẽ công chiếu phim theo lịch — mọi người vào phòng trước giờ chiếu.</p>
             </div>
             <iframe id="xc-frame" title="Phát phim" class="hidden absolute inset-0 w-full h-full border-0" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
             <div id="xc-countdown" class="hidden absolute inset-0 z-20 flex-col items-center justify-center bg-[#08081a]/90">
@@ -78,10 +92,8 @@ const isHost = !!user && user.sub === room.hostId
                 </svg>
                 <span id="xc-countdown-num" class="text-6xl md:text-7xl font-black text-white drop-shadow-[0_0_28px_rgba(196,75,237,0.55)] tracking-tight leading-none">10</span>
               </div>
-              <p class="text-sm md:text-base font-semibold text-white mt-4">Sắp bắt đầu...</p>
-              <p class="text-[11px] text-text-muted mt-1">Bấm sẵn sàng để khởi động sớm hơn</p>
-              <button id="xc-ready" type="button" class="xc-ready-btn mt-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold glass-tile-active text-white hover:brightness-110 transition-all">✅ Tôi đã sẵn sàng</button>
-              <p id="xc-ready-count" class="hidden text-[11px] text-emerald-400 font-medium mt-2"></p>
+              <p class="text-sm md:text-base font-semibold text-white mt-4">Sắp công chiếu...</p>
+              <p class="text-[11px] text-text-muted mt-1">Phim sẽ tự động phát đồng bộ khi tới giờ</p>
             </div>
             <div id="xc-buffering" class="hidden absolute inset-0 z-30 items-center justify-center bg-black/60">
               <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#C44BED] animate-spin"></div>
@@ -245,13 +257,13 @@ const isHost = !!user && user.sub === room.hostId
       function statusText(): string {
         if (!room) return 'Đang tải...'
         const n = room.members.length
-        if (room.status === 'ended') return 'Phòng đã kết thúc'
-        if (room.status === 'playing') return `● Đang chiếu • ${n} người`
+        if (room.status === 'ended') return 'Buổi công chiếu đã kết thúc'
+        if (room.status === 'playing') return `● Đang công chiếu • ${n} người`
         if (room.status === 'scheduled' && room.movie) {
           const remain = Math.max(0, Math.round((room.startTime - nowMs()) / 1000))
-          return `Bắt đầu lúc ${new Date(room.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • còn ${remain}s • ${n} người`
+          return `Công chiếu lúc ${new Date(room.startTime).toLocaleString('vi-VN', { weekday: 'short', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })} • còn ${remain}s • ${n} người`
         }
-        return room.movie ? `Sẵn sàng • ${n} người` : `Chưa chiếu • ${n} người`
+        return room.movie ? `Đã chọn phim • ${n} người` : `Chưa có suất chiếu • ${n} người`
       }
 
       function fmtClock(ms: number): string {
@@ -269,7 +281,7 @@ const isHost = !!user && user.sub === room.hostId
           _userId = d.user?.id || d.user?.sub || ''
           discordUser = !!_userId
         } catch { _userId = '' }
-        // Guest: coi như "đã xác minh người xem" để mở chat/ready, nhưng KHÔNG phải host.
+        // Guest: coi như "đã xác minh người xem" để mở chat/xem, nhưng KHÔNG phải host.
         if (!discordUser) _userId = 'nllp-guest:' + guest.id
         const overlay = $('xc-login-overlay')
         if (overlay) overlay.classList.add('hidden')
@@ -319,7 +331,7 @@ const isHost = !!user && user.sub === room.hostId
           return
         }
         if (info) info.classList.remove('hidden')
-        if (noText) noText.textContent = 'Đang chờ phát theo lịch của host.'
+        if (noText) noText.textContent = 'Đang chờ giờ công chiếu theo lịch của admin.'
         const th = $('xc-thumb') as HTMLImageElement | null
         if (th && movie.thumb) th.src = movie.thumb
         const mn = $('xc-movie-name')
@@ -347,26 +359,7 @@ const isHost = !!user && user.sub === room.hostId
         }
         const resync = $('xc-resync') as HTMLButtonElement | null
         if (resync && room) resync.disabled = room.status !== 'playing'
-        // ready đếm: host auto-ready, khách cần bấm
-        updateReadyUI()
         renderChat()
-      }
-
-      function updateReadyUI() {
-        const r = room
-        if (!r) return
-        const count = $('xc-ready-count')
-        const btn = $('xc-ready') as HTMLButtonElement | null
-        if (!count || !btn) return
-        const audience = r.members.filter((m) => m.id !== r.hostId)
-        const readyN = audience.filter((m) => (r.ready || {})[m.id]).length
-        btn.dataset.checked = (r.ready || {})[_userId] ? '1' : ''
-        count.classList.toggle('hidden', audience.length === 0)
-        if (audience.length > 0) {
-          const names = audience.filter((m) => (r.ready || {})[m.id]).map((m) => m.global_name || m.username).join(', ')
-          count.textContent = `Sẵn sàng ${readyN}/${audience.length}${names ? ' • ' + names : ''}`
-        }
-        btn.textContent = (r.ready || {})[_userId] ? '✅ Đã sẵn sàng' : '✅ Tôi đã sẵn sàng'
       }
 
       function renderChat() {
@@ -602,17 +595,6 @@ const isHost = !!user && user.sub === room.hostId
         if (at <= nowMs()) return hostErr('Thời gian phải ở tương lai.')
         startMovie(at)
       })
-      $('xc-ready')?.addEventListener('click', async () => {
-        const was = !!(room && (room.ready || {})[_userId])
-        const r = await fetch(`/api/xem-chung/${code}/ready`, {
-          method: 'POST', credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json', ...guestHeaders() },
-          body: JSON.stringify({ ready: !was }),
-        }).catch(() => null)
-        if (!r) return
-        const d = await r.json()
-        if (d.room) { room = d.room; renderAll() }
-      })
       $('xc-resync')?.addEventListener('click', () => {
         const f = frameEl()
         if (!f) return
@@ -660,11 +642,25 @@ const isHost = !!user && user.sub === room.hostId
       void whoami()
       void syncClock()
       void refresh().then((ok) => { if (ok) renderAll() })
-      // Tự thêm mình vào phòng (kể cả guest qua link share) để count member + ready chuẩn.
+      // Tự thêm mình vào phòng (kể cả guest qua link share) để count member chuẩn.
+      // Nếu buổi công chiếu đã bắt đầu và mình là người mới → hiện overlay chặn.
       fetch(`/api/xem-chung/${code}/join`, {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', ...guestHeaders() },
-      }).catch(() => {})
+      })
+        .then((r) => r.json().catch(() => null))
+        .then((d) => {
+          if (d && d.blocked === true) {
+            const info = $('xc-blocked-info')
+            const movieName = room?.movie?.movieName
+            if (info) info.textContent = movieName
+              ? `Phim: ${movieName} — bắt đầu ${room?.status === 'ended' ? 'đã chiếu xong' : new Date(room?.startTime || 0).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit' })}.`
+              : 'Hãy xem lịch chiếu ở trang Xem Chung để bắt kịp buổi sau.'
+            const ov = $('xc-blocked-overlay')
+            if (ov) { ov.classList.remove('hidden'); ov.classList.add('flex', 'flex-col') }
+          }
+        })
+        .catch(() => {})
       window.setInterval(() => { void syncClock() }, 60_000)
 
       window.setInterval(() => { drawFrame(); tickClock() }, 250)
