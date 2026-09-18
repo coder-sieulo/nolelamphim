@@ -1,0 +1,341 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ThemeBG from '../../components/ThemeBG.astro'
+import { getSessionUser, isAdmin } from '../../lib/auth'
+import { FaCalendarCheck, FaFilm, FaMagnifyingGlass, FaPlus, FaRotate } from 'react-icons/fa6'
+
+const user = await getSessionUser(Astro.cookies)
+if (!user || !isAdmin(user)) {
+  return Astro.redirect('/xem-chung', 307)
+}
+---
+
+<BaseLayout title="Quản trị Công chiếu" description="Dashboard quản trị buổi công chiếu Xem Chung." noIndex>
+  <ThemeBG name="xem-chung" />
+  <main class="px-4 md:px-8 py-6 max-w-5xl mx-auto" data-admin-page data-room-code="">
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl glass-tile flex items-center justify-center text-[#FF6B9D]"><FaCalendarCheck className="w-5 h-5" /></div>
+        <div>
+          <h1 class="text-lg font-bold text-text-primary">Quản trị buổi công chiếu</h1>
+          <p class="text-xs text-text-muted">Tạo lịch chiếu & quản lý phòng — chỉ admin xem được.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="xc-refresh" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors"><FaRotate className="w-3 h-3" /> Làm mới</button>
+        <a href="/xem-chung" class="px-3 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors">Trang Xem Chung</a>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-4 items-start mb-6">
+      <!-- Tạo buổi công chiếu -->
+      <div class="content-card p-5 space-y-3">
+        <h2 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaPlus className="w-3.5 h-3.5 text-[#FF6B9D]" /> Tạo buổi công chiếu</h2>
+
+        <div class="relative">
+          <FaMagnifyingGlass className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+          <input
+            id="xc-lookup"
+            type="text"
+            placeholder="Gõ tên phim để tìm..."
+            autocomplete="off"
+            class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50"
+          />
+          <div id="xc-lookup-res" class="hidden absolute left-0 right-0 top-full mt-2 z-30 max-h-72 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
+        </div>
+
+        <div id="xc-ep-picker" class="hidden space-y-2">
+          <div class="flex items-center gap-3 p-3 rounded-xl glass-tile">
+            <img id="xc-pick-thumb" alt="" class="w-14 h-20 rounded-md object-cover shrink-0 bg-bg-card glass-frame" />
+            <div class="min-w-0">
+              <p id="xc-pick-name" class="text-sm font-bold text-text-primary truncate"></p>
+              <p id="xc-pick-meta" class="text-[11px] text-text-muted"></p>
+            </div>
+          </div>
+          <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1 px-1">Chọn tập/nguồn</p>
+          <div id="xc-ep-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-44 overflow-y-auto p-1"></div>
+        </div>
+
+        <div id="xc-schedule-pick" class="hidden space-y-3 pt-1">
+          <div>
+            <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1.5 px-1">Giờ công chiếu (giờ địa phương)</p>
+            <input id="xc-schedule-dt" type="datetime-local" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary focus:outline-none focus:border-[#C44BED]/50" />
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1.5 px-1">Mã phòng (tuỳ chọn, 4–8 ký tự)</p>
+            <input id="xc-code"
+              type="text"
+              maxlength="8"
+              autocapitalize="characters"
+              autocomplete="off"
+              placeholder="VD: MMA404"
+              class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary uppercase tracking-widest placeholder:text-text-muted placeholder:normal-case focus:outline-none focus:border-[#C44BED]/50"
+            />
+          </div>
+          <button id="xc-create" type="button" class="w-full px-5 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Tạo lịch công chiếu</button>
+          <p id="xc-create-msg" class="hidden text-xs text-red-400"></p>
+        </div>
+      </div>
+
+      <!-- Danh sách phòng -->
+      <div class="content-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaFilm className="w-3.5 h-3.5 text-[#FF6B9D]" /> Phòng công chiếu</h2>
+          <span id="xc-count" class="text-[11px] text-text-muted"></span>
+        </div>
+        <div id="xc-rooms" class="space-y-2 max-h-[34rem] overflow-y-auto pr-1">
+          <p class="text-xs text-text-muted py-6 text-center">Đang tải...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Link chia sẻ nổi -->
+    <div id="xc-share-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl glass-dropdown text-sm font-semibold text-text-primary shadow-2xl"></div>
+  </main>
+
+  <script>
+    import { registerPageInit } from '../../scripts/lifecycle'
+
+    interface AdminMovie { slug: string; name: string; thumb: string }
+    interface AdminEp { name: string; slug: string; embed: string }
+    interface AdminRoom {
+      code: string; status: string; hostId: string; members: { id: string; username: string; global_name?: string | null }[];
+      movie: { slug: string; movieName: string; epName: string; episode: string; thumb: string; embed: string } | null;
+      startTime: number; endedAt: number; createdAt: number;
+    }
+
+    function escapeHTML(s: string): string {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
+    }
+
+    registerPageInit(() => {
+      const page = document.querySelector<HTMLElement>('[data-admin-page]')
+      if (!page) return () => {}
+
+      let selected: { movie: AdminMovie; ep: AdminEp } | null = null
+      let rooms: AdminRoom[] = []
+
+      const $ = (id: string) => document.getElementById(id)
+
+      function showMsg(msg: string) {
+        const el = $('xc-create-msg')
+        if (!el) return
+        el.textContent = msg
+        el.classList.remove('hidden')
+      }
+      function fmtDT(ms: number): string {
+        if (!ms) return '—'
+        return new Date(ms).toLocaleString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      }
+      function fmtRemain(ms: number): string {
+        const s = Math.max(0, Math.round((ms - Date.now()) / 1000))
+        if (s >= 3600) return `${Math.floor(s / 3600)}g ${Math.floor((s % 3600) / 60)}p`
+        if (s >= 60) return `${Math.floor(s / 60)}p ${s % 60}s`
+        return `${s}s`
+      }
+      function statusBadge(r: AdminRoom): string {
+        if (r.status === 'ended') return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-text-muted">Đã kết thúc</span>'
+        if (r.status === 'playing') return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-400">● Đang công chiếu</span>'
+        if (r.status === 'scheduled') return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#C44BED]/20 text-[#E2A6FF]">⏳ Sắp chiếu</span>'
+        return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-text-muted">Mở tự do</span>'
+      }
+
+      function renderRooms() {
+        const list = $('xc-rooms')
+        const count = $('xc-count')
+        if (!list) return
+        if (count) count.textContent = `${rooms.length} phòng`
+        if (!rooms.length) {
+          list.innerHTML = '<p class="text-xs text-text-muted py-6 text-center">Chưa có phòng nào. Tạo buổi công chiếu ở bên trái.</p>'
+          return
+        }
+        list.innerHTML = rooms.map((r) => `
+          <div class="rounded-xl glass-tile p-3">
+            <div class="flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-text-primary truncate flex items-center gap-2">
+                  ${escapeHTML(r.movie?.movieName || 'Phòng trống')}
+                  ${statusBadge(r)}
+                </p>
+                <p class="text-[11px] text-text-muted mt-0.5 truncate">#${r.code} ${r.movie?.epName ? '• ' + escapeHTML(r.movie.epName) : ''}</p>
+                <p class="text-[11px] text-text-secondary mt-0.5">
+                  ${r.status === 'scheduled' ? `Chiếu lúc <b class="text-text-primary">${fmtDT(r.startTime)}</b> • còn <b class="text-[#E2A6FF]">${fmtRemain(r.startTime)}</b>` : r.status === 'playing' ? `Đang phát từ ${fmtDT(r.startTime)}` : '—'}
+                  • ${r.members.length} người
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+              <button type="button" class="xc-copy px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-text-secondary hover:text-white" data-code="${r.code}">🔗 Link</button>
+              <button type="button" class="xc-goto px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-text-secondary hover:text-white" data-code="${r.code}">Vào phòng</button>
+              ${r.status !== 'ended' ? `<button type="button" class="xc-end px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-text-muted hover:text-white" data-code="${r.code}">■ Kết thúc</button>` : ''}
+              <button type="button" class="xc-del px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-red-400 hover:text-red-300" data-code="${r.code}">🗑 Xoá</button>
+            </div>
+          </div>
+        `).join('')
+        list.querySelectorAll<HTMLButtonElement>('.xc-copy').forEach((b) => b.addEventListener('click', () => copyLink(b.dataset.code || '')))
+        list.querySelectorAll<HTMLButtonElement>('.xc-goto').forEach((b) => b.addEventListener('click', () => { window.location.href = `/xem-chung/${b.dataset.code}` }))
+        list.querySelectorAll<HTMLButtonElement>('.xc-end').forEach((b) => b.addEventListener('click', () => endRoom(b.dataset.code || '')))
+        list.querySelectorAll<HTMLButtonElement>('.xc-del').forEach((b) => b.addEventListener('click', () => delRoom(b.dataset.code || '')))
+      }
+
+      async function refreshRooms() {
+        try {
+          const r = await fetch('/api/xem-chung/admin', { credentials: 'same-origin', cache: 'no-store' })
+          const d = await r.json()
+          if (d.ok && Array.isArray(d.rooms)) rooms = d.rooms
+        } catch {}
+        renderRooms()
+      }
+
+      function copyLink(code: string) {
+        const url = `${window.location.origin}/xem-chung/${code}`
+        navigator.clipboard?.writeText(url).then(() => toast('Đã chép link phòng #' + code)).catch(() => {})
+      }
+      function toast(msg: string) {
+        const el = $('xc-share-toast')
+        if (!el) return
+        el.textContent = msg
+        el.classList.remove('hidden')
+        window.setTimeout(() => el.classList.add('hidden'), 1600)
+      }
+
+      async function endRoom(code: string) {
+        await fetch(`/api/xem-chung/admin/${code}`, { method: 'POST', credentials: 'same-origin' }).catch(() => {})
+        await refreshRooms()
+      }
+      async function delRoom(code: string) {
+        if (!confirm(`Xoá hẳn phòng #${code}?`)) return
+        await fetch(`/api/xem-chung/admin/${code}`, { method: 'DELETE', credentials: 'same-origin' }).catch(() => {})
+        await refreshRooms()
+      }
+
+      // ── Tìm phim ──
+      const lookup = $('xc-lookup') as HTMLInputElement | null
+      const lookupRes = $('xc-lookup-res')
+      let lookupTimer = 0
+      let episodes: AdminEp[] = []
+      if (lookup) {
+        lookup.addEventListener('input', () => {
+          window.clearTimeout(lookupTimer)
+          lookupTimer = window.setTimeout(async () => {
+            const q = lookup.value.trim()
+            if (!q || !lookupRes) { lookupRes?.classList.add('hidden'); return }
+            const r = await fetch(`/api/xem-chung/lookup?q=${encodeURIComponent(q)}`, { credentials: 'same-origin' }).catch(() => null)
+            if (!r) return
+            const d = await r.json()
+            const res = (d.results || []).slice(0, 6)
+            if (!lookupRes) return
+            if (!res.length) {
+              lookupRes.innerHTML = '<p class="px-4 py-2 text-xs text-text-muted">Không tìm thấy phim.</p>'
+              lookupRes.classList.remove('hidden')
+              return
+            }
+            lookupRes.innerHTML = res.map((mv: AdminMovie) => `
+              <button type="button" class="xc-mv block w-full text-left px-3 py-2.5 hover:bg-white/5 transition-colors" data-slug="${escapeHTML(mv.slug)}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb || '')}">
+                <span class="flex items-center gap-3">
+                  ${mv.thumb ? `<img src="${escapeHTML(mv.thumb)}" alt="" loading="lazy" decoding="async" class="w-8 h-11 rounded-md object-cover shrink-0 bg-bg-card glass-frame" />` : '<span class="w-8 shrink-0"></span>'}
+                  <span class="min-w-0">
+                    <span class="block text-sm text-text-primary truncate">${escapeHTML(mv.name)}</span>
+                    <span class="block text-[11px] text-text-muted">Chọn phim</span>
+                  </span>
+                </span>
+              </button>
+            `).join('')
+            lookupRes.classList.remove('hidden')
+            lookupRes.querySelectorAll<HTMLButtonElement>('.xc-mv').forEach((b) => {
+              b.addEventListener('click', async () => {
+                const mv: AdminMovie = { slug: b.dataset.slug || '', name: b.dataset.name || '', thumb: b.dataset.thumb || '' }
+                lookupRes.classList.add('hidden')
+                lookup.value = mv.name
+                const r = await fetch(`/api/episodes?slug=${encodeURIComponent(mv.slug)}`, { credentials: 'same-origin' }).catch(() => null)
+                if (!r) return
+                const d = await r.json()
+                episodes = d.status ? (d.episodes || []).flatMap((s: any) => s.list.map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed }))) : []
+                showMsg('')
+                if (!episodes.length) {
+                  $('xc-ep-picker')?.classList.add('hidden')
+                  $('xc-schedule-pick')?.classList.add('hidden')
+                  showMsg('Phim này không có nguồn phát.')
+                  return
+                }
+                renderEpPicker(mv)
+              })
+            })
+          }, 350)
+        })
+        lookup.addEventListener('click', () => { if (lookup.value && lookup.value === selected?.movie.name) return })
+      }
+
+      function renderEpPicker(mv: AdminMovie) {
+        const pk = $('xc-ep-picker')
+        const grid = $('xc-ep-grid')
+        if (!pk || !grid) return
+        const thumbEl = $('xc-pick-thumb') as HTMLImageElement | null
+        const nameEl = $('xc-pick-name')
+        const metaEl = $('xc-pick-meta')
+        if (thumbEl) thumbEl.src = mv.thumb || '/logo.png'
+        if (nameEl) nameEl.textContent = mv.name
+        if (metaEl) metaEl.textContent = `${episodes.length} nguồn/tập`
+        grid.innerHTML = episodes.map((ep, i) => `
+          <button type="button" class="xc-ep px-1.5 py-2 rounded-lg text-[11px] font-medium glass-tile text-text-secondary hover:text-white hover:bg-white/10 transition-colors truncate" data-index="${i}" title="${escapeHTML(ep.name)}">
+            ${escapeHTML(ep.name)}
+          </button>
+        `).join('')
+        pk.classList.remove('hidden')
+        grid.querySelectorAll<HTMLButtonElement>('.xc-ep').forEach((b) => {
+          b.addEventListener('click', () => {
+            const ep = episodes[Number(b.dataset.index || 0)]
+            if (!ep) return
+            selected = { movie: mv, ep }
+            grid.querySelectorAll('.xc-ep').forEach((x) => x.classList.remove('bg-white/10', 'text-white'))
+            b.classList.add('bg-white/10', 'text-white')
+            if (metaEl) metaEl.textContent = `${mv.name} • ${ep.name}`
+            $('xc-schedule-pick')?.classList.remove('hidden')
+          })
+        })
+      }
+
+      // ── Tạo ──
+      $('xc-create')?.addEventListener('click', async () => {
+        if (!selected) return showMsg('Chọn phim + tập trước.')
+        const dt = ($('xc-schedule-dt') as HTMLInputElement | null)?.value
+        if (!dt) return showMsg('Chọn giờ công chiếu.')
+        const at = new Date(dt).getTime()
+        if (!(at > Date.now())) return showMsg('Giờ công chiếu phải ở tương lai.')
+        const btn = $('xc-create') as HTMLButtonElement | null
+        if (btn) { btn.disabled = true; btn.textContent = 'Đang tạo...' }
+        const r = await fetch('/api/xem-chung/admin', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: ($('xc-code') as HTMLInputElement | null)?.value.trim().toUpperCase() || '',
+            slug: selected.movie.slug,
+            movieName: selected.movie.name,
+            epName: selected.ep.name,
+            episode: selected.ep.slug,
+            thumb: selected.movie.thumb,
+            embed: selected.ep.embed,
+            startTime: at,
+          }),
+        }).catch(() => null)
+        if (btn) { btn.disabled = false; btn.textContent = 'Tạo lịch công chiếu' }
+        if (!r) return showMsg('Không kết nối được server.')
+        const d = await r.json()
+        if (!d.ok || !d.room) return showMsg(d.error || 'Tạo thất bại.')
+        toast(`✓ Tạo phòng #${d.room.code}. Link đã sao vào clipboard.`)
+        navigator.clipboard?.writeText(`${window.location.origin}/xem-chung/${d.room.code}`).catch(() => {})
+        selected = null
+        const inp = $('xc-code') as HTMLInputElement | null
+        if (inp) inp.value = ''
+        $('xc-ep-picker')?.classList.add('hidden')
+        $('xc-schedule-pick')?.classList.add('hidden')
+        if (lookup) lookup.value = ''
+        await refreshRooms()
+      })
+
+      $('xc-refresh')?.addEventListener('click', () => void refreshRooms())
+      window.setInterval(() => void refreshRooms(), 8000)
+      void refreshRooms()
+    })
+  </script>
+</BaseLayout>

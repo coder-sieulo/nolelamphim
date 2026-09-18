@@ -54,6 +54,7 @@ export interface Room {
 const TTL_SEC = 60 * 60 * 24 * 30
 const MEMBER_KEY = 'xemchung:member:{id}'
 const ROOM_KEY = 'xemchung:room:{code}'
+const ROOMS_SET = 'xemchung:rooms:all'
 
 function env(key: string): string {
   const v = import.meta.env[key]
@@ -168,6 +169,7 @@ export async function saveRoom(room: Room): Promise<boolean> {
   const r = redis()
   if (!r) return false
   await r.set(roomKey(room.code), JSON.stringify(room), { ex: TTL_SEC })
+  await r.sadd(ROOMS_SET, room.code)
   return true
 }
 
@@ -344,4 +346,71 @@ export async function myRooms(userId: string): Promise<string[]> {
   const r = redis()
   if (!r) return []
   return r.smembers(memberKey(userId))
+}
+
+// ── Admin dashboard: liệt kê / tạo / xoá phòng ──
+export async function listAllRooms(): Promise<Room[]> {
+  const r = redis()
+  if (!r) return []
+  const codes = await r.smembers(ROOMS_SET)
+  const rooms: Room[] = []
+  for (const code of codes) {
+    const room = await getRoom(code).catch(() => null)
+    if (room) rooms.push(room)
+  }
+  // Phòng sắp công chiếu lên đầu, ended cuối
+  rooms.sort((a, b) => {
+    const pri = (x: Room) => (x.status === 'scheduled' ? 0 : x.status === 'playing' ? 1 : x.status === 'ended' ? 2 : 3)
+    const dp = pri(a) - pri(b)
+    if (dp !== 0) return dp
+    return (a.startTime || 0) - (b.startTime || 0)
+  })
+  return rooms
+}
+
+export async function createScheduledRoom(user: SessionPayload, data: {
+  code?: string
+  movie: RoomMovie
+  startTime: number
+}): Promise<{ ok: boolean; room?: Room; error?: string }> {
+  const r = redis()
+  if (!r) return { ok: false, error: 'Redis chưa được cấu hình.' }
+  let code = (data.code || '').toUpperCase()
+  if (code && !/^[A-Z0-9]{4,8}$/.test(code)) {
+    return { ok: false, error: 'Mã phòng 4–8 ký tự, chỉ chữ hoa và số.' }
+  }
+  const withCode = code
+  let attempts = 0
+  while (true) {
+    if (!code) code = randomCode()
+    if (attempts >= 10) return { ok: false, error: 'Không sinh được mã phòng.' }
+    const exists = await r.get(roomKey(code))
+    if (!exists) break
+    code = withCode ? withCode : ''
+    attempts++
+  }
+  const room: Room = {
+    code,
+    status: 'scheduled',
+    hostId: user.sub,
+    members: [publicUser(user)],
+    movie: data.movie,
+    startTime: data.startTime,
+    endedAt: 0,
+    chat: [],
+    muted: {},
+    banned: {},
+    ready: {},
+    createdAt: Date.now(),
+  }
+  await saveRoom(room)
+  return { ok: true, room }
+}
+
+export async function deleteRoom(code: string): Promise<boolean> {
+  const r = redis()
+  if (!r) return false
+  await r.del(roomKey(code))
+  await r.srem(ROOMS_SET, code)
+  return true
 }

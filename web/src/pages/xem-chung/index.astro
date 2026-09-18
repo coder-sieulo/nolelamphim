@@ -1,17 +1,25 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
+import { FaFilm, FaLink, FaDiscord, FaGaugeHigh } from 'react-icons/fa6'
 ---
 
 <BaseLayout title="Xem Chung" description="Tạo phòng xem phim cùng bạn bè tại Nô Lệ Làm Phim." noIndex>
   <main class="flex-1" data-grid-page>
     <div class="px-4 md:px-8 py-10 max-w-2xl mx-auto">
       <div class="mb-8">
-        <h1 class="text-2xl md:text-3xl font-bold text-text-primary">Xem Chung</h1>
-        <p class="text-text-secondary text-sm mt-2">
-          Tạo phòng riêng, mời bạn bè bằng mã — mọi người cùng xem một bộ phim, không ai tua được.
-          Chỉ phát sóng theo lịch của host.
-        </p>
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-text-primary">Xem Chung</h1>
+            <p class="text-text-secondary text-sm mt-2">
+              Tạo phòng riêng, mời bạn bè bằng mã — mọi người cùng xem một bộ phim, không ai tua được.
+              Chỉ phát sóng theo lịch của host.
+            </p>
+          </div>
+          <a id="xc-admin-link" href="/xem-chung/admin"
+            class="hidden items-center gap-1.5 px-4 py-2 rounded-xl glass-tile text-xs font-bold text-[#E2A6FF] hover:text-white hover:bg-white/5 transition-colors">
+            <FaGaugeHigh className="w-3.5 h-3.5" /> Dashboard công chiếu
+          </a>
+        </div>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2">
@@ -140,6 +148,9 @@ import { FaFilm, FaLink, FaDiscord } from 'react-icons/fa6'
         authed = authedState
         const canCreate = authed && admin
         if (createBtn) createBtn.disabled = !canCreate
+        const adminLink = document.getElementById('xc-admin-link')
+        if (adminLink) adminLink.classList.toggle('hidden', !admin)
+        if (adminLink) adminLink.classList.toggle('flex', admin)
         if (loginNote) {
           // Chỉ admin tạo phòng/làm host; người khác vào xem dưới tư cách guest.
           loginNote.classList.toggle('hidden', canCreate)
