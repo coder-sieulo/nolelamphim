@@ -1,10 +1,9 @@
 ---
 interface Props {
-  dot?: 'new' | 'hot'
   width?: string
 }
 
-const { dot, width = '170px' } = Astro.props
+const { width = '170px' } = Astro.props
 ---
 
 <div style={`width:${width}`} class="shrink-0">

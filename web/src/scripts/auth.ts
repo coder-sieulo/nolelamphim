@@ -21,10 +21,6 @@ function avatarUrl(user: MeUser): string | null {
   return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
 }
 
-function loginDesktop() {
-  return ''
-}
-
 function userDesktop(user: MeUser) {
   const img = avatarUrl(user)
   const name = user.global_name || user.username
@@ -41,6 +37,14 @@ function userDesktop(user: MeUser) {
         <p class="text-sm font-semibold text-text-primary truncate">${name}</p>
         <p class="text-[11px] text-text-muted truncate">@${user.username}</p>
       </div>
+      <a href="/profile" class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
+        ${iconString('user', 'w-4 h-4')}
+        Hồ sơ của tôi
+      </a>
+      <a href="/favorites" class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
+        ${iconString('heart', 'w-4 h-4')}
+        Phim yêu thích
+      </a>
       <a id="auth-logout" href="#" class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors" role="menuitem">
         ${iconString('logout', 'w-4 h-4')}
         Đăng xuất
@@ -70,7 +74,11 @@ function userMobile(user: MeUser) {
       <p class="text-[11px] text-text-muted truncate">@${user.username}</p>
     </div>
     <a data-auth-logout-mobile href="#" class="px-2.5 py-1.5 rounded-lg text-[11px] text-text-secondary hover:text-white hover:bg-white/5 transition-colors">Đăng xuất</a>
-  </div>`
+  </div>
+  <a href="/profile" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors border-t border-white/5">
+    ${iconString('user', 'w-4 h-4')}
+    Hồ sơ của tôi
+  </a>`
 }
 
 async function fetchMe(): Promise<MeUser | null> {

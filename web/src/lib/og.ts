@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import satori from 'satori'
+import type { ReactNode } from 'react'
 import type { MovieDetail } from './types'
 
 interface FontConfig {
@@ -254,7 +255,7 @@ export async function renderOGImage(movie: MovieDetail, opts: OGOptions = {}): P
             : null,
         ].filter(Boolean),
       },
-    },
+    } as unknown as ReactNode,
     {
       width,
       height,

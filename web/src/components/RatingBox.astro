@@ -12,7 +12,7 @@ const { slug } = Astro.props
 <div
   class="rating-box flex flex-col items-center gap-1 group/rating cursor-pointer"
   data-slug={slug}
-  title="Đánh giá phim này (lưu trên máy của bạn)"
+  title="Đánh giá phim này — lưu vào tài khoản khi đăng nhập"
 >
   <div class="flex gap-0.5">
     {
@@ -33,7 +33,7 @@ const { slug } = Astro.props
 </div>
 
 <script>
-  import { getRatings, saveRating } from '../scripts/store'
+  import { getRatings, saveRating, writeJSON } from '../scripts/store'
   import { registerPageInit } from '../scripts/lifecycle'
 
   registerPageInit(() => {
@@ -56,6 +56,26 @@ const { slug } = Astro.props
       })
     }
 
+    // Đã đăng nhập → lấy điểm đã lưu trên tài khoản, hợp nhất lên máy.
+    void (async () => {
+      try {
+        const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
+        if (!me?.user) return
+        const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
+        const server = (res?.lib?.ratings ?? {}) as Record<string, number>
+        writeJSON('ratings', { ...getRatings(), ...server })
+        const synced = server[slug] ?? 0
+        if (synced) {
+          value = synced
+          if (label) label.textContent = `Bạn: ${value}/5`
+          box.title = `Bạn đã đánh giá ${value}/5 (đã đồng bộ tài khoản)`
+          paint()
+        }
+      } catch {
+        /* vẫn dùng điểm trên máy */
+      }
+    })()
+
     stars.forEach((star) => {
       star.addEventListener('mouseenter', () => {
         hover = Number(star.dataset.value)
@@ -67,6 +87,21 @@ const { slug } = Astro.props
         if (label) label.textContent = `Bạn: ${value}/5`
         box.title = `Bạn đã đánh giá ${value}/5 (lưu trên máy này)`
         paint()
+        void (async () => {
+          try {
+            const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
+            if (!me?.user) return
+            await fetch('/api/user/rate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ slug, value }),
+            })
+            box.title = `Bạn đã đánh giá ${value}/5 (đã đồng bộ tài khoản)`
+          } catch {
+            /* lưu trên máy */
+          }
+        })()
       })
     })
 

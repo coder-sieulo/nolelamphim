@@ -412,6 +412,26 @@ const specialLoader = isHorror
         tmdb_vote: movieVote || undefined,
       })
 
+      // Đồng bộ lịch sử xem lên tài khoản (nếu đã đăng nhập) để dùng được trên mọi máy.
+      fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d?.user) return
+          return fetch('/api/user/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              slug,
+              name: movieName,
+              thumb: movieThumb,
+              episode: epName,
+              episodeSlug: episode,
+            }),
+          })
+        })
+        .catch(() => {})
+
       function epLink(id: string, href: string, text: string) {
         return `<a id="${id}" href="${href}" class="px-5 py-2.5 rounded-xl glass-tile text-text-secondary text-xs hover:text-white">${text}</a>`
       }

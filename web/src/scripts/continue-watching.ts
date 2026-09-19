@@ -9,7 +9,37 @@ registerPageInit(() => {
   const root = document.getElementById('cw-root')
   if (!root) return () => {}
   const el = root
-  const watched = getRecent().filter((r) => r.episodeSlug)
+  void init()
+
+  async function init() {
+    // Đã đăng nhập và có lịch sử trên tài khoản → ưu tiên dữ liệu đám mây
+    // (xem được ở mọi máy), chưa đăng nhập thì dùng lịch sử trên máy.
+    let watched: RecentItem[] = getRecent().filter((r) => r.episodeSlug)
+    let authed = false
+    try {
+      const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
+      if (me?.user) {
+        authed = true
+        const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
+        const hist = Array.isArray(res?.lib?.history) ? res.lib.history : []
+        const serverWatched = hist
+          .filter((h: { episodeSlug?: string }) => h.episodeSlug)
+          .map((h: { slug: string; name: string; thumb: string; episode?: string; episodeSlug?: string; watchedAt: number }) => ({
+            id: 0,
+            slug: h.slug,
+            name: h.name,
+            thumb: h.thumb,
+            episode: h.episode,
+            episodeSlug: h.episodeSlug,
+            watchedAt: h.watchedAt,
+          }))
+        if (serverWatched.length > 0) watched = serverWatched
+      }
+    } catch {
+      /* dùng dữ liệu trên máy */
+    }
+    render(watched, authed)
+  }
 
   function itemHTML(item: RecentItem): string {
     const vote = item.tmdb_vote && Number(item.tmdb_vote) > 0 ? item.tmdb_vote : ''
@@ -32,30 +62,36 @@ registerPageInit(() => {
     `
   }
 
-  if (watched.length > 0) {
-    el.innerHTML = `
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-text-primary">Tiếp tục xem</h2>
-        <span class="text-[11px] text-text-muted">${watched.length} phim</span>
-      </div>
-      <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
-        ${watched.slice(0, CONTINUE_WATCHING_MAX).map(itemHTML).join('')}
-      </div>
-    `
-    el.querySelectorAll<HTMLButtonElement>('.cw-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const card = btn.closest<HTMLElement>('[data-slug]')
-        if (!card) return
-        removeRecent(card.dataset.slug || '')
-        card.remove()
-        const remaining = el.querySelectorAll('[data-slug]').length
-        const count = el.querySelector('.text-text-muted')
-        if (count) count.textContent = `${remaining} phim`
-        if (remaining === 0) renderEmpty()
+  function render(list: RecentItem[], authed: boolean) {
+    if (list.length > 0) {
+      el.innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-text-primary">Tiếp tục xem</h2>
+          <span class="text-[11px] text-text-muted">${list.length} phim</span>
+        </div>
+        <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+          ${list.slice(0, CONTINUE_WATCHING_MAX).map(itemHTML).join('')}
+        </div>
+      `
+      el.querySelectorAll<HTMLButtonElement>('.cw-remove').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const card = btn.closest<HTMLElement>('[data-slug]')
+          if (!card) return
+          const slug = card.dataset.slug || ''
+          removeRecent(slug)
+          if (authed) {
+            fetch(`/api/user/history?slug=${encodeURIComponent(slug)}`, { method: 'DELETE', credentials: 'same-origin' }).catch(() => {})
+          }
+          card.remove()
+          const remaining = el.querySelectorAll('[data-slug]').length
+          const count = el.querySelector('.text-text-muted')
+          if (count) count.textContent = `${remaining} phim`
+          if (remaining === 0) render([], authed)
+        })
       })
-    })
-  } else {
-    renderEmpty()
+    } else {
+      renderEmpty()
+    }
   }
 
   function renderEmpty() {

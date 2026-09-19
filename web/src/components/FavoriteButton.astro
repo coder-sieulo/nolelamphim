@@ -23,7 +23,7 @@ const { id, name, slug, thumb, vote = '' } = Astro.props
 </button>
 
 <script>
-  import { isFavorite, toggleFavorite } from '../scripts/store'
+  import { isFavorite, toggleFavorite, getFavorites, writeJSON } from '../scripts/store'
   import { registerPageInit } from '../scripts/lifecycle'
 
   registerPageInit(() => {
@@ -46,10 +46,47 @@ const { id, name, slug, thumb, vote = '' } = Astro.props
         btn.setAttribute('aria-pressed', String(active))
       }
 
+      async function authedUser(): Promise<boolean> {
+        try {
+          const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
+          const d = await r.json()
+          return Boolean(d?.user)
+        } catch {
+          return false
+        }
+      }
+
       update(isFavorite(id))
 
-      btn.addEventListener('click', () => {
-        update(toggleFavorite(item))
+      void (async () => {
+        // Đã đăng nhập → hợp nhất thư viện trên tài khoản vào máy để nút hiện đúng trạng thái.
+        try {
+          const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
+          if (!me?.user) return
+          const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
+          const server = Array.isArray(res?.lib?.favorites) ? res.lib.favorites : []
+          const merged = server.slice()
+          for (const f of getFavorites()) {
+            if (!merged.some((m: { slug: string }) => m.slug === f.slug)) merged.push(f)
+          }
+          writeJSON('favorites', merged)
+          update(merged.some((f: { slug: string }) => f.slug === item.slug))
+        } catch {
+          /* thư viện máy vẫn hoạt động */
+        }
+      })()
+
+      btn.addEventListener('click', async () => {
+        const active = toggleFavorite(item)
+        update(active)
+        if (await authedUser()) {
+          fetch('/api/user/favorite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ item: { ...item }, on: active }),
+          }).catch(() => {})
+        }
       })
     })
   })

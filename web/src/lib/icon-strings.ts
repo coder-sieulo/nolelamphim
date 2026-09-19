@@ -21,6 +21,7 @@ import {
   FaMagnifyingGlass,
   FaShuffle,
   FaStar,
+  FaUser,
 } from 'react-icons/fa6'
 import { FiLogOut, FiShare2 } from 'react-icons/fi'
 import { MdClose } from 'react-icons/md'
@@ -47,6 +48,7 @@ const registry: Record<string, IconType> = {
   search: FaMagnifyingGlass,
   shuffle: FaShuffle,
   star: FaStar,
+  user: FaUser,
   logout: FiLogOut,
   shareFeather: FiShare2,
   close: MdClose,

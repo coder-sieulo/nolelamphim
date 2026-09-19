@@ -13,7 +13,6 @@ const { slug, name, servers } = Astro.props
 const thumb = Astro.props.thumb || ''
 
 const serverNames = servers.map((s) => s.server_name.trim())
-const firstServer = servers[0]?.list ?? []
 const dataServers = JSON.stringify(
   servers.map((s) => ({ name: s.server_name.trim(), items: s.list.map((e) => ({ name: e.name, slug: e.slug, embed: e.embed })) })),
 )

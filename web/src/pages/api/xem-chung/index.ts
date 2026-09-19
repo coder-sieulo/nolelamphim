@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro'
 import { getSessionUser, isAdmin } from '../../../lib/auth'
 import { createRoom } from '../../../lib/rooms'
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ cookies }) => {
   const user = await getSessionUser(cookies)
   if (!user) {
     return new Response(JSON.stringify({ ok: false, error: 'Bạn phải đăng nhập để tạo phòng.' }), {

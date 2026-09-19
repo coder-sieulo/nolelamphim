@@ -187,7 +187,7 @@ import { FaFilm, FaLink, FaDiscord, FaGaugeHigh } from 'react-icons/fa6'
         window.location.href = `/xem-chung/${d.room.code}`
       }
 
-      async function loadMy(user: MeUser) {
+      async function loadMy() {
         if (!myBox || !myList) return
         try {
           const res = await fetch('/api/xem-chung/mine', { credentials: 'same-origin' })
@@ -234,7 +234,7 @@ import { FaFilm, FaLink, FaDiscord, FaGaugeHigh } from 'react-icons/fa6'
 
 void whoami().then(({ user, admin }) => {
         setAuthed(!!user, user, admin)
-        if (user) void loadMy(user)
+        if (user) void loadMy()
       })
     })
   </script>

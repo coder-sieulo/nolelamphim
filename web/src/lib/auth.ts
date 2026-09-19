@@ -191,7 +191,6 @@ export function setSessionCookie(
 
 export function clearSessionCookie(
   cookies: AstroCookies,
-  prod: boolean,
 ): void {
   cookies.delete(SESSION_COOKIE, { path: '/' })
 }
