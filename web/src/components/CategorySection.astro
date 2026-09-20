@@ -1,7 +1,7 @@
 ---
 import MovieCard from './MovieCard.astro'
 import type { Movie } from '../lib/types'
-import { FaCalendarXmark } from 'react-icons/fa6'
+import { FaCalendarXmark, FaChevronRight, FaFilm } from 'react-icons/fa6'
 
 interface Props {
   slug: string
@@ -26,8 +26,9 @@ const isEmpty = items.length === 0
           <a
             href={`/the-loai/${slug}`}
             class="group text-[11px] text-text-muted hover:text-white transition-colors"
+            aria-label="Xem thêm thể loại"
           >
-            Xem thêm <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+            <FaChevronRight className="w-3.5 h-3.5 inline-block transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         )
       }
@@ -39,8 +40,8 @@ const isEmpty = items.length === 0
             <FaCalendarXmark className="w-5 h-5 text-text-muted" />
           </div>
           <p class="text-text-muted text-xs">Không thể tải phim thể loại này ngay lúc này</p>
-          <a href={`/the-loai/${slug}`} class="mt-3 px-4 py-1.5 rounded-xl glass-tile text-[11px] text-text-secondary hover:text-white transition-colors">
-            Xem trang thể loại
+          <a href={`/the-loai/${slug}`} class="mt-3 px-4 py-1.5 rounded-xl glass-tile text-[11px] text-text-secondary hover:text-white transition-colors inline-flex items-center gap-1.5" aria-label="Xem trang thể loại">
+            <FaFilm className="w-3.5 h-3.5" /> Xem trang thể loại
           </a>
         </div>
       ) : (

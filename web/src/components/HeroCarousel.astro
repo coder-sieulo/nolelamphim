@@ -194,9 +194,8 @@ const first = slides[0]
         <h2 class="hero-enter hero-enter-delay-1 mt-3 text-white text-xl md:text-3xl lg:text-4xl font-bold drop-shadow-lg line-clamp-2 max-w-3xl">${name}</h2>
         ${origin ? `<p class="hero-enter hero-enter-delay-2 mt-1 text-text-secondary text-xs md:text-sm drop-shadow max-w-2xl truncate">${origin}</p>` : ''}
         <p class="hero-enter hero-enter-delay-3 mt-4 inline-flex items-center gap-2 text-xs md:text-sm text-white/90 font-medium">
-          <a href="/phim/${slug}" class="pointer-events-auto inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full bg-white/15 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/25 hover:scale-105">
+          <a href="/phim/${slug}" class="pointer-events-auto inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-full bg-white/15 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/25 hover:scale-105" aria-label="Xem phim">
             ${iconString('play', 'w-4 h-4')}
-            Xem ngay
           </a>
           ${quality ? `<span class="hidden sm:inline-flex px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/15 text-text-secondary text-[11px] md:text-xs font-medium">${quality}</span>` : ''}
         </p>
