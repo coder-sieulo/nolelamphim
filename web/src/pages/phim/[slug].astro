@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import SimilarMovies from '../../components/SimilarMovies.astro'
+import MovieComments from '../../components/MovieComments.astro'
 import FavoriteButton from '../../components/FavoriteButton.astro'
 import EpisodeList from '../../components/EpisodeList.astro'
 import Reveal from '../../components/Reveal.astro'
@@ -14,6 +15,7 @@ import { imgUrl } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
 import { breadcrumbLd } from '../../lib/seo'
 import { getSessionUser, isAdmin } from '../../lib/auth'
+import { getComments } from '../../lib/comments'
 import { FaPlay, FaArrowLeft, FaXmark } from 'react-icons/fa6'
 
 const slug = Astro.params.slug ?? ''
@@ -31,6 +33,7 @@ const movie = data.movie
 const episodes = epRes.status ? epRes.episodes : []
 const viewer = await getSessionUser(Astro.cookies)
 const canHost = isAdmin(viewer)
+const commentData = await getComments(slug, 20, 0)
 
 const metaTitle = movie.name
 const metaDescription = movie.content
@@ -273,6 +276,8 @@ const trailerEmbed = youtubeEmbedUrl(movie.trailer_url)
         }
 
         <SimilarMovies categories={movie.category ?? []} excludeSlug={slug} />
+
+        <MovieComments slug={slug} comments={commentData.comments} total={commentData.total} user={viewer} isAdmin={canHost} />
 
         <a
           href="/"
