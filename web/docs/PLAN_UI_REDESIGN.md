@@ -261,5 +261,5 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 | Phase | Trạng thái | Ghi chú |
 |---|---|---|
 | P0 Nền tảng | ✅ xong (commit `00a1478`) | tokens, CSS modules, primitive, MovieCard gom nguồn |
-| P1 Shell | ✅ xong (commit `[P1]`) | Navbar mới, search overlay, bottom nav, footer |
+| P1 Shell | ✅ xong (commit `a4b5482`) | Navbar mới, search overlay, bottom nav, footer |
 | P2–P8 | ⏳ chưa làm | — |
