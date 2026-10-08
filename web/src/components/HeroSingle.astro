@@ -1,0 +1,173 @@
+---
+/**
+ * HeroSingle — hero TRANG CHỦ chỉ 1 phim nổi bật (brief §06).
+ * Backdrop full-bleed 1 lớp (poster ~1600w + gradient đen từ đáy), KHÔNG carousel,
+ * KHÔNG glass/ken-burns. Nhịp CTA tối thiểu: [▶ Xem ngay] [＋ Danh sách].
+ */
+import type { Movie } from '../lib/types'
+import { imgUrl } from '../lib/img'
+import { FaPlay } from 'react-icons/fa6'
+
+interface Props {
+  movie: Movie
+}
+const { movie } = Astro.props
+
+const image = movie.poster_url || movie.thumb_url
+const vote = movie.tmdb?.vote_average
+const voteNum = vote && Number(vote) > 0 ? Number(vote).toFixed(1) : ''
+const meta = [voteNum ? ` · ${voteNum}` : '', movie.year ?? '', movie.time ?? '', movie.quality ?? '']
+  .filter(Boolean)
+  .join(' ')
+--- 
+
+<section class="relative overflow-hidden bg-cm-bg" id="home-hero" aria-label={`Phim nổi bật ${movie.name}`}>
+  <div class="relative flex items-end min-h-[420px] sm:min-h-[480px] lg:min-h-[70vh] max-h-[85vh] aspect-[3/2] sm:aspect-[16/9] lg:aspect-[21/9]">
+    {image && (
+      <img
+        src={imgUrl(image, 1600)}
+        alt=""
+        width={1600}
+        height={900}
+        fetchpriority="high"
+        decoding="async"
+        class="absolute inset-0 w-full h-full object-cover"
+      />
+    )}
+    {/* Gradient đáy 1 lớp sang nền trang — nối liền nội dung bên dưới */}
+    <div class="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-cm-bg via-cm-bg/55 to-transparent" aria-hidden />
+
+    <div class="relative w-full px-4 sm:px-6 md:px-8 pb-8 sm:pb-10 hero-enter">
+      {movie.year && (
+        <p class="text-cm-meta text-cm-text-3 font-medium uppercase tracking-[0.18em] mb-2">{movie.year}</p>
+      )}
+      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-cm-text leading-tight line-clamp-2 max-w-3xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+        {movie.name}
+      </h1>
+      {movie.origin_name && (
+        <p class="mt-1 text-sm md:text-base text-cm-text-2 line-clamp-1 max-w-2xl">{movie.origin_name}</p>
+      )}
+      {(voteNum || movie.time || movie.quality) && (
+        <p class="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-cm-meta text-cm-text-2">
+          {voteNum && (
+            <span class="inline-flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-cm-accent" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>
+              {voteNum}
+            </span>
+          )}
+          {movie.time && <span>{movie.time}</span>}
+          {movie.quality && <span>{movie.quality}</span>}
+        </p>
+      )}
+      <div class="mt-5 flex flex-wrap items-center gap-2.5">
+        <a
+          href={`/phim/${movie.slug}`}
+          class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-sm font-semibold hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]"
+          aria-label={`Xem ngay ${movie.name}`}
+        >
+          <FaPlay className="w-3.5 h-3.5" />
+          Xem ngay
+        </a>
+        <button
+          type="button"
+          class="hero-fav inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-surface/80 border border-cm-border text-cm-text text-sm font-medium hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]"
+          data-id={movie._id}
+          data-name={movie.name}
+          data-slug={movie.slug}
+          data-thumb={movie.thumb_url || movie.poster_url || ''}
+          data-vote={movie.tmdb?.vote_average || ''}
+          aria-pressed="false"
+          aria-label={`Thêm ${movie.name} vào danh sách`}
+        >
+          <svg class="hero-fav-plus w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+          </svg>
+          <svg class="hero-fav-check w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+          </svg>
+          <span class="hero-fav-label">Danh sách</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { isFavorite, toggleFavorite, getFavorites, writeJSON } from '../scripts/store'
+  import { registerPageInit } from '../scripts/lifecycle'
+
+  registerPageInit(() => {
+    const btn = document.querySelector<HTMLButtonElement>('.hero-fav')
+    if (!btn) return () => {}
+    const ac = new AbortController()
+
+    const item = {
+      id: Number(btn.dataset.id || 0),
+      name: btn.dataset.name || '',
+      slug: btn.dataset.slug || '',
+      thumb: btn.dataset.thumb || '',
+      tmdb_vote: btn.dataset.vote || undefined,
+    }
+    const label = btn.querySelector<HTMLElement>('.hero-fav-label')
+    const plus = btn.querySelector<HTMLElement>('.hero-fav-plus')
+    const check = btn.querySelector<HTMLElement>('.hero-fav-check')
+    const setActive = (active: boolean) => {
+      btn.setAttribute('aria-pressed', String(active))
+      btn.classList.toggle('hero-fav-active', active)
+      if (plus && check && label) {
+        plus.classList.toggle('hidden', active)
+        check.classList.toggle('hidden', !active)
+        label.textContent = active ? 'Đã thêm' : 'Danh sách'
+      }
+    }
+
+    let ready = false
+    const apply = (active: boolean) => {
+      setActive(active)
+      if (!ready) {
+        ready = true
+        btn.addEventListener('click', () => {
+          const next = toggleFavorite(item)
+          setActive(next)
+          // Đồng bộ lên tài khoản khi đã đăng nhập
+          fetch('/api/auth/me', { credentials: 'same-origin' })
+            .then((r) => r.json())
+            .then((d) => {
+              if (!d?.user) return
+              return fetch('/api/user/favorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ item, on: next }),
+              })
+            })
+            .catch(() => {})
+        })
+      }
+    }
+
+    // Trạng thái khởi tạo từ localStorage
+    apply(isFavorite(item.id))
+
+    // Đã đăng nhập → merge favorites cloud về localStorage để đồng nhất
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d?.user) return
+        return fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
+      })
+      .then((res: { lib?: { favorites?: { id: number; slug: string }[] } } | void) => {
+        if (!res?.lib?.favorites || res.lib.favorites.length === 0 || ac.signal.aborted) return
+        const local = getFavorites()
+        const known = new Set(local.map((f) => f.id))
+        const merged = [...local, ...res.lib.favorites.filter((f) => !known.has(f.id))]
+        writeJSON('favorites', merged)
+        apply(isFavorite(item.id))
+      })
+      .catch(() => {})
+
+    return () => ac.abort()
+  })
+</script>

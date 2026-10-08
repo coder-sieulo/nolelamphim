@@ -38,7 +38,7 @@ const initialPages = pageList(1, totalPages)
   <div class="flex flex-wrap items-center justify-center gap-1.5 mt-8">
     <button
       type="button"
-      class="mg-first w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      class="mg-first w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       disabled
       title="Trang đầu"
       aria-label="Trang đầu"
@@ -47,7 +47,7 @@ const initialPages = pageList(1, totalPages)
     </button>
     <button
       type="button"
-      class="mg-prev w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      class="mg-prev w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       disabled
       title="Trang trước"
       aria-label="Trang trước"
@@ -62,8 +62,10 @@ const initialPages = pageList(1, totalPages)
           ) : (
             <button
               type="button"
-              class={`mg-page w-9 h-9 rounded-xl text-sm font-medium transition-all duration-200 ${
-                p === 1 ? 'pagination-active' : 'glass-tile text-text-secondary hover:text-white'
+              class={`mg-page w-9 h-9 rounded-[var(--radius-cm-btn)] text-sm font-medium transition-colors duration-[var(--duration-cm)] ${
+                p === 1
+                  ? 'pagination-active'
+                  : 'bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong'
               }`}
               data-page={p}
             >
@@ -75,7 +77,7 @@ const initialPages = pageList(1, totalPages)
     </span>
     <button
       type="button"
-      class="mg-next w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      class="mg-next w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       title="Trang sau"
       aria-label="Trang sau"
     >
@@ -83,7 +85,7 @@ const initialPages = pageList(1, totalPages)
     </button>
     <button
       type="button"
-      class="mg-last w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      class="mg-last w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       title="Trang cuối"
       aria-label="Trang cuối"
     >
@@ -91,7 +93,7 @@ const initialPages = pageList(1, totalPages)
     </button>
   </div>
   <div class="mg-loading hidden flex justify-center mt-4">
-    <div class="w-5 h-5 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+    <div class="w-5 h-5 rounded-full border-2 border-cm-border border-t-cm-accent animate-spin" />
   </div>
 </div>
 
@@ -134,9 +136,11 @@ const initialPages = pageList(1, totalPages)
       return pageList(page, totalPages)
         .map((p) =>
           p === '...'
-            ? `<span class="px-2 text-text-muted text-xs">...</span>`
-            : `<button type="button" class="mg-page w-9 h-9 rounded-xl text-sm font-medium transition-all duration-200 ${
-                p === page ? 'pagination-active' : 'glass-tile text-text-secondary hover:text-white'
+            ? `<span class="px-2 text-cm-text-3 text-xs">...</span>`
+            : `<button type="button" class="mg-page w-9 h-9 rounded-[var(--radius-cm-btn)] text-sm font-medium transition-colors duration-[var(--duration-cm)] ${
+                p === page
+                  ? 'pagination-active'
+                  : 'bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong'
               }" data-page="${p}">${p}</button>`,
         )
         .join('')

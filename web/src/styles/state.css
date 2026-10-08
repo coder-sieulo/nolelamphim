@@ -1,8 +1,7 @@
 /* JS-toggled state classes (avoid relying on Tailwind runtime generation) */
 .pagination-active {
-  background: linear-gradient(to bottom right, #ff6b9d, #c44bed, #4a9eff);
+  background: var(--color-cm-accent);
   color: #fff;
-  box-shadow: 0 10px 15px -3px rgba(196, 75, 237, 0.25);
 }
 
 .sort-active {

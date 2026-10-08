@@ -1,16 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import HeroCarousel from '../components/HeroCarousel.astro'
-import ThemeSection from '../components/ThemeSection.astro'
+import HeroSingle from '../components/HeroSingle.astro'
 import ContinueWatching from '../components/ContinueWatching.astro'
+import ForYou from '../components/ForYou.astro'
 import CategorySection from '../components/CategorySection.astro'
 import MovieGrid from '../components/MovieGrid.astro'
 import MovieCard from '../components/MovieCard.astro'
-import Reveal from '../components/Reveal.astro'
+import SectionHeader from '../components/ui/SectionHeader.astro'
 import { getNewMovies, getSubteam, getMoviesByCategory } from '../lib/api'
 import { imgUrl } from '../lib/img'
-import { HERO_IMAGE_LIMIT } from '../lib/constants'
-import { FaCircleCheck } from 'react-icons/fa6'
+import type { Movie } from '../lib/types'
 
 export const prerender = true
 export const revalidate = 60
@@ -19,6 +18,21 @@ const [newMovies, subteam] = await Promise.all([
   getNewMovies().catch(() => ({ status: false, items: [], pagination: undefined })),
   getSubteam().catch(() => ({ status: false, items: [], pagination: undefined })),
 ])
+
+// Hero: phim mới nhất có TMDB vote cao; fallback subteam[0]
+const heroMovie: Movie | null =
+  newMovies.items
+    .slice()
+    .sort((a, b) => (Number(b.tmdb?.vote_average) || 0) - (Number(a.tmdb?.vote_average) || 0))[0] ??
+  subteam.items[0] ??
+  null
+const heroImage = heroMovie ? heroMovie.poster_url || heroMovie.thumb_url : ''
+
+// "Phim đang hot": getNewMovies sắp theo tmdb_vote desc (không có endpoint hot)
+const hotMovies = newMovies.items
+  .slice()
+  .sort((a, b) => (Number(b.tmdb?.vote_average) || 0) - (Number(a.tmdb?.vote_average) || 0))
+  .slice(0, 12)
 
 const categorySlugs = [
   { slug: 'hanh-dong', name: 'Hành Động' },
@@ -37,86 +51,89 @@ const categoryItems = await Promise.all(
   ),
 )
 
-const heroMovies = newMovies.items.slice(0, HERO_IMAGE_LIMIT)
-const heroImage = heroMovies[0] ? heroMovies[0].poster_url || heroMovies[0].thumb_url : ''
+const showSubteam = subteam.items.length > 0
 ---
 
 <BaseLayout>
   <Fragment slot="head">
     {heroImage && <link rel="preload" as="image" href={imgUrl(heroImage, 1600)} fetchpriority="high" />}
   </Fragment>
-  <div class="px-4 md:px-8">
-    {
-      heroMovies.length > 0 ? (
-        <section class="mt-6">
-          <div class="mb-3">
-            <p class="text-text-muted text-xs">Khám phá kho phim chiếu rạp, bộ, lẻ mới nhất</p>
-          </div>
-          <Reveal>
-            <HeroCarousel movies={heroMovies} />
-          </Reveal>
-        </section>
-      ) : (
-        <div class="py-20 flex flex-col items-center justify-center">
-          <div class="content-card px-8 py-12 flex flex-col items-center">
-            <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
-              <FaCircleCheck className="w-6 h-6 text-text-muted" />
-            </div>
-            <p class="text-text-secondary text-sm">Không thể tải dữ liệu phim mới</p>
-            <p class="text-text-muted text-xs mt-1 mb-4">Kiểm tra kết nối mạng rồi thử lại</p>
-            <a href="/" class="px-5 py-2 rounded-xl bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors">
-              Tải lại
-            </a>
-          </div>
-        </div>
-      )
-    }
-  </div>
 
-  <ThemeSection />
+  {heroMovie && <HeroSingle movie={heroMovie} />}
 
-  <div class="px-4 md:px-8">
+  <div class="px-4 sm:px-6 md:px-8 pb-16">
+    {/* 1. Tiếp tục xem — lên đầu trang (brief §06) */}
     <ContinueWatching />
 
+    {/* 2. Dành cho bạn — dựng từ watch history (client), ẩn nếu trống */}
+    <ForYou />
+
+    {/* 3. Phim đang hot — getNewMovies sắp theo vote (không có endpoint hot) */}
     {
-      subteam.items.length > 0 && (
-        <Reveal delay={80}>
-          <section class="mt-10 cv-auto">
-            <div class="liquid-glass rounded-3xl px-4 sm:px-6 py-5">
-              <h2 class="text-sm font-semibold text-text-primary mb-4">Subteam</h2>
-              <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
-                {
-                  subteam.items.slice(0, 10).map((movie) => (
-                    <div class="snap-start shrink-0 w-[160px]">
-                      <MovieCard movie={movie} dot="hot" />
-                    </div>
-                  ))
-                }
-              </div>
-            </div>
-          </section>
-        </Reveal>
+      hotMovies.length > 0 && (
+        <section class="mt-10">
+          <SectionHeader title="Phim đang hot" href="/danh-sach/phim-moi-cap-nhat" linkLabel="Xem tất cả" />
+          <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+            {
+              hotMovies.map((movie) => (
+                <div class="snap-start shrink-0 w-[150px]">
+                  <MovieCard movie={movie} dot="hot" />
+                </div>
+              ))
+            }
+          </div>
+        </section>
       )
     }
 
-    {
-      categoryItems.map((c, i) => (
-        <Reveal delay={40 + i * 20}>
-          <CategorySection slug={c.slug} name={c.name} items={c.items} className={i > 0 ? 'cv-auto' : ''} />
-        </Reveal>
-      ))
-    }
-
+    {/* 4. Mới cập nhật — grid đầy đủ + phân trang */}
     {
       newMovies.items.length > 0 && (
-        <Reveal delay={120}>
-          <section class="mt-10 cv-auto">
-            <div class="liquid-glass rounded-3xl px-4 sm:px-6 py-5">
-              <h2 class="text-sm font-semibold text-text-primary mb-4">Phim mới cập nhật</h2>
-              <MovieGrid initialItems={newMovies.items} path="/danh-sach/phim-moi-cap-nhat" dot="new" totalPages={newMovies.pagination?.totalPages} />
-            </div>
-          </section>
-        </Reveal>
+        <section class="mt-10">
+          <SectionHeader title="Mới cập nhật" />
+          <MovieGrid
+            initialItems={newMovies.items}
+            path="/danh-sach/phim-moi-cap-nhat"
+            dot="new"
+            totalPages={newMovies.pagination?.totalPages}
+          />
+        </section>
+      )
+    }
+
+    {/* 5. Khám phá — Subteam + các row thể loại gộp lại (brief §07, không card) */}
+    {
+      (showSubteam || categoryItems.some((c) => c.items.length > 0)) && (
+        <section class="mt-12">
+          <SectionHeader title="Khám phá" href="/the-loai" linkLabel="Tất cả thể loại" />
+
+          {
+            showSubteam && (
+              <div class="mt-1">
+                <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+                  {
+                    subteam.items.slice(0, 10).map((movie) => (
+                      <div class="snap-start shrink-0 w-[150px]">
+                        <MovieCard movie={movie} dot="hot" />
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )
+          }
+
+          {
+            categoryItems.map((c, i) => (
+              <CategorySection
+                slug={c.slug}
+                name={c.name}
+                items={c.items}
+                className={showSubteam || i > 0 ? 'mt-8' : 'mt-6'}
+              />
+            ))
+          }
+        </section>
       )
     }
   </div>

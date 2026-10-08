@@ -23,42 +23,49 @@ export function escapeHTML(value: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
+/** Điểm TMDB dạng số gọn (8.7 / 9 / 6.4) — brief §07: meta `2026 · 8.4` */
+function formatVote(v: string): string {
+  const n = Number(v)
+  if (!Number.isFinite(n) || n <= 0) return ''
+  return n >= 10 ? n.toFixed(0) : n.toFixed(1)
+}
+
+/**
+ * Poster card — NGUỒN DUY NHẤT cho mọi grid (brief §07).
+ * Poster 8px + 2 dòng text, KHÔNG card nặng (bỏ glass/shadow/ring/translate).
+ * Giữ class `poster-shell` để app.ts xử lý ảnh lỗi (`poster-missing`).
+ */
 export function movieCardHTML(movie: CardMovie, dot?: 'new' | 'hot'): string {
   const slug = escapeHTML(movie.slug)
   const name = escapeHTML(movie.name)
   const year = movie.year ? escapeHTML(movie.year) : ''
   const quality = movie.quality ? escapeHTML(movie.quality) : ''
-  const lang = movie.lang ? escapeHTML(movie.lang) : ''
   const episode = movie.episode_current ? escapeHTML(movie.episode_current) : ''
   const voteRaw = movie.tmdb_vote ?? movie.tmdb?.vote_average
-  const vote = voteRaw && Number(voteRaw) > 0 ? `★ ${voteRaw}` : ''
-  const meta = [vote, year, quality, lang].filter(Boolean).join(' \u00b7 ')
+  const vote = voteRaw ? formatVote(voteRaw) : ''
+  const meta = [year, vote, quality].filter(Boolean).join(' \u00b7 ')
   const badge = dot
-    ? `<span class="absolute top-3 left-3 z-20 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase ${
-        dot === 'new'
-          ? 'bg-[#4A9EFF] text-white shadow-[0_0_10px_rgba(74,158,255,0.4)]'
-          : 'bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white shadow-[0_0_10px_rgba(196,75,237,0.4)]'
-      }">${dot === 'new' ? 'Mới' : 'Hot'}</span>`
+    ? `<span class="absolute top-2 left-2 z-20 px-1.5 py-0.5 rounded-[4px] text-[10px] font-semibold tracking-wide uppercase bg-cm-accent text-white">${
+        dot === 'new' ? 'Mới' : 'Hot'
+      }</span>`
     : ''
   const episodeBadge = episode
-    ? `<span class="absolute bottom-2 right-2 z-20 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-medium text-white/95 pointer-events-none">${episode}</span>`
+    ? `<span class="absolute bottom-2 right-2 z-20 px-1.5 py-0.5 rounded-[4px] bg-black/60 text-[10px] font-medium text-white/90 pointer-events-none">${episode}</span>`
     : ''
   return `
-    <a href="/phim/${slug}" class="group block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C44BED]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-dark">
-      <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-bg-card glass-frame poster-shell${movie.thumb_url ? ' shimmer' : ''} transition-all duration-500 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_18px_40px_-12px_rgba(196,75,237,0.3)] group-hover:ring-1 group-hover:ring-[#C44BED]/35">
+    <a href="/phim/${slug}" class="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-cm-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cm-bg rounded-[var(--radius-cm-card)]">
+      <div class="relative aspect-[2/3] overflow-hidden rounded-[var(--radius-cm-card)] bg-cm-surface poster-shell">
         ${
           movie.thumb_url
-            ? `<img src="${escapeHTML(imgUrl(movie.thumb_url, 320))}" srcset="${escapeHTML(imgUrl(movie.thumb_url, 160))} 160w, ${escapeHTML(imgUrl(movie.thumb_url, 320))} 320w, ${escapeHTML(imgUrl(movie.thumb_url, 640))} 640w" sizes="(max-width: 640px) 160px, (max-width: 1024px) 320px, 320px" width="320" height="480" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />`
-            : `<div class="w-full h-full flex items-center justify-center text-text-muted"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg></div>`
+            ? `<img src="${escapeHTML(imgUrl(movie.thumb_url, 320))}" srcset="${escapeHTML(imgUrl(movie.thumb_url, 160))} 160w, ${escapeHTML(imgUrl(movie.thumb_url, 320))} 320w, ${escapeHTML(imgUrl(movie.thumb_url, 640))} 640w" sizes="(max-width: 640px) 150px, 320px" width="320" height="480" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
+            : ''
         }
-        <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"></div>
         ${badge}
         ${episodeBadge}
-        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       </div>
-      <div class="mt-2.5 px-0.5">
-        <h3 class="text-[15px] font-medium text-text-primary leading-snug line-clamp-2 transition-colors duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF6B9D] group-hover:to-[#4A9EFF]">${name}</h3>
-        ${meta ? `<p class="text-xs text-text-muted mt-1 truncate transition-colors duration-300 group-hover:text-text-secondary">${meta}</p>` : ''}
+      <div class="mt-2 px-0.5">
+        <h3 class="text-[13px] font-medium text-cm-text leading-snug line-clamp-2 transition-colors duration-[var(--duration-cm)] group-hover:text-cm-text-2">${name}</h3>
+        ${meta ? `<p class="text-xs text-cm-text-3 mt-0.5 truncate">${meta}</p>` : ''}
       </div>
     </a>
   `
@@ -74,8 +81,9 @@ export interface ContinueCardOptions {
 /**
  * Poster "Tiếp tục xem" — NGUỒN DUY NHẤT (trước đây copy ở
  * scripts/continue-watching.ts và pages/profile.astro).
- * Markup phải giữ nguyên để các script bind `.cw-remove` / `.pf-cw-remove`
- * và `[data-slug]` vẫn hoạt động.
+ * Brief §08: poster + progress bar (position/duration), meta
+ * `S02 E04 · 32 phút còn lại`, hover `[▶ Tiếp tục][↺ Xem lại]`.
+ * Giữ binding `.cw-remove` / `.pf-cw-remove` và `[data-slug]`.
  */
 export function continueCardHTML(
   item: {
@@ -84,37 +92,80 @@ export function continueCardHTML(
     thumb: string
     episode?: string
     episodeSlug?: string
+    position?: number
+    duration?: number
   },
   opts: ContinueCardOptions = {},
 ): string {
   const slug = escapeHTML(item.slug)
   const name = escapeHTML(item.name)
   const episode = item.episode ? escapeHTML(item.episode) : ''
-  const vote = opts.vote ? escapeHTML(opts.vote) : ''
   const href = `/xem/${slug}/${escapeHTML(item.episodeSlug || '')}`
   const thumb = item.thumb
-    ? `<img src="${escapeHTML(imgUrl(item.thumb, 300))}" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />`
-    : '<div class="w-full h-full bg-bg-card"></div>'
+    ? `<img src="${escapeHTML(imgUrl(item.thumb, 300))}" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
+    : ''
+  const vote = opts.vote ? formatVote(opts.vote) : ''
+
+  // Progress (brief §08): chỉ hiển thị khi history có position/duration.
+  const hasProgress =
+    typeof item.position === 'number' &&
+    typeof item.duration === 'number' &&
+    item.duration > 0
+  const progress = hasProgress
+    ? Math.min(1, Math.max(0, (item.position ?? 0) / (item.duration ?? 1)))
+    : 0
+  const remainingMin =
+    hasProgress && item.duration! - item.position! > 0
+      ? Math.max(1, Math.ceil((item.duration! - item.position!) / 60))
+      : 0
+
+  const progressBar = hasProgress
+    ? `<span class="absolute inset-x-0 bottom-0 z-10 h-[3px] bg-white/15" aria-hidden>
+        <span class="block h-full" style="width:${(progress * 100).toFixed(1)}%;background:var(--color-cm-accent)"></span>
+      </span>`
+    : ''
+
+  const hoverActions = `
+    <span class="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-cm)]">
+      <a href="${href}" class="flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-[11px] font-semibold" aria-label="Tiếp tục xem ${name}">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        Tiếp tục
+      </a>
+      <a href="${href}" class="flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-cm-btn)] bg-white/10 text-white text-[11px] font-medium hover:bg-white/20 transition-colors" aria-label="Xem lại ${name} từ đầu">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        Xem lại
+      </a>
+    </span>`
+
+  const episodeChip = episode
+    ? `<span class="absolute top-2 left-2 z-10 px-1.5 py-0.5 rounded-[4px] bg-cm-accent text-white text-[10px] font-semibold">${episode}</span>`
+    : ''
   const voteBadge = vote
-    ? `<span class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-medium text-white/95 pointer-events-none">★ ${vote}</span>`
+    ? `<span class="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded-[4px] bg-cm-bg/80 text-white/90 text-[10px] font-medium pointer-events-none flex items-center gap-1"><svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>${vote}</span>`
     : ''
   const removeBtn = opts.removeClass
-    ? `<button type="button" class="${opts.removeClass} absolute -top-1.5 -right-1.5 z-10 w-5 h-5 rounded-full bg-black/60 border border-white/15 text-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80" aria-label="Xoá khỏi lịch sử xem">
-        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    ? `<button type="button" class="${opts.removeClass} absolute -top-1.5 -right-1.5 z-30 w-5 h-5 rounded-full bg-cm-surface border border-cm-border text-cm-text-2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:text-white" aria-label="Xoá khỏi lịch sử xem">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>`
     : ''
+
+  const metaLine = [episode, remainingMin > 0 ? `${remainingMin} phút còn lại` : '']
+    .filter(Boolean)
+    .join(' \u00b7 ')
+
   return `
     <div class="snap-start shrink-0 w-[150px] relative group" data-slug="${slug}">
-      <a href="${href}" class="block relative aspect-[2/3] rounded-xl overflow-hidden bg-bg-card glass-frame poster-shell${item.thumb ? ' shimmer' : ''}">
+      <a href="${href}" class="block relative aspect-[2/3] overflow-hidden rounded-[var(--radius-cm-card)] bg-cm-surface poster-shell focus:outline-none focus-visible:ring-2 focus-visible:ring-cm-accent/60">
         ${thumb}
-        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-        ${episode ? `<span class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-[#FF6B9D] text-white text-[10px] font-semibold">${episode}</span>` : ''}
+        ${episodeChip}
         ${voteBadge}
-        <span class="absolute inset-x-0 bottom-0 px-2.5 py-2 flex items-center gap-1.5 text-white text-[11px] font-medium">
-          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          Tiếp tục
-        </span>
+        ${progressBar}
+        ${hoverActions}
       </a>
+      <div class="mt-2 px-0.5">
+        <h3 class="text-[13px] font-medium text-cm-text leading-snug line-clamp-1">${name}</h3>
+        ${metaLine ? `<p class="text-xs text-cm-text-3 mt-0.5 truncate">${metaLine}</p>` : ''}
+      </div>
       ${removeBtn}
     </div>
   `

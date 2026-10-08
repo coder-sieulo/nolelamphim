@@ -1,0 +1,14 @@
+/* ══════════════════════════════════════════════════════════════
+   Homepage — CINEMA MINIMAL (Phase 2).
+   Thêm CUỐI global.css → không ảnh hưởng cascade block cũ.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Nút "+ Danh sách" trên hero khi đã thêm vào danh sách (proxy cho .fav-active
+   cũ — không dùng gradient/glass). */
+.hero-fav-active {
+  border-color: var(--color-cm-accent);
+  color: var(--color-cm-accent);
+  background: rgba(229, 9, 20, 0.1);
+}
+
+/* Skeleton home: phẳng, không shimmer — đợi nội dung render trong microtask */

@@ -1,18 +1,22 @@
 ---
+/**
+ * ContinueWatching — "Tiếp tục xem" (brief §08): render client-side từ
+ * lịch sử (local + tài khoản). Skeleton phẳng, id giữ nguyên cho script.
+ */
 ---
 
 <section id="cw-root" class="mt-10">
   <div id="cw-skeleton" aria-hidden>
-    <div class="flex items-center justify-between mb-4">
-      <div class="h-4 w-28 shimmer rounded"></div>
+    <div class="flex items-center justify-between mb-3">
+      <div class="h-5 w-32 rounded bg-cm-surface" />
     </div>
     <div class="flex gap-3 overflow-hidden">
       {
         Array.from({ length: 5 }).map(() => (
           <div class="shrink-0 w-[150px]">
-            <div class="aspect-[2/3] rounded-xl shimmer" />
-            <div class="mt-2.5 h-3 shimmer rounded w-3/4" />
-            <div class="mt-1.5 h-2.5 shimmer rounded w-1/2" />
+            <div class="aspect-[2/3] rounded-[var(--radius-cm-card)] bg-cm-surface" />
+            <div class="mt-2 h-3 rounded bg-cm-surface w-3/4" />
+            <div class="mt-1.5 h-2.5 rounded bg-cm-surface w-1/2" />
           </div>
         ))
       }

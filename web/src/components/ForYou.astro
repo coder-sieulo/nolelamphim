@@ -1,0 +1,112 @@
+---
+/**
+ * ForYou — "Dành cho bạn" (brief §06).
+ * Dựng client-side từ watch history: vài phim recent → suy thể loại hay xem
+ * → row poster thể loại đó. Không có history → ẩn hẳn (không render section).
+ */
+---
+
+<section id="for-you-section" class="mt-10 hidden">
+  <div id="for-you-skeleton" aria-hidden class="hidden">
+    <div class="h-6 w-40 rounded bg-cm-surface mb-3 ui-skeleton-line" />
+    <div class="flex gap-3 overflow-hidden">
+      {
+        Array.from({ length: 6 }).map(() => (
+          <div class="shrink-0 w-[150px]">
+            <div class="aspect-[2/3] rounded-[var(--radius-cm-card)] bg-cm-surface" />
+            <div class="mt-2 h-3 rounded bg-cm-surface w-3/4" />
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  import { getRecent } from '../scripts/store'
+  import { getMovieDetail, getMoviesByCategory } from '../lib/api'
+  import { movieToCard, movieCardHTML } from '../lib/movieCard'
+  import { registerPageInit } from '../scripts/lifecycle'
+
+  const MAX_INFERENCE = 3
+  const ROW_LIMIT = 12
+
+  registerPageInit(() => {
+    const section = document.getElementById('for-you-section')
+    if (!section) return () => {}
+    const ac = new AbortController()
+
+    void init(section, ac.signal)
+
+    async function init(section: HTMLElement, signal: AbortSignal) {
+      try {
+        const watched = await watchedSlugs(signal)
+        if (signal.aborted) return
+        if (watched.length === 0) return // không có history → ẩn section
+
+        const candidates = watched.slice(0, MAX_INFERENCE)
+        const details = await Promise.all(
+          candidates.map((slug) => getMovieDetail(slug).catch(() => ({ movie: null }))),
+        )
+        if (signal.aborted) return
+
+        // Đếm thể loại xuất hiện nhiều nhất trong các phim đã xem
+        const catSlugs = new Map<string, number>()
+        for (const d of details) {
+          const cats = d?.movie?.category ?? []
+          for (const c of cats) {
+            catSlugs.set(c.slug, (catSlugs.get(c.slug) || 0) + 1)
+          }
+        }
+        let topCat = ''
+        let topCount = 0
+        for (const [slug, count] of catSlugs) {
+          if (count > topCount) {
+            topCat = slug
+            topCount = count
+          }
+        }
+        if (!topCat || signal.aborted) return
+
+        const data = await getMoviesByCategory(topCat, { limit: ROW_LIMIT }).catch(() => ({ items: [] }))
+        if (signal.aborted) return
+        if (!data.items || data.items.length === 0) return
+
+        section.innerHTML = `
+          <div class="flex items-baseline justify-between gap-4 mb-3">
+            <h2 class="text-cm-h3 font-semibold text-cm-text">Dành cho bạn</h2>
+            <a href="/the-loai/${topCat}" class="shrink-0 inline-flex items-center gap-1 text-cm-meta font-medium text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)]">
+              Xem tất cả
+              <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </a>
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+            ${data.items.map((m) => `<div class="snap-start shrink-0 w-[150px]">${movieCardHTML(movieToCard(m))}</div>`).join('')}
+          </div>
+        `
+        section.classList.remove('hidden')
+      } catch {
+        // lỗi API → ẩn section
+      }
+    }
+
+    async function watchedSlugs(signal: AbortSignal): Promise<string[]> {
+      // Ưu tiên lịch sử tài khoản (có thể xem mọi máy), fallback lịch sử máy
+      let slugs: string[] = []
+      try {
+        const me = await fetch('/api/auth/me', { credentials: 'same-origin', signal }).then((r) => r.json())
+        if (!me?.user) throw new Error('guest')
+        const res = await fetch('/api/user/lib', { credentials: 'same-origin', signal }).then((r) => r.json())
+        const hist = Array.isArray(res?.lib?.history) ? res.lib.history : []
+        slugs = hist
+          .filter((h: { episodeSlug?: string; slug?: string }) => h.episodeSlug && h.slug)
+          .map((h: { slug: string }) => h.slug)
+      } catch {
+        slugs = getRecent().filter((r) => r.episodeSlug).map((r) => r.slug)
+      }
+      return [...new Set(slugs)]
+    }
+
+    return () => ac.abort()
+  })
+</script>

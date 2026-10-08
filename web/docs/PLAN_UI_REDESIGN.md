@@ -262,4 +262,5 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 |---|---|---|
 | P0 Nền tảng | ✅ xong (commit `00a1478`) | tokens, CSS modules, primitive, MovieCard gom nguồn |
 | P1 Shell | ✅ xong (commit `a4b5482`) | Navbar mới, search overlay, bottom nav, footer |
-| P2–P8 | ⏳ chưa làm | — |
+| P2 Homepage | ✅ xong (commit ở đây) | HeroSingle, ForYou, hot row (getNewMovies sort vote), Khám phá gom Subteam+thể loại, bỏ ThemeSection, nền phẳng, movieCardHTML cm, CW progress bar |
+| P3–P8 | ⏳ chưa làm | — |

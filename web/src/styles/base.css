@@ -1,10 +1,10 @@
 html {
-  background: var(--color-bg-deeper);
+  background: var(--color-cm-bg);
   color-scheme: dark;
 }
 
 body {
-  background: var(--color-bg-deeper);
+  background: var(--color-cm-bg);
   color: var(--color-text-primary);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -12,9 +12,9 @@ body {
   position: relative;
 }
 
-/* Background gradient cố định — dùng pseudo-element fixed thay vì
-   background-attachment: fixed (gây repaint mỗi lần cuộn, đặc biệt trên mobile).
-   z-index -11: nằm dưới lớp blob của BaseLayout (-z-10) để giữ nguyên look. */
+/* Nền phẳng #0B0B0C + vignette rất nhẹ (CINEMA MINIMAL §03).
+   dùng pseudo-element fixed thay vì background-attachment: fixed.
+   z-index -11: nằm dưới nền BaseLayout (-z-10). Theme theo phim override ở themes/. */
 body::before {
   content: '';
   position: fixed;
@@ -22,11 +22,6 @@ body::before {
   z-index: -11;
   pointer-events: none;
   background:
-    radial-gradient(48% 42% at 12% 18%, rgba(255, 92, 160, 0.42) 0%, transparent 62%),
-    radial-gradient(44% 38% at 88% 12%, rgba(82, 140, 255, 0.45) 0%, transparent 62%),
-    radial-gradient(46% 40% at 78% 78%, rgba(150, 80, 255, 0.42) 0%, transparent 62%),
-    radial-gradient(40% 36% at 22% 88%, rgba(0, 214, 200, 0.34) 0%, transparent 62%),
-    radial-gradient(34% 30% at 55% 45%, rgba(255, 176, 60, 0.3) 0%, transparent 62%),
-    radial-gradient(60% 60% at 50% -10%, rgba(70, 100, 255, 0.2) 0%, transparent 60%),
-    linear-gradient(180deg, #0b0a1c 0%, #0a0a14 50%, #0c0a1a 100%);
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.035) 0%, transparent 55%),
+    #0b0b0c;
 }
