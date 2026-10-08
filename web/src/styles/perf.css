@@ -1,0 +1,66 @@
+/* ---------- Mobile (touch) perf: giảm chi phí render ---------- */
+/* Thiết bị touch (điện thoại/máy tính bảng) không có hover chuột.
+   backdrop-filter + gradient full-screen repaint cực tốn GPU trên mobile;
+   desktop/laptop (hover: hover) vẫn giữ nguyên hiệu ứng 100%. */
+@media (hover: none), (pointer: coarse) {
+  .liquid-glass,
+  .content-card,
+  .glass-pane,
+  .glass-tile,
+  .ep-btn,
+  .episode-panel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /* Bù lại cho mặt glass: nền đục hơn thay vì dựa vào blur */
+  .liquid-glass {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.06) 100%),
+      rgba(18, 18, 40, 0.55);
+  }
+
+  .content-card {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 45%, rgba(255, 255, 255, 0.065) 100%),
+      rgba(18, 18, 40, 0.55);
+  }
+
+  .glass-pane {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.06) 100%),
+      rgba(18, 18, 40, 0.55);
+  }
+
+  .glass-tile {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.025) 45%, rgba(255, 255, 255, 0.05) 100%),
+      rgba(18, 18, 40, 0.55);
+  }
+
+  .ep-btn {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.1) 100%),
+      rgba(24, 24, 48, 0.4);
+  }
+
+  .episode-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.08) 100%),
+      rgba(28, 22, 50, 0.62);
+  }
+
+  /* Navbar luôn nền đục khi chưa cuộn để dễ đọc trên mobile */
+  #navbar .liquid-glass {
+    background: rgba(10, 10, 20, 0.78);
+  }
+
+  /* Giảm cường độ gradient nền full-screen (ít repaint khi scroll) */
+  body::before {
+    background:
+      radial-gradient(46% 40% at 78% 78%, rgba(150, 80, 255, 0.2) 0%, transparent 62%),
+      radial-gradient(40% 36% at 22% 88%, rgba(0, 214, 200, 0.15) 0%, transparent 62%),
+      radial-gradient(34% 30% at 55% 45%, rgba(255, 176, 60, 0.12) 0%, transparent 62%),
+      linear-gradient(180deg, #0b0a1c 0%, #0a0a14 50%, #0c0a1a 100%);
+  }
+}

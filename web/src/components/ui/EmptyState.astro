@@ -1,0 +1,43 @@
+---
+/**
+ * EmptyState — trạng thái rỗng (brief: không trang trí, 1 icon + 1 dòng).
+ * Dùng thống nhất cho favorites/recent/search/listing rỗng.
+ */
+import { FaFilm } from 'react-icons/fa6'
+
+interface Props {
+  title?: string
+  hint?: string
+  href?: string
+  ctaLabel?: string
+  class?: string
+}
+const {
+  title = 'Không có phim nào',
+  hint,
+  href,
+  ctaLabel = 'Về trang chủ',
+  class: className = '',
+} = Astro.props
+---
+
+<div
+  class:list={[
+    'flex flex-col items-center justify-center text-center py-14 px-4',
+    className,
+  ]}
+>
+  <FaFilm className="w-7 h-7 text-cm-text-3 mb-3" />
+  <p class="text-sm font-medium text-cm-text-2">{title}</p>
+  {hint && <p class="text-cm-meta text-cm-text-3 mt-1">{hint}</p>}
+  {
+    href && (
+      <a
+        href={href}
+        class="mt-4 h-9 px-4 inline-flex items-center rounded-cm-btn bg-cm-surface border border-cm-border text-sm text-cm-text hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]"
+      >
+        {ctaLabel}
+      </a>
+    )
+  }
+</div>

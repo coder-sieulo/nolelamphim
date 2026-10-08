@@ -1,11 +1,16 @@
 ---
 import { ClientRouter } from 'astro:transitions'
 import '../styles/global.css'
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
+// Giữ Be Vietnam Pro làm fallback cho chữ hiếm Inter không cover (font family
+// khai báo trong tokens.css vẫn trỏ cả hai).
 import '@fontsource/be-vietnam-pro/400.css'
-import '@fontsource/be-vietnam-pro/500.css'
 import '@fontsource/be-vietnam-pro/600.css'
 import '@fontsource/be-vietnam-pro/700.css'
-import beVietnamPro600Woff2 from '@fontsource/be-vietnam-pro/files/be-vietnam-pro-vietnamese-600-normal.woff2?url'
+import inter600Woff2 from '@fontsource/inter/files/inter-vietnamese-600-normal.woff2?url'
 import Navbar from '../components/Navbar.astro'
 import Footer from '../components/Footer.astro'
 import { SITE_NAME, SITE_URL } from '../lib/site'
@@ -37,7 +42,7 @@ Astro.response.headers.set(
 ---
 
 <!doctype html>
-<html lang="vi" class="h-full antialiased">
+  <html lang="vi" class="h-full antialiased">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -49,7 +54,7 @@ Astro.response.headers.set(
     {noIndex && <meta name="robots" content="noindex" />}
     <link rel="preconnect" href="https://vsmov.com" />
     <link rel="dns-prefetch" href="https://vsmov.com" />
-    <link rel="preload" as="font" type="font/woff2" href={beVietnamPro600Woff2} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={inter600Woff2} crossorigin />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

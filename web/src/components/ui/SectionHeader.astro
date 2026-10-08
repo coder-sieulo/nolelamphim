@@ -1,0 +1,30 @@
+---
+/**
+ * SectionHeader — tiêu đề mục + link "Xem tất cả →" (brief §07).
+ * Mọi row trên trang dùng chung component này cho nhịp điệu thống nhất.
+ */
+import { FaChevronRight } from 'react-icons/fa6'
+
+interface Props {
+  title: string
+  href?: string
+  linkLabel?: string
+  class?: string
+}
+const { title, href, linkLabel = 'Xem tất cả', class: className = '' } = Astro.props
+---
+
+<div class:list={['flex items-baseline justify-between gap-4 mb-3', className]}>
+  <h2 class="text-cm-h3 font-semibold text-cm-text truncate">{title}</h2>
+  {
+    href && (
+      <a
+        href={href}
+        class="shrink-0 inline-flex items-center gap-1 text-cm-meta font-medium text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)]"
+      >
+        {linkLabel}
+        <FaChevronRight className="w-2.5 h-2.5" />
+      </a>
+    )
+  }
+</div>

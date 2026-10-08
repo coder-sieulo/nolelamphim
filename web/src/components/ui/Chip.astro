@@ -1,0 +1,23 @@
+---
+/**
+ * Chip — metadata ngắn (thể loại, năm, chất lượng…).
+ * Brief §07: meta dạng chữ nhỏ, không trang trí. Không cần blur.
+ */
+interface Props {
+  href?: string
+  active?: boolean
+  class?: string
+}
+const { href, active = false, class: className = '' } = Astro.props
+const base =
+  'inline-flex items-center h-6 px-2.5 text-cm-meta font-medium rounded-cm-btn ' +
+  'transition-colors duration-[var(--duration-cm)] ease-[var(--ease-cm)]'
+const skin = active
+  ? 'bg-cm-accent text-white'
+  : 'bg-cm-surface text-cm-text-2 border border-cm-border hover:text-cm-text hover:border-cm-border-strong'
+const Tag = href ? 'a' : 'span'
+---
+
+<Tag href={href} class:list={[base, skin, className]}>
+  <slot />
+</Tag>

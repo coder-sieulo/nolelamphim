@@ -1,0 +1,82 @@
+@theme inline {
+  --color-glass: rgba(255, 255, 255, 0.08);
+  --color-glass-hover: rgba(255, 255, 255, 0.16);
+  --color-glass-border: rgba(255, 255, 255, 0.12);
+  --color-glass-border-hover: rgba(255, 255, 255, 0.25);
+  --color-glass-shadow: rgba(0, 0, 0, 0.3);
+
+  --color-bg-dark: #0a0a14;
+  --color-bg-deeper: #06060e;
+  --color-bg-surface: #111122;
+  --color-bg-card: #181830;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-text-muted: rgba(255, 255, 255, 0.55);
+
+  --color-gradient-1: #ff6b9d;
+  --color-gradient-2: #c44bed;
+  --color-gradient-3: #4a9eff;
+
+  /* Font chính: Inter (brief §04) — fallback Be Vietnam Pro (đã cài, hỗ trợ VI) */
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Be Vietnam Pro",
+    Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CINEMA MINIMAL — token mới (PLAN_UI_REDESIGN.md Phase 0)
+   Thêm SONG SONG token cũ: component cũ chưa đổi, component mới
+   dùng các token này. Khi migration xong → xoá block token cũ.
+   Bảng màu brief §03, radius §23, motion §23.
+   ══════════════════════════════════════════════════════════════ */
+@theme inline {
+  /* Background — brief §03 */
+  --color-cm-bg: #0b0b0c;
+  --color-cm-bg-2: #111113;
+  --color-cm-surface: #18181b;
+  --color-cm-elevated: #202024;
+
+  /* Text — brief §03 */
+  --color-cm-text: #f5f5f5;
+  --color-cm-text-2: #a1a1aa;
+  --color-cm-text-3: #71717a;
+
+  /* Accent DUY NHẤT — brief §03 (CTA / progress / selected / active nav) */
+  --color-cm-accent: #e50914;
+  --color-cm-accent-hover: #f6121d;
+
+  /* Border — chỉ dùng khi cần phân vùng (brief §23) */
+  --color-cm-border: rgba(255, 255, 255, 0.08);
+  --color-cm-border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Radius — brief §23: không bo quá tròn */
+  --radius-cm-card: 8px;
+  --radius-cm-btn: 6px;
+  --radius-cm-input: 6px;
+  --radius-cm-modal: 12px;
+
+  /* Shadow — rất nhẹ (brief §23) */
+  --shadow-cm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-cm-up: 0 6px 20px -8px rgba(0, 0, 0, 0.55);
+
+  /* Motion — nhanh 120–180ms, transition quan trọng 250–400ms (brief §23) */
+  --ease-cm: cubic-bezier(0.2, 0, 0, 1);
+  --duration-cm-fast: 140ms;
+  --duration-cm: 160ms;
+  --duration-cm-slow: 320ms;
+
+  /* Type scale — brief §04: H1 32–40, H2 22–28, H3 17–20, body 14–16, meta 12–13 */
+  --text-cm-h1: 2.25rem;
+  --text-cm-h1--line-height: 1.2;
+  --text-cm-h2: 1.625rem;
+  --text-cm-h2--line-height: 1.25;
+  --text-cm-h3: 1.125rem;
+  --text-cm-h3--line-height: 1.35;
+  --text-cm-body: 0.9375rem;
+  --text-cm-body--line-height: 1.55;
+  --text-cm-meta: 0.75rem;
+  --text-cm-meta--line-height: 1.4;
+}

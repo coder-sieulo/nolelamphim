@@ -1,0 +1,23 @@
+---
+/**
+ * PosterSkeleton — skeleton cho lưới poster (brief §23: animation nhanh).
+ * Nền phẳng cm-surface, shimmer nhẹ 1.2s — không dùng glass.
+ */
+interface Props {
+  count?: number
+  class?: string
+}
+const { count = 1, class: className = '' } = Astro.props
+---
+
+<>
+  {
+    Array.from({ length: count }).map(() => (
+      <div class:list={['ui-skeleton', className]} aria-hidden="true">
+        <div class="ui-skeleton-poster" />
+        <div class="ui-skeleton-line w-3/4" />
+        <div class="ui-skeleton-line w-1/2 !h-2" />
+      </div>
+    ))
+  }
+</>

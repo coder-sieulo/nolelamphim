@@ -1,0 +1,366 @@
+/* Sections dưới fold: browser bỏ qua render/layout cho tới khi cuộn tới */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 700px;
+}
+
+.glass-pane {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.06) 100%),
+    rgba(24, 24, 48, 0.04);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ---------- Liquid Glass surface language ---------- */
+
+/* Surface chính: hero frame, banner, các panel lớn */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.06) 100%),
+    rgba(24, 24, 48, 0.04);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 12px 40px -12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 1px 0 0 rgba(255, 255, 255, 0.07),
+    inset -1px 0 0 rgba(255, 255, 255, 0.07);
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Dropdown của mode switcher — dùng class riêng (không dính Tailwind)
+   vì CSS ngoài layer (global.css) thắng utility trong @layer utilities,
+   khiến `position:absolute` bị .liquid-glass ghi đè thành relative */
+.mode-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 50;
+}
+
+/* Dropdown menu tài khoản (auth) — dùng class riêng vì .liquid-glass
+   ép position:relative ghi đè utility `absolute` của Tailwind */
+.user-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 50;
+}
+
+/* Specular "cap" highlight — dải sáng cong ở nửa trên */
+.liquid-glass::before,
+.content-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 45% 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(130% 150% at 50% -30%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.09) 45%, transparent 75%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+}
+
+/* Sheen theo con trỏ — bắt chước hiệu ứng nghiêng của Liquid Glass */
+.liquid-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(
+    220px circle at var(--lx, 50%) var(--ly, -20%),
+    rgba(255, 255, 255, 0.14),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.liquid-glass:hover::after {
+  opacity: 1;
+}
+
+/* Tile nhỏ (nút, chip, select, dropdown) — cùng ngôn ngữ liquid glass */
+.glass-tile {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.025) 45%, rgba(255, 255, 255, 0.05) 100%),
+    rgba(24, 24, 48, 0.06);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 0.25s ease;
+}
+
+.glass-tile:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.055) 45%, rgba(255, 255, 255, 0.11) 100%),
+    rgba(24, 24, 48, 0.32);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+/* Dropdown (suggestions, filter) — nền đục hơn glass-tile để chữ nổi rõ khi
+   che poster/section phía dưới, vẫn giữ liquid glass look với blur.
+   KHÔNG set position ở đây: dropdown dùng utility `absolute` từ Tailwind
+   (định vị theo `.relative` cha). Set position:relative ở đây sẽ ghi đè
+   `.absolute` trong @layer utilities và làm dropdown nằm trong flow (bị chèn). */
+.glass-dropdown {
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.035) 45%, rgba(255, 255, 255, 0.07) 100%),
+    rgba(20, 20, 44, 0.86);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 16px 44px -12px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Trên touch device, desktop mở description ở trên: không blur nhưng đục hẳn */
+@media (hover: none), (pointer: coarse) {
+  .glass-dropdown {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.05) 100%),
+      rgba(14, 14, 32, 0.94);
+  }
+}
+
+.glass-tile-active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.12) 100%),
+    rgba(24, 24, 48, 0.35);
+  border-color: rgba(255, 255, 255, 0.26);
+  box-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 1px rgba(196, 75, 237, 0.15);
+}
+
+/* Nút tập phim — nổi rõ hơn glass-tile để tập phim dễ thấy, dễ bấm.
+   Nền sáng hơn + border rõ + viền tím khi hover theo ngôn ngữ brand. */
+.ep-btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.19) 0%, rgba(255, 255, 255, 0.08) 45%, rgba(255, 255, 255, 0.13) 100%),
+    rgba(30, 30, 60, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+.ep-btn:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.11) 45%, rgba(255, 255, 255, 0.17) 100%),
+    rgba(30, 30, 60, 0.5);
+  border-color: rgba(196, 75, 237, 0.55);
+  color: #ffffff;
+  box-shadow:
+    0 4px 18px rgba(196, 75, 237, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 1px rgba(196, 75, 237, 0.22);
+}
+
+/* Chip tĩnh nhỏ (thể loại, keyword, meta) — không cần blur */
+.glass-chip {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Khung glass cho poster / ảnh — viền + sáng mặt trên, như kính ép */
+.glass-frame {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 4px 20px -6px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.group:hover .glass-frame {
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 12px 32px -8px rgba(196, 75, 237, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 1px rgba(196, 75, 237, 0.3);
+}
+
+/* Panel nội dung — ngôn ngữ liquid glass */
+.content-card {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 45%, rgba(255, 255, 255, 0.065) 100%),
+    rgba(24, 24, 48, 0.1);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow:
+    0 8px 30px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+/* Thu nhỏ khoảng đệm khi cuộn */
+#navbar #nav-shell {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Panel tập phim — NỔI BẬT riêng, không nhầm với content-card/glass khác:
+   viền gradient hồng→tím→xanh + nền tím đục + header riêng trội hẳn. */
+.episode-panel {
+  position: relative;
+  isolation: isolate;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.08) 100%),
+    rgba(34, 26, 58, 0.45);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow:
+    0 14px 42px -14px rgba(196, 75, 237, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.episode-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(255, 107, 157, 0.6), rgba(196, 75, 237, 0.6), rgba(74, 158, 255, 0.5));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.episode-header {
+  position: relative;
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(180deg, rgba(196, 75, 237, 0.16), rgba(255, 107, 157, 0.05));
+}
+
+/* Tiêu đề "Tập phim" — nổi với gradient nhỏ */
+.episode-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.episode-title::before {
+  content: '';
+  width: 4px;
+  height: 1.1em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ff6b9d, #c44bed);
+  box-shadow: 0 0 10px rgba(196, 75, 237, 0.5);
+}
+#navbar.scrolled #nav-shell {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+#navbar.scrolled .liquid-glass {
+  background: rgba(10, 10, 20, 0.85);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow:
+    0 16px 48px -12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    inset 1px 0 0 rgba(255, 255, 255, 0.07),
+    inset -1px 0 0 rgba(255, 255, 255, 0.07);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-gradient-1), var(--color-gradient-2), var(--color-gradient-3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+::selection {
+  background: rgba(196, 75, 237, 0.35);
+  color: var(--color-text-primary);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Poster frame — nền shimmer trong lúc load, icon fallback khi ảnh lỗi */
+.poster-shell {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  background-size: 200% 100%;
+}
+.poster-shell.poster-missing {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' opacity='0.35' viewBox='0 0 24 24'%3E%3Cpath d='M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 40px 40px;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

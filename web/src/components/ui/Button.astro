@@ -1,0 +1,68 @@
+---
+/**
+ * Button — primitive theo brief CINEMA MINIMAL (§03 accent, §23 radius 6px).
+ * LUẬT: ≤2 CTA chính/viewport → primary chỉ dùng cho hành động chính.
+ * Dùng react-icons cho icon (luật 08: không emoji).
+ */
+import { FaPlay, FaPlus } from 'react-icons/fa6'
+
+interface Props {
+  href?: string
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  size?: 'sm' | 'md'
+  type?: 'button' | 'submit'
+  disabled?: boolean
+  class?: string
+  ariaLabel?: string
+  icon?: 'play' | 'plus' | 'none'
+  'data-*'?: string
+}
+
+const {
+  href,
+  variant = 'secondary',
+  size = 'md',
+  type = 'button',
+  disabled = false,
+  class: className = '',
+  ariaLabel,
+  icon = 'none',
+  ...rest
+} = Astro.props
+
+const base =
+  'inline-flex items-center justify-center gap-2 font-medium select-none ' +
+  'transition-[background-color,color,opacity] duration-[var(--duration-cm)] ease-[var(--ease-cm)] ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cm-bg ' +
+  'disabled:opacity-40 disabled:pointer-events-none'
+
+const variants: Record<string, string> = {
+  // CTA chính — accent đỏ, brief §03
+  primary: 'bg-cm-accent text-white hover:bg-cm-accent-hover',
+  // Hành động phụ — nền surface, border chỉ khi cần phân vùng
+  secondary: 'bg-cm-surface text-cm-text border border-cm-border hover:bg-cm-elevated',
+  // Trong suốt, chữ.secondary — cho hàng icon
+  ghost: 'text-cm-text-2 hover:text-cm-text hover:bg-white/5',
+  danger: 'bg-cm-surface text-cm-accent border border-cm-border hover:bg-cm-elevated',
+}
+
+const sizes: Record<string, string> = {
+  sm: 'h-8 px-3 text-[13px] rounded-cm-btn',
+  md: 'h-10 px-4 text-sm rounded-cm-btn',
+}
+
+const Tag = href ? 'a' : 'button'
+const Icon = icon === 'play' ? FaPlay : icon === 'plus' ? FaPlus : null
+---
+
+<Tag
+  href={href}
+  type={href ? undefined : type}
+  disabled={href ? undefined : disabled}
+  aria-label={ariaLabel}
+  class:list={[base, variants[variant], sizes[size], className]}
+  {...rest}
+>
+  {Icon && <Icon className="shrink-0" />}
+  <slot />
+</Tag>

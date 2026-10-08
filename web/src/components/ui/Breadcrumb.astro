@@ -1,0 +1,36 @@
+---
+/**
+ * Breadcrumb — 1 dòng, thống nhất cho danh sách/chi tiết/xem (Phase 1).
+ * Icon separator dùng SVG (luật 08).
+ */
+interface Item {
+  label: string
+  href?: string
+}
+interface Props {
+  items: Item[]
+  class?: string
+}
+const { items, class: className = '' } = Astro.props
+---
+
+<nav aria-label="Đường dẫn" class:list={['flex items-center gap-2 text-cm-meta', className]}>
+  {
+    items.map((item, i) => (
+      <>
+        {i > 0 && (
+          <svg class="w-2.5 h-2.5 text-cm-text-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        )}
+        {item.href ? (
+          <a href={item.href} class="text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)] truncate">
+            {item.label}
+          </a>
+        ) : (
+          <span class="text-cm-text-2 truncate">{item.label}</span>
+        )}
+      </>
+    ))
+  }
+</nav>

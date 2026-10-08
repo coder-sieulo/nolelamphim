@@ -1,0 +1,58 @@
+/* ══════════════════════════════════════════════════════════════
+   UI primitives (src/components/ui/) — CINEMA MINIMAL.
+   File mới Phase 0: thêm CUỐI global.css → không ảnh hưởng
+   cascade của các block cũ.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Skeleton poster + text — nhanh, phẳng, không glass (brief §23) */
+.ui-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ui-skeleton-poster {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-cm-card);
+  background: var(--color-cm-surface);
+}
+
+.ui-skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--color-cm-surface);
+}
+
+.ui-skeleton-poster,
+.ui-skeleton-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.ui-skeleton-poster::after,
+.ui-skeleton-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  animation: ui-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes ui-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-skeleton-poster::after,
+  .ui-skeleton-line::after {
+    animation: none;
+  }
+}
