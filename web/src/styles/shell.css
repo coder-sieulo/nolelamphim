@@ -1,0 +1,430 @@
+/* ══════════════════════════════════════════════════════════════
+   SHELL — Header + Search overlay + Mobile bottom nav (Phase 1).
+   Dùng token CINEMA MINIMAL (--color-cm-*). File mới → thêm CUỐI
+   global.css, không đụng cascade cũ.
+   Brief: §05 header, §21 mobile IA, §23 radius/shadow.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---------- Header ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
+.site-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 56px;
+  padding: 0 16px;
+  background: var(--color-cm-bg-2);
+  border-bottom: 1px solid var(--color-cm-border);
+  transition:
+    height var(--duration-cm) var(--ease-cm),
+    background-color var(--duration-cm-slow) var(--ease-cm);
+}
+@media (min-width: 768px) {
+  .site-bar {
+    height: 64px;
+    padding: 0 32px;
+  }
+}
+
+/* Compact header khi scroll xuống (brief §05) */
+.site-header.scrolled .site-bar {
+  height: 48px;
+  background: rgba(17, 17, 19, 0.92);
+  box-shadow: var(--shadow-cm-up);
+}
+@media (min-width: 768px) {
+  .site-header.scrolled .site-bar {
+    height: 52px;
+  }
+}
+
+.site-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.site-logo img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  transition: width var(--duration-cm) var(--ease-cm), height var(--duration-cm) var(--ease-cm);
+}
+.site-header.scrolled .site-logo img {
+  width: 28px;
+  height: 28px;
+}
+.site-logo span {
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--color-cm-text);
+  white-space: nowrap;
+}
+
+/* Desktop nav — brief: không quá nhiều navigation */
+.site-nav {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+@media (min-width: 768px) {
+  .site-nav {
+    display: flex;
+    margin-inline: auto;
+  }
+}
+.site-nav .nav-link {
+  height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-cm-btn);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-cm-text-2);
+  position: relative;
+  transition: color var(--duration-cm) var(--ease-cm);
+}
+.site-nav .nav-link:hover {
+  color: var(--color-cm-text);
+}
+/* Active = màu accent + underline (brief §03: active navigation) */
+.site-nav .nav-link.active {
+  color: var(--color-cm-text);
+}
+.site-nav .nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-cm-accent);
+}
+
+/* Dropdown Thể loại */
+.genre-wrap {
+  position: relative;
+}
+.genre-btn {
+  height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-cm-btn);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-cm-text-2);
+  transition: color var(--duration-cm) var(--ease-cm);
+}
+.genre-btn:hover,
+.genre-wrap.open .genre-btn,
+.genre-wrap.genre-on .genre-btn {
+  color: var(--color-cm-text);
+}
+.genre-btn .chevron {
+  transition: transform var(--duration-cm) var(--ease-cm);
+}
+.genre-wrap.open .genre-btn .chevron {
+  transform: rotate(180deg);
+}
+
+/* Menu panel chung (dropdown thể loại + avatar) — solid, không glass */
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--color-cm-elevated);
+  border: 1px solid var(--color-cm-border);
+  border-radius: var(--radius-cm-card);
+  box-shadow: var(--shadow-cm-up);
+  padding: 6px;
+  display: none;
+}
+.genre-wrap.open .menu-panel,
+.menu-wrap.open .menu-panel {
+  display: block;
+  animation: cm-menu-in var(--duration-cm) var(--ease-cm);
+}
+@keyframes cm-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.menu-panel .menu-head {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-cm-border);
+  margin-bottom: 6px;
+}
+.menu-panel .menu-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-cm-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.menu-panel .menu-sub {
+  font-size: 11px;
+  color: var(--color-cm-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-cm-btn);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-cm-text-2);
+  text-align: left;
+  transition: background-color var(--duration-cm) var(--ease-cm), color var(--duration-cm) var(--ease-cm);
+}
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-cm-text);
+}
+.menu-item .mi-ic {
+  color: var(--color-cm-text-3);
+}
+.menu-item:hover .mi-ic {
+  color: var(--color-cm-text-2);
+}
+.menu-sep {
+  height: 1px;
+  background: var(--color-cm-border);
+  margin: 6px 4px;
+}
+.menu-grow {
+  margin-top: auto;
+}
+
+/* ---------- Header actions ---------- */
+.site-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.site-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-cm-btn);
+  color: var(--color-cm-text-2);
+  transition: color var(--duration-cm) var(--ease-cm), background-color var(--duration-cm) var(--ease-cm);
+}
+.site-icon-btn:hover {
+  color: var(--color-cm-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Nút Discord khi chưa đăng nhập */
+.site-login {
+  height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-cm-btn);
+  background: #5865f2;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  transition: filter var(--duration-cm) var(--ease-cm);
+}
+.site-login:hover {
+  filter: brightness(1.1);
+}
+
+/* ---------- Search overlay (brief §09) ---------- */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--color-cm-bg);
+  display: none;
+  flex-direction: column;
+  padding-top: 12px;
+}
+.search-overlay.open {
+  display: flex;
+  animation: cm-veil-in var(--duration-cm) var(--ease-cm);
+}
+@keyframes cm-veil-in {
+  from {
+    opacity: 0;
+  }
+}
+.search-overlay-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-cm-border);
+}
+.search-overlay-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-cm-text);
+  font-size: 16px;
+  padding: 10px 0;
+}
+.search-overlay-input::placeholder {
+  color: var(--color-cm-text-3);
+}
+.search-overlay-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px 96px;
+  max-width: 720px;
+  width: 100%;
+  margin-inline: auto;
+}
+.search-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-cm-text-3);
+  margin: 14px 0 8px;
+}
+.search-hit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--radius-cm-card);
+  transition: background-color var(--duration-cm) var(--ease-cm);
+}
+.search-hit:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.search-hit img {
+  width: 42px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--color-cm-surface);
+  flex-shrink: 0;
+}
+.search-hit .sh-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-cm-text);
+  line-height: 1.35;
+}
+.search-hit .sh-meta {
+  font-size: 12px;
+  color: var(--color-cm-text-3);
+  margin-top: 2px;
+}
+.search-empty {
+  color: var(--color-cm-text-3);
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 0;
+}
+.search-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-cm-border);
+  font-size: 13px;
+  color: var(--color-cm-text-2);
+  transition:
+    color var(--duration-cm) var(--ease-cm),
+    border-color var(--duration-cm) var(--ease-cm);
+}
+.search-chip:hover {
+  color: var(--color-cm-text);
+  border-color: var(--color-cm-border-strong);
+}
+.search-all {
+  display: block;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-cm-btn);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-cm-accent);
+  transition: background-color var(--duration-cm) var(--ease-cm);
+}
+.search-all:hover {
+  background: rgba(229, 9, 20, 0.1);
+}
+
+/* ---------- Mobile bottom nav (brief §21) ---------- */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 70;
+  display: flex;
+  background: var(--color-cm-bg-2);
+  border-top: 1px solid var(--color-cm-border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 58px;
+  color: var(--color-cm-text-3);
+  transition: color var(--duration-cm) var(--ease-cm);
+}
+.bottom-nav-item:hover {
+  color: var(--color-cm-text-2);
+}
+.bottom-nav-item.active {
+  color: var(--color-cm-accent);
+}
+.bottom-nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+/* Nội dung tránh bị che bởi bottom nav trên mobile */
+.bottom-nav-spacer {
+  height: 66px;
+}
+@media (min-width: 768px) {
+  .bottom-nav-spacer {
+    display: none;
+  }
+}
+
+/* Back-to-top nằm trên bottom nav (mobile) */
+@media (max-width: 767px) {
+  .back-to-top {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+    right: 12px;
+  }
+}

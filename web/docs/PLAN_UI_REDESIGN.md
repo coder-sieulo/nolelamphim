@@ -252,3 +252,14 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 5. **Rating** → **5 icon** (map 1–5, schema Redis không đổi).
 6. **URL** → **giữ nguyên** `/phim/...`, `/xem/...`, `/danh-sach/...` (không redirect, SEO giữ).
 7. **Collections + Notification** → **tách sprint sau** (phase 🟡 không làm lần này).
+8. **Header Shell (Phase 1)** → đã làm: `Trang chủ · Phim · Series · Thể loại ▾` + icon **Tìm kiếm** + icon **Xem Chung** (thay 🔔 — notification chưa có backend nên không render, tránh component trang trí) + avatar/Discord. `Phim bất kỳ` + `Phim DNA` chuyển vào menu avatar + footer. Bỏ hamburger drawer `nav-mobile` cũ.
+9. **Mobile (Phase 1)** → bottom nav 5 mục: `Trang chủ · Tìm kiếm · Danh sách(/favorites) · Đã xem(/recent) · Hồ sơ(/profile)` (Library sheet có collection: để Phase 3 khi gộp thư viện).
+10. **Search overlay (Phase 1)** → header biến thành overlay toàn màn hình realtime (debounce 250ms, `searchMovies`), Enter → `/search?q=…`, phím `/` focus, có "Tìm kiếm gần đây".
+
+## 5. Trạng thái phase
+
+| Phase | Trạng thái | Ghi chú |
+|---|---|---|
+| P0 Nền tảng | ✅ xong (commit `00a1478`) | tokens, CSS modules, primitive, MovieCard gom nguồn |
+| P1 Shell | ✅ xong (commit `[P1]`) | Navbar mới, search overlay, bottom nav, footer |
+| P2–P8 | ⏳ chưa làm | — |

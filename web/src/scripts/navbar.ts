@@ -1,65 +1,120 @@
 import { registerPageInit } from './lifecycle'
+import { getCategories } from '../lib/api'
+import { escapeHTML } from '../lib/movieCard'
 
 registerPageInit(() => {
   const ac = new AbortController()
 
   const nav = document.getElementById('navbar')
-  const toggle = document.getElementById('nav-toggle')
-  const mobile = document.getElementById('nav-mobile')
-  const pill = document.getElementById('nav-pill')
-  const linksContainer = document.getElementById('nav-links')
-  const line1 = document.getElementById('nav-line-1')
-  const line2 = document.getElementById('nav-line-2')
-  const line3 = document.getElementById('nav-line-3')
-
-  let menuOpen = false
-
-  function updatePill() {
-    if (!pill || !linksContainer) return
-    const active = linksContainer.querySelector('.nav-link.text-white') as HTMLElement | null
-    if (!active) {
-      pill.classList.add('opacity-0')
-      return
-    }
-    const elRect = active.getBoundingClientRect()
-    const parentRect = linksContainer.getBoundingClientRect()
-    pill.style.left = `${elRect.left - parentRect.left}px`
-    pill.style.width = `${elRect.width}px`
-    pill.classList.remove('opacity-0')
-  }
 
   function onScroll() {
     if (!nav) return
     nav.classList.toggle('scrolled', window.scrollY > 8)
   }
+  window.addEventListener('scroll', onScroll, { passive: true, signal: ac.signal })
+  onScroll()
 
-  function onPointerMove(e: PointerEvent) {
-    const bar = document.getElementById('nav-bar')
-    if (!bar) return
-    const rect = bar.getBoundingClientRect()
-    bar.style.setProperty('--lx', `${e.clientX - rect.left}px`)
-    bar.style.setProperty('--ly', `${e.clientY - rect.top}px`)
+  // ---------- Dropdown Thể loại (lazy-load categories từ API) ----------
+  const genreWrap = document.getElementById('genre-wrap')
+  const genreBtn = document.getElementById('genre-btn')
+  const genreMenu = document.getElementById('genre-menu')
+  let genreLoaded = false
+
+  async function loadGenres() {
+    if (genreLoaded || !genreMenu) return
+    genreLoaded = true
+    try {
+      const res = await getCategories()
+      const cats = res?.data?.items ?? []
+      if (cats.length === 0) return
+      genreMenu.innerHTML =
+        '<a class="menu-item" href="/search"><span class="mi-ic">#</span>Tất cả thể loại</a>' +
+        '<div class="menu-sep"></div>' +
+        cats
+          .slice(0, 24)
+          .map(
+            (c) =>
+              `<a class="menu-item" href="/the-loai/${escapeHTML(c.slug)}" data-genre="${escapeHTML(
+                c.slug,
+              )}">${escapeHTML(c.name)}</a>`,
+          )
+          .join('')
+    } catch {
+      genreLoaded = false
+    }
   }
 
-  function setMenu(open: boolean) {
-    menuOpen = open
-    if (!mobile || !toggle) return
-    mobile.classList.toggle('open', open)
-    toggle.setAttribute('aria-expanded', String(open))
-    if (line1) line1.style.transform = open ? 'rotate(45deg) translateY(6px)' : ''
-    if (line2) line2.style.opacity = open ? '0' : ''
-    if (line3) line3.style.transform = open ? 'rotate(-45deg) translateY(-6px)' : ''
+  function toggleGenre(open?: boolean) {
+    if (!genreWrap) return
+    const next = open ?? !genreWrap.classList.contains('open')
+    genreWrap.classList.toggle('open', next)
+    genreBtn?.setAttribute('aria-expanded', String(next))
+    if (next) void loadGenres()
   }
 
-  toggle?.addEventListener('click', () => setMenu(!menuOpen), { signal: ac.signal })
-  mobile?.addEventListener(
+  genreBtn?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    toggleGenre()
+  }, { signal: ac.signal })
+
+  // Đóng khi click ngoài / Escape
+  document.addEventListener(
     'click',
     (e) => {
-      if ((e.target as HTMLElement).closest('a')) setMenu(false)
+      if (genreWrap && !genreWrap.contains(e.target as Node)) toggleGenre(false)
+    },
+    { signal: ac.signal },
+  )
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Escape') {
+        toggleGenre(false)
+        closeSearch()
+      }
     },
     { signal: ac.signal },
   )
 
+  // ---------- Search overlay (open/close — logic tìm kiếm ở header-search.ts) ----------
+  const overlay = document.getElementById('search-overlay')
+  const input = document.getElementById('search-overlay-input') as HTMLInputElement | null
+  const openSearchBtn = document.getElementById('search-open')
+  const bnSearch = document.getElementById('bn-search')
+
+  function closeSearch() {
+    if (!overlay) return
+    overlay.classList.remove('open')
+    overlay.setAttribute('aria-hidden', 'true')
+    document.body.style.overflow = ''
+  }
+  function openSearch() {
+    if (!overlay) return
+    overlay.classList.add('open')
+    overlay.setAttribute('aria-hidden', 'false')
+    document.body.style.overflow = 'hidden'
+    input?.focus()
+  }
+
+  openSearchBtn?.addEventListener('click', openSearch, { signal: ac.signal })
+  bnSearch?.addEventListener('click', openSearch, { signal: ac.signal })
+  document.getElementById('search-close')?.addEventListener('click', closeSearch, { signal: ac.signal })
+
+  // Phím "/" focus search (brief §22 hidden features)
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      const editing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable
+      if (e.key === '/' && !editing && !overlay?.classList.contains('open')) {
+        e.preventDefault()
+        openSearch()
+      }
+    },
+    { signal: ac.signal },
+  )
+
+  // ---------- Loading overlay (random / dna) ----------
   const loadingEl = document.getElementById('nav-loading')
   const loadingMsg = loadingEl?.querySelector('p')
   let loadingTimer: number | undefined
@@ -71,7 +126,7 @@ registerPageInit(() => {
     loadingEl.classList.add('flex')
     document.body.style.overflow = 'hidden'
     clearTimeout(loadingTimer)
-    loadingTimer = window.setTimeout(() => stopLoading(), 15000)
+    loadingTimer = window.setTimeout(stopLoading, 15000)
   }
   function stopLoading() {
     if (!loadingEl) return
@@ -81,40 +136,35 @@ registerPageInit(() => {
     clearTimeout(loadingTimer)
   }
 
-  const loadingTriggers = [
-    ['#nav-loading-random', 'Đang chọn phim ngẫu nhiên...'],
-    ['#nav-loading-dna', 'Đang khám phá DNA phim...'],
-  ]
-
-  loadingTriggers.forEach(([sel, msg]) => {
-    const el = document.getElementById(sel as string)
-    if (!el) return
-    el.addEventListener(
-      'click',
-      (e) => {
-        const isMod = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
-        if (isMod) return
-        const target = (e.currentTarget as HTMLElement).closest('a')
-        if (target && !target.target) {
-          e.preventDefault()
-          showLoading(msg)
-          window.location.assign(target.href)
-        }
-      },
-      { signal: ac.signal },
-    )
-  })
+  document.addEventListener(
+    'click',
+    (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-loading-msg]')
+      if (!el) return
+      const isMod = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
+      if (isMod) return
+      const target = el.closest('a')
+      if (target && !target.target) {
+        e.preventDefault()
+        showLoading(el.dataset.loadingMsg || 'Đang tải...')
+        window.location.assign(target.href)
+      }
+    },
+    { signal: ac.signal },
+  )
 
   document.addEventListener('astro:page-load', stopLoading, { signal: ac.signal })
   window.addEventListener('pageshow', stopLoading, { signal: ac.signal })
 
-  window.addEventListener('resize', updatePill, { signal: ac.signal })
-  window.addEventListener('scroll', onScroll, { passive: true, signal: ac.signal })
-  document.getElementById('nav-bar')?.addEventListener('pointermove', onPointerMove, { signal: ac.signal })
-
-  updatePill()
-  onScroll()
-  setMenu(false)
+  // Đóng genre/dropdown + reset scroll lock khi view transition đổi trang
+  document.addEventListener(
+    'astro:page-load',
+    () => {
+      toggleGenre(false)
+      closeSearch()
+    },
+    { signal: ac.signal },
+  )
 
   return () => ac.abort()
 })

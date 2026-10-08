@@ -16,3 +16,4 @@
 @import "./perf.css"; /* mobile/touch: giảm chi phí render */
 @import "./decor.css"; /* decor sự kiện (cờ pride, credit glow) */
 @import "./ui.css"; /* UI primitives mới (Phase 0) — thêm cuối, không đổi cascade cũ */
+@import "./shell.css"; /* Shell header/bottom-nav/search (Phase 1) — dùng token cm-* */

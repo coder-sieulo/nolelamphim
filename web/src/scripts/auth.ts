@@ -1,8 +1,6 @@
 import { registerPageInit } from './lifecycle'
 import { iconString } from '../lib/icon-strings'
 
-const discordIcon = () => iconString('discord', 'w-4 h-4')
-
 interface MeUser {
   id: string
   username: string
@@ -21,63 +19,63 @@ function avatarUrl(user: MeUser): string | null {
   return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
 }
 
-function userDesktop(user: MeUser) {
+function userMenu(user: MeUser) {
   const img = avatarUrl(user)
   const name = user.global_name || user.username
-  return `<div class="relative" id="auth-menu-wrap">
-    <button id="auth-menu-btn" type="button" class="w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden glass-tile flex items-center justify-center text-text-secondary hover:text-white transition-colors group" aria-haspopup="true" aria-expanded="false" aria-label="Tài khoản ${name}">
+  return `<div class="relative menu-wrap" id="auth-menu-wrap">
+    <button
+      id="auth-menu-btn"
+      type="button"
+      class="w-9 h-9 rounded-full overflow-hidden bg-cm-surface ring-1 ring-cm-border flex items-center justify-center text-cm-text-2 hover:text-cm-text transition-colors"
+      aria-haspopup="true"
+      aria-expanded="false"
+      aria-label="Tài khoản ${name}"
+    >
       ${
         img
-          ? `<img src="${img}" alt="" width="64" height="64" class="w-full h-full object-cover" />`
+          ? `<img src="${img}" alt="" width="36" height="36" class="w-full h-full object-cover" />`
           : `<span class="w-6 h-6 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D]"></span>`
       }
     </button>
-    <div id="auth-menu" class="user-menu dropdown w-48 rounded-xl glass-dropdown p-1.5 shadow-2xl">
-      <div class="px-3 py-2 border-b border-white/5 mb-1">
-        <p class="text-sm font-semibold text-text-primary truncate">${name}</p>
-        <p class="text-[11px] text-text-muted truncate">@${user.username}</p>
+    <div id="auth-menu" class="menu-panel" role="menu">
+      <div class="menu-head">
+        <p class="menu-title">${name}</p>
+        <p class="menu-sub">@${user.username}</p>
       </div>
-      <a href="/profile" class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
-        ${iconString('user', 'w-4 h-4')}
+      <a href="/profile" class="menu-item" role="menuitem">
+        <span class="mi-ic">${iconString('user', 'w-4 h-4')}</span>
         Hồ sơ của tôi
       </a>
-      <a href="/favorites" class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
-        ${iconString('heart', 'w-4 h-4')}
+      <a href="/favorites" class="menu-item" role="menuitem">
+        <span class="mi-ic">${iconString('heart', 'w-4 h-4')}</span>
         Phim yêu thích
       </a>
-      <a id="auth-logout" href="#" class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors" role="menuitem">
-        ${iconString('logout', 'w-4 h-4')}
+      <a href="/recent" class="menu-item" role="menuitem">
+        <span class="mi-ic">${iconString('clock', 'w-4 h-4')}</span>
+        Đã xem
+      </a>
+      <div class="menu-sep"></div>
+      <a href="/api/random" class="menu-item" role="menuitem" data-loading-msg="Đang tìm phim bất kỳ…">
+        <span class="mi-ic">${iconString('dice', 'w-4 h-4')}</span>
+        Phim bất kỳ
+      </a>
+      <a href="/phim-dna" class="menu-item" role="menuitem" data-loading-msg="Đang nạp DNA phim…">
+        <span class="mi-ic">${iconString('dna', 'w-4 h-4')}</span>
+        Phim theo DNA
+      </a>
+      <div class="menu-sep"></div>
+      <a id="auth-logout" href="#" class="menu-item" role="menuitem">
+        <span class="mi-ic">${iconString('logout', 'w-4 h-4')}</span>
         Đăng xuất
       </a>
     </div>
   </div>`
 }
 
-function loginMobile() {
-  return `<a href="/api/auth/discord" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
-    <span class="text-[#5865F2]">${discordIcon()}</span>
-    Đăng nhập Discord
-  </a>`
-}
-
-function userMobile(user: MeUser) {
-  const img = avatarUrl(user)
-  const name = user.global_name || user.username
-  return `<div class="flex items-center gap-2.5 px-3 py-2 rounded-xl opacity-80">
-    ${
-      img
-        ? `<img src="${img}" alt="" width="32" height="32" class="w-8 h-8 rounded-full object-cover" />`
-        : `<span class="w-8 h-8 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D]"></span>`
-    }
-    <div class="min-w-0 flex-1">
-      <p class="text-sm font-semibold text-text-primary truncate">${name}</p>
-      <p class="text-[11px] text-text-muted truncate">@${user.username}</p>
-    </div>
-    <a data-auth-logout-mobile href="#" class="px-2.5 py-1.5 rounded-lg text-[11px] text-text-secondary hover:text-white hover:bg-white/5 transition-colors">Đăng xuất</a>
-  </div>
-  <a href="/profile" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors border-t border-white/5">
-    ${iconString('user', 'w-4 h-4')}
-    Hồ sơ của tôi
+function loginSlot() {
+  return `<a href="/api/auth/discord" class="site-login">
+    ${iconString('discord', 'w-4 h-4')}
+    <span class="hidden sm:inline">Đăng nhập</span>
   </a>`
 }
 
@@ -103,17 +101,16 @@ function discardCache() {
   cacheExpires = 0
 }
 
-function bindDesktop(user: MeUser | null) {
-  const container = document.getElementById('auth-btn-desktop')
-  if (!container) return
-  container.classList.toggle('hidden', !user)
-  container.innerHTML = user ? userDesktop(user) : ''
+function bind(user: MeUser | null) {
+  const slot = document.getElementById('auth-slot')
+  if (!slot) return
+  slot.innerHTML = user ? userMenu(user) : loginSlot()
   if (!user) return
 
   const btn = document.getElementById('auth-menu-btn')
   const menu = document.getElementById('auth-menu')
   const logout = document.getElementById('auth-logout')
-  const wrap = document.getElementById('auth-menu-wrap')
+  const wrap = document.getElementById('auth-menu-wrap') as HTMLElement | null
 
   const close = () => {
     menu?.classList.remove('open')
@@ -150,17 +147,6 @@ function bindDesktop(user: MeUser | null) {
   })
 }
 
-function bindMobile(user: MeUser | null) {
-  const container = document.getElementById('auth-btn-mobile')
-  if (!container) return
-  container.innerHTML = user ? userMobile(user) : loginMobile()
-  const logout = container.querySelector('[data-auth-logout-mobile]')
-  logout?.addEventListener('click', (e) => {
-    e.preventDefault()
-    handleLogout()
-  })
-}
-
 async function handleLogout() {
   try {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -176,17 +162,7 @@ let ac = new AbortController()
 async function renderAuth() {
   const user = await fetchMe()
   if (ac.signal.aborted) return
-  bindDesktop(user)
-  bindMobile(user)
-  setLoginRounds(user)
-}
-
-function setLoginRounds(user: MeUser | null) {
-  const desktop = document.getElementById('auth-login-round')
-  const mobile = document.getElementById('auth-login-round-mobile')
-  const style = user ? 'none' : ''
-  if (desktop) desktop.style.display = style
-  if (mobile) mobile.style.display = style
+  bind(user)
 }
 
 registerPageInit(() => {

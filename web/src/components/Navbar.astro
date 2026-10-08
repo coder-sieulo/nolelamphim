@@ -1,164 +1,153 @@
 ---
+// Shell Phase 1 — header CINEMA MINIMAL (brief §05) + search overlay (§09) + mobile bottom nav (§21)
 const pathname = Astro.url.pathname
-import { FaDiscord, FaTv, FaDice, FaDna } from 'react-icons/fa6'
+import {
+  FaMagnifyingGlass,
+  FaTv,
+  FaChevronDown,
+  FaHouse,
+  FaPlus,
+  FaClockRotateLeft,
+  FaUser,
+  FaArrowLeft,
+  FaXmark,
+} from 'react-icons/fa6'
 
 const links = [
-  { href: '/', label: 'Trang chủ' },
-  { href: '/search', label: 'Tìm kiếm' },
-  { href: '/favorites', label: 'Yêu thích' },
-  { href: '/recent', label: 'Đã xem' },
-  { href: '/download', label: 'Tải App' },
+  { href: '/', label: 'Trang chủ', match: (p: string) => p === '/' },
+  {
+    href: '/danh-sach/phim-le',
+    label: 'Phim',
+    match: (p: string) =>
+      p.startsWith('/danh-sach/phim-le') ||
+      p.startsWith('/danh-sach/phim-moi') ||
+      p.startsWith('/danh-sach/phim-dang-chieu') ||
+      p.startsWith('/danh-sach/subteam'),
+  },
+  { href: '/danh-sach/phim-bo', label: 'Series', match: (p: string) => p.startsWith('/danh-sach/phim-bo') },
 ]
 
-function isActive(p: string, href: string) {
-  return p === href || (href !== '/' && p.startsWith(href))
-}
-
-const activeIndex = links.findIndex((l) => isActive(pathname, l.href))
+const activeIndex = links.findIndex((l) => l.match(pathname))
+const genreActive = pathname.startsWith('/the-loai')
+const bottomItems = [
+  { href: '/', label: 'Trang chủ', icon: FaHouse, match: (p: string) => p === '/' },
+  { href: '/favorites', label: 'Danh sách', icon: FaPlus, match: (p: string) => p.startsWith('/favorites') },
+  { href: '/recent', label: 'Đã xem', icon: FaClockRotateLeft, match: (p: string) => p.startsWith('/recent') },
+  { href: '/profile', label: 'Hồ sơ', icon: FaUser, match: (p: string) => p.startsWith('/profile') },
+]
 ---
 
-<nav id="navbar" class="sticky top-0 z-50">
+<nav id="navbar" class="site-header" aria-label="Điều hướng chính">
+  <!-- Loading overlay (giữ từ cũ — random/dna navigates) -->
   <div
     id="nav-loading"
-    class="hidden fixed inset-0 z-[80] flex-col items-center justify-center gap-4 bg-black/70 backdrop-blur-sm"
+    class="hidden fixed inset-0 z-[80] flex-col items-center justify-center gap-4 bg-cm-bg/80"
   >
-    <div class="w-11 h-11 border-3 border-[#C44BED]/30 border-t-[#C44BED] rounded-full animate-spin"></div>
-    <p class="text-text-secondary text-sm font-medium"></p>
+    <div class="w-9 h-9 border-2 border-cm-accent/30 border-t-cm-accent rounded-full animate-spin"></div>
+    <p class="text-cm-text-2 text-sm font-medium"></p>
   </div>
-  <div id="nav-shell" class="px-4 md:px-8 transition-all duration-300">
-    <div class="flex items-stretch gap-2 md:gap-3">
-    <div
-      id="nav-bar"
-      class="liquid-glass flex-1 flex items-center justify-between gap-3 h-14 md:h-16 rounded-2xl md:rounded-3xl px-3 md:px-4"
-    >
-      <a href="/" class="flex items-center gap-2 md:gap-3 shrink-0 group pl-1 md:pl-2">
-        <img
-          src="/logo.png"
-          alt="Nô Lệ Làm Phim"
-          width="40"
-          height="40"
-          class="md:w-11 md:h-11 rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-[#C44BED]/20"
-        />
-        <span class="font-semibold text-base md:text-lg text-text-primary transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#FF6B9D] group-hover:via-[#C44BED] group-hover:to-[#4A9EFF]">
-          Nô Lệ Làm Phim
-        </span>
-      </a>
 
-      <button
-        id="nav-toggle"
-        class="md:hidden relative w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"
-        aria-label="Menu"
-        aria-expanded="false"
-      >
-        <div class="w-5 flex flex-col gap-1">
-          <span id="nav-line-1" class="block h-0.5 bg-text-secondary rounded transition-all duration-300"></span>
-          <span id="nav-line-2" class="block h-0.5 bg-text-secondary rounded transition-all duration-300"></span>
-          <span id="nav-line-3" class="block h-0.5 bg-text-secondary rounded transition-all duration-300"></span>
-        </div>
-      </button>
+  <div id="nav-shell" class="site-bar">
+    <a href="/" class="site-logo group">
+      <img src="/logo.png" alt="Nô Lệ Làm Phim" width="32" height="32" />
+      <span>Nô Lệ Làm Phim</span>
+    </a>
 
-      <div id="nav-links" class="hidden md:flex items-center gap-1 relative">
-        <span
-          id="nav-pill"
-          class="absolute inset-y-0 rounded-xl bg-white/10 border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 ease-out opacity-0"
-          style="left:0;width:0"
-        ></span>
-        {
-          links.map((link, i) => {
-            const active = i === activeIndex
-            return (
-              <a
-                href={link.href}
-                class={`nav-link relative px-4 lg:px-5 py-2 rounded-xl text-[15px] font-medium transition-all duration-300 ease-out z-10 ${
-                  active ? 'text-white' : 'text-text-secondary hover:text-white'
-                }`}
-              >
-                {link.label}
-              </a>
-            )
-          })
-        }
-      </div>
-
-<div class="hidden md:flex items-center gap-1.5 shrink-0">
-        <a id="nav-loading-random" href="/api/random" class="w-9 h-9 rounded-xl glass-tile flex items-center justify-center text-text-secondary hover:text-white transition-colors" aria-label="Phim bất kỳ" title="Phim bất kỳ">
-          <FaDice className="w-4 h-4" />
-        </a>
-        <a id="nav-loading-dna" href="/phim-dna" class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6B9D]/25 to-[#C44BED]/25 border border-[#C44BED]/30 flex items-center justify-center text-[#FF6B9D] hover:text-white transition-colors" aria-label="Phim DNA" title="Phim DNA">
-          <FaDna className="w-4 h-4" />
-        </a>
+    <div id="nav-links" class="site-nav">
+      {
+        links.map((link, i) => (
+          <a
+            href={link.href}
+            class:list={['nav-link', i === activeIndex && 'active']}
+            aria-current={i === activeIndex ? 'page' : undefined}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+      <div id="genre-wrap" class:list={['genre-wrap', genreActive && 'genre-on']}>
+        <button id="genre-btn" class="genre-btn" aria-haspopup="true" aria-expanded="false">
+          Thể loại
+          <FaChevronDown className="chevron w-3 h-3" />
+        </button>
+        <div id="genre-menu" class="menu-panel"></div>
       </div>
     </div>
 
-    <div class="hidden sm:flex items-center gap-2 shrink-0">
+    <div class="site-actions">
+      <button id="search-open" class="site-icon-btn" aria-label="Tìm kiếm" title="Tìm kiếm (/)">
+        <FaMagnifyingGlass className="w-[18px] h-[18px]" />
+      </button>
       <a
         href="/xem-chung"
         id="nav-xem-chung"
-        class="relative w-14 h-14 md:w-16 md:h-16 rounded-full liquid-glass flex items-center justify-center text-[#FF6B9D] hover:text-white transition-colors group"
+        class="site-icon-btn relative"
         aria-label="Xem Chung"
         title="Xem Chung — phòng xem phim cùng nhau"
       >
-        <FaTv className="w-6 h-6 md:w-7 md:h-7 group-hover:scale-110 transition-transform" />
-        <span class="absolute top-2.5 right-2.5 md:top-3 md:right-3 w-2.5 h-2.5 rounded-full pointer-events-none bg-[#FF6B9D]/80"></span>
+        <FaTv className="w-[18px] h-[18px]" />
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full pointer-events-none bg-cm-accent/80"></span>
       </a>
-      <a
-        href="/api/auth/discord"
-        id="auth-login-round"
-        class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#5865F2] hover:brightness-110 flex items-center justify-center text-white transition-all group"
-        aria-label="Đăng nhập bằng Discord"
-        title="Đăng nhập bằng Discord"
-      >
-        <FaDiscord className="w-6 h-6 md:w-7 md:h-7 group-hover:scale-110 transition-transform" />
-      </a>
-      <div id="auth-btn-desktop" class="hidden"></div>
-    </div>
-    </div>
-
-    <div id="nav-mobile" class="nav-mobile md:hidden overflow-hidden transition-all duration-300 ease-out">
-      <div class="liquid-glass mt-2 rounded-2xl px-3 py-2 flex flex-col gap-1">
-        <div class="flex items-center justify-between gap-3 px-3 py-2.5 mb-1 border-b border-white/5">
-          <a href="/xem-chung" class="flex items-center gap-2 flex-1 px-3 py-2.5 rounded-xl glass-tile text-[#FF6B9D] text-sm font-medium hover:text-white hover:bg-white/5 transition-colors">
-            <FaTv className="w-4 h-4" /> Xem Chung
-          </a>
-          <a
-            href="/api/auth/discord"
-            id="auth-login-round-mobile"
-            class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#5865F2] text-white text-sm font-medium hover:brightness-110 transition-all"
-          >
-            <FaDiscord className="w-4 h-4" />
-            Discord
-          </a>
-        </div>
-        {
-          links.map((link, i) => {
-            const active = i === activeIndex
-            return (
-              <a
-                href={link.href}
-                class={`nav-mobile-link px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ease-out ${
-                  active
-                    ? 'text-white bg-white/10'
-                    : 'text-text-secondary hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {link.label}
-              </a>
-            )
-          })
-        }
-        <div class="flex items-center gap-2 px-3 py-2 mt-1 border-t border-white/5">
-          <a id="nav-loading-random" href="/api/random" class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl glass-tile text-text-secondary text-sm font-medium hover:text-white transition-colors">
-            <FaDice className="w-4 h-4" /> Phim bất kỳ
-          </a>
-          <a id="nav-loading-dna" href="/phim-dna" class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B9D]/20 to-[#C44BED]/20 border border-[#C44BED]/30 text-[#FF6B9D] text-sm font-medium hover:text-white transition-colors">
-            <FaDna className="w-4 h-4" /> Phim DNA
-          </a>
-        </div>
-        <div id="auth-btn-mobile" class="px-3 py-2"></div>
-      </div>
+      <div id="auth-slot"></div>
     </div>
   </div>
 </nav>
 
+<!-- Search overlay (brief §09): header biến thành ô search, realtime, không rời trang -->
+<div id="search-overlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="Tìm kiếm">
+  <div class="search-overlay-bar">
+    <button id="search-close" class="site-icon-btn" aria-label="Đóng tìm kiếm">
+      <FaArrowLeft className="w-[18px] h-[18px]" />
+    </button>
+    <FaMagnifyingGlass className="w-[18px] h-[18px] text-cm-text-3 shrink-0" />
+    <input
+      id="search-overlay-input"
+      class="search-overlay-input"
+      type="text"
+      placeholder="Tìm phim, diễn viên, đạo diễn, thể loại…"
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      aria-label="Nhập từ khoá tìm kiếm"
+    />
+    <button id="search-clear" class="site-icon-btn hidden" aria-label="Xoá từ khoá">
+      <FaXmark className="w-[18px] h-[18px]" />
+    </button>
+  </div>
+  <div id="search-panel" class="search-overlay-panel"></div>
+</div>
+
+<!-- Mobile bottom nav (brief §21): Home · Search · Library · Activity · Profile -->
+<nav class="bottom-nav" aria-label="Điều hướng di động">
+  {
+    bottomItems.slice(0, 1).map((item) => {
+      const active = item.match(pathname)
+      return (
+        <a class:list={['bottom-nav-item', active && 'active']} href={item.href} aria-current={active ? 'page' : undefined}>
+          <item.icon className="w-5 h-5" />
+          <span class="bottom-nav-label">{item.label}</span>
+        </a>
+      )
+    })
+  }
+  <button id="bn-search" class="bottom-nav-item" aria-label="Tìm kiếm">
+    <FaMagnifyingGlass className="w-5 h-5" />
+    <span class="bottom-nav-label">Tìm kiếm</span>
+  </button>
+  {
+    bottomItems.slice(1).map((item) => {
+      const active = item.match(pathname)
+      return (
+        <a class:list={['bottom-nav-item', active && 'active']} href={item.href} aria-current={active ? 'page' : undefined}>
+          <item.icon className="w-5 h-5" />
+          <span class="bottom-nav-label">{item.label}</span>
+        </a>
+      )
+    })
+  }
+</nav>
+<div class="bottom-nav-spacer" aria-hidden="true"></div>
+
 <script src="../scripts/navbar.ts"></script>
+<script src="../scripts/header-search.ts"></script>
 <script src="../scripts/auth.ts"></script>
