@@ -18,11 +18,38 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * fetch có timeout + signal ngoài (chống treo vô hạn khi API upstream chậm/hết hạn).
+ * Lý do: `fetchAPI` trước đây không timeout — 1 request treo = hàng chục giây x retry.
+ */
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(new DOMException('Timeout', 'TimeoutError')), timeoutMs)
+  const external = init.signal
+  const onExternalAbort = () => ctrl.abort()
+  if (external) {
+    if (external.aborted) ctrl.abort()
+    else external.addEventListener('abort', onExternalAbort, { once: true })
+  }
+  return fetch(url, { ...init, signal: ctrl.signal }).finally(() => {
+    clearTimeout(timer)
+    external?.removeEventListener('abort', onExternalAbort)
+  })
+}
+
+interface FetchAPIOptions {
+  /** Vượt quá ms này → abort (không retry). Mặc định 10s. */
+  timeoutMs?: number
+  /** Hủy request từ caller (dùng cho search khi gõ tiếp). */
+  signal?: AbortSignal
+}
+
 async function fetchAPI<T>(
   path: string,
   params?: Record<string, string | number>,
   fallback?: T,
   retries = FETCH_RETRIES,
+  opts: FetchAPIOptions = {},
 ): Promise<T> {
   const url = new URL(`${BASE_URL}${path}`)
   if (params) {
@@ -35,13 +62,20 @@ async function fetchAPI<T>(
   if (cached && cached.expires > Date.now()) {
     return cached.value as T
   }
+  const timeoutMs = opts.timeoutMs ?? 10_000
   let lastError: unknown
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url.toString(), {
-        headers: { Accept: 'application/json' },
-      })
+      const res = await fetchWithTimeout(
+        url.toString(),
+        { headers: { Accept: 'application/json' }, signal: opts.signal },
+        timeoutMs,
+      )
       if (res.status === 429 || res.status >= 500) {
+        if (attempt < retries) {
+          await delay(300 * 2 ** attempt)
+          continue
+        }
         throw new Error(`HTTP ${res.status}`)
       }
       if (!res.ok) {
@@ -58,6 +92,9 @@ async function fetchAPI<T>(
         throw new Error(`Invalid JSON from ${url.toString()}`)
       }
     } catch (err) {
+      // Timeout/abort (người dùng gõ tiếp hoặc quá chậm) → KHÔNG retry, fail nhanh
+      const aborted = err instanceof DOMException && (err.name === 'AbortError' || err.name === 'TimeoutError')
+      if (aborted) throw err
       lastError = err
       if (attempt < retries) await delay(300 * 2 ** attempt)
     }
@@ -123,8 +160,14 @@ export function getMoviesByPath(path: string, params?: Record<string, string | n
   return fetchAPI<MovieList>(path, params, { status: false, items: [] }).then(normalizeMovieList)
 }
 
-export function searchMovies(keyword: string, page = 1, limit = 20) {
-  return fetchAPI<MovieList>('/tim-kiem', { keyword, page, limit }).then(normalizeMovieList)
+export function searchMovies(keyword: string, page = 1, limit = 20, signal?: AbortSignal) {
+  return fetchAPI<MovieList>(
+    '/tim-kiem',
+    { keyword, page, limit },
+    undefined,
+    1,
+    { timeoutMs: 6000, signal },
+  ).then(normalizeMovieList)
 }
 
 export function getCategories() {

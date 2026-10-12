@@ -622,9 +622,41 @@ const filterConfig = [
     loadMeta()
     paintChips()
     paintRecent()
-    renderResults()
-    renderPagination()
-    sortRow.classList.toggle('hidden', results.length === 0)
+
+    // Tải theo URL ngay trên mount — search.astro giờ render shell không chờ vsmov
+    function autoRun() {
+      const sp = new URLSearchParams(location.search)
+      const qq = sp.get('q') || ''
+      const ff = sp.get('f') || ''
+      const pp = Math.max(1, Number(sp.get('p')) || 1)
+      if (qq.trim()) {
+        query = qq
+        input.value = qq
+        clearBtn?.classList.remove('hidden')
+        void runSearch(pp, false, true)
+      } else if (ff) {
+        loadMeta().then(() => {
+          const f = decodeFilter(ff)
+          if (f) {
+            activeFilter = f
+            paintChips()
+            void fetchByFilter(f, pp, { skipSync: true })
+          } else {
+            void fetchByFilter(null, pp, { skipSync: true })
+          }
+        })
+      } else {
+        void fetchByFilter(null, pp, { skipSync: true })
+      }
+    }
+
+    if (initialResults.length > 0) {
+      renderResults()
+      renderPagination()
+      sortRow.classList.toggle('hidden', results.length === 0)
+    } else {
+      autoRun()
+    }
 
     return () => ac.abort()
   })

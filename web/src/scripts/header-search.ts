@@ -21,6 +21,7 @@ registerPageInit(() => {
   let debounceTimer: number | undefined
   let activeQuery = ''
   let mounted = false
+  let searchAbort: AbortController | null = null
 
   function isOpen() {
     return overlay.classList.contains('open')
@@ -74,14 +75,20 @@ registerPageInit(() => {
     const q = input.value.trim()
     activeQuery = q
     if (!q) {
+      searchAbort?.abort()
+      searchAbort = null
       renderRecent()
       return
     }
+    // Huỷ request đang chạy của lần gõ trước — tránh bắn loạt request vsmov song song
+    searchAbort?.abort()
+    searchAbort = new AbortController()
+    const signal = searchAbort.signal
     clearBtn?.classList.remove('hidden')
     panel.innerHTML = `<p class="search-empty">Đang tìm…</p>`
     try {
-      const data = await searchMovies(q, 1, SUGGESTION_LIMIT)
-      if (ac.signal.aborted || activeQuery !== input.value.trim()) return
+      const data = await searchMovies(q, 1, SUGGESTION_LIMIT, signal)
+      if (ac.signal.aborted || signal.aborted || activeQuery !== input.value.trim()) return
       const items = data.items ?? []
       panel.innerHTML =
         `<p class="search-group-label">Phim</p>` +
@@ -92,7 +99,7 @@ registerPageInit(() => {
           q,
         )}”</a>`
     } catch {
-      if (ac.signal.aborted || activeQuery !== input.value.trim()) return
+      if (ac.signal.aborted || signal.aborted || activeQuery !== input.value.trim()) return
       panel.innerHTML = `<p class="search-empty">Không thể tải kết quả. Vui lòng thử lại.</p>`
     }
   }
@@ -152,6 +159,8 @@ registerPageInit(() => {
       input.value = ''
       clearBtn.classList.add('hidden')
       activeQuery = ''
+      searchAbort?.abort()
+      searchAbort = null
     }
   })
   mo.observe(overlay, { attributes: true, attributeFilter: ['class'] })

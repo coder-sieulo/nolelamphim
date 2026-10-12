@@ -1,75 +1,16 @@
 ---
+/**
+ * /search — render shell NGAY, không chờ vsmov (trước đây await searchMovies
+ * server-side → TTFB chậm khi vsmov chậm / Vercel cold start).
+ * Kết quả được SearchClient tự tải theo URL (?q= / ?f= / ?p=) trên client.
+ */
 import BaseLayout from '../layouts/BaseLayout.astro'
 import SearchClient from '../components/SearchClient.astro'
-import {
-  searchMovies,
-  getNewMovies,
-  getMoviesByCategory,
-  getMoviesByCountry,
-  getMoviesByYear,
-  getCategories,
-  getCountries,
-  getYears,
-} from '../lib/api'
-import { SEARCH_LIMIT } from '../lib/constants'
-import type { Movie, ListResponse } from '../lib/types'
 
 const params = Astro.url.searchParams
 const q = params.get('q') ?? ''
-const fParam = params.get('f') ?? ''
-const p = Math.max(1, Number(params.get('p')) || 1)
-
-const emptyMovieList: ListResponse<Movie> = { status: false, items: [] }
-
-let initialResults: Movie[] = []
-let initialLabel = ''
-let initialTotalPages = 1
-let initialFilter: { type: string; label: string; value: string } | null = null
-
-if (q.trim()) {
-  const data = await searchMovies(q.trim(), p, SEARCH_LIMIT).catch(() => emptyMovieList)
-  initialResults = data.items ?? []
-  initialLabel = `Kết quả cho "${q.trim()}"`
-  initialTotalPages = Number(data.pagination?.totalPages) || 1
-} else if (fParam) {
-  const [rawType, ...rest] = fParam.split(':')
-  const value = rest.join(':')
-  let data = emptyMovieList
-  if (rawType === 'the-loai' && value) {
-    const cats = await getCategories().catch(() => null)
-    const item = cats?.data?.items?.find((c) => c.slug === value)
-    initialFilter = { type: 'category', label: item?.name || value, value }
-    data = await getMoviesByCategory(value, { page: p, limit: SEARCH_LIMIT }).catch(() => emptyMovieList)
-    initialLabel = `Thể loại: ${initialFilter.label}`
-  } else if (rawType === 'quoc-gia' && value) {
-    const countries = await getCountries().catch(() => null)
-    const item = countries?.data?.items?.find((c) => c.slug === value)
-    initialFilter = { type: 'country', label: item?.name || value, value }
-    data = await getMoviesByCountry(value, { page: p, limit: SEARCH_LIMIT }).catch(() => emptyMovieList)
-    initialLabel = `Quốc gia: ${initialFilter.label}`
-  } else if (rawType === 'nam' && value) {
-    const years = await getYears().catch(() => null)
-    const item = years?.data?.items?.find((c) => String(c.slug) === value)
-    initialFilter = { type: 'year', label: item?.name || value, value }
-    data = await getMoviesByYear(value, { page: p, limit: SEARCH_LIMIT }).catch(() => emptyMovieList)
-    initialLabel = `Năm: ${initialFilter.label}`
-  }
-  initialResults = data.items ?? []
-  initialTotalPages = Number(data.pagination?.totalPages) || 1
-} else {
-  const data = await getNewMovies(p).catch(() => emptyMovieList)
-  initialResults = data.items ?? []
-  initialLabel = 'Phim mới nhất'
-  initialTotalPages = Number(data.pagination?.totalPages) || 1
-}
 ---
 
 <BaseLayout title="Tìm kiếm phim" description="Tìm kiếm phim theo từ khoá, thể loại, quốc gia, năm tại Nô Lệ Làm Phim.">
-  <SearchClient
-    initialQuery={q}
-    initialResults={initialResults}
-    initialLabel={initialLabel}
-    initialTotalPages={initialTotalPages}
-    initialFilter={initialFilter}
-  />
+  <SearchClient initialQuery={q} />
 </BaseLayout>
