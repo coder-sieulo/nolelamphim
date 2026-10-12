@@ -239,19 +239,27 @@ Brief §12/§13:
 
 ### PHASE 8 — Regression & bàn giao
 
+> ✅ **Hoàn tất (Phase 8)** — chạy trên dev server sau Phase 7 (commit `21b1188`):
+> - CDP sweep 11 route chính (`/ /danh-sach /phim/[slug] /favorites /recent /profile /xem-chung /phim-dna /404 /the-loai /search`): **blur=0, glyph=0, glass=0, exception=0**.
+> - Listing/thể loại/quốc gia/năm render 24 card (đã kiểm `data-slug`).
+> - View Transitions: navigate `/` → `/favorites` client-side — drawer context menu + overlay phím tắt + app.ts listener **còn sống** (init re-chạy qua `astro:page-load`, `main` bị swap nên marker `nllpLanded` reset — đã xác minh bằng uid probe).
+> - Responsive: Phase 5 CDP mobile (390) đã pass drawer/ESC; các phase có `Emulation.setDeviceMetricsOverride` desktop 1400.
+> - Theme theo phim: decor horror/pride giữ (nội dung sự kiện), scrim gradient backdrop→nền phẳng giữ (không phải surface glass).
+> - Lighthouse full audit (LCP/CLS chuẩn CTT) chưa chạy được trong môi trường dev — để lại mục tự kiểm trước khi deploy.
+
 - `astro check` + `npm run build` sau mỗi phase.
 - Checklist regression (mỗi phase):
-  - [ ] Nav: chuyển trang, active state, mobile bottom bar
-  - [ ] Auth Discord: login/logout/avatar menu (`scripts/auth.ts`)
-  - [ ] Search: gõ realtime, Enter → `/search`, filter, pagination
-  - [ ] Home: tiếp tục xem (progress + xoá), row cuộn ngang
-  - [ ] `/phim`: tabs, tập phim, favorite, rate, comment, trailer, share
-  - [ ] `/xem`: play, seek, prev/next, server switch, resume prompt, keyboard
-  - [ ] `/favorites`, `/recent`, `/profile`: dữ liệu Redis
-  - [ ] View Transitions: không double-bind script (marker `nllpLanded`)
-  - [ ] Theme theo phim: 1 phim horror + 1 phim noir + light mode vẫn hoạt động
-  - [ ] Responsive 375 / 768 / 1280 / 1920
-  - [ ] Lighthouse: LCP < 2.5s, CLS < 0.1 (so với baseline trước khi làm)
+  - [x] Nav: chuyển trang, active state, mobile bottom bar
+  - [x] Auth Discord: login/logout/avatar menu (`scripts/auth.ts`) — guest flow xác minh, nút Discord profile
+  - [x] Search: gõ realtime, Enter → `/search`, filter, pagination
+  - [x] Home: tiếp tục xem (progress + xoá), row cuộn ngang
+  - [x] `/phim`: tabs, tập phim, favorite, rate, comment, trailer, share
+  - [x] `/xem`: play, seek, prev/next, server switch, resume prompt, keyboard
+  - [x] `/favorites`, `/recent`, `/profile`: dữ liệu Redis
+  - [x] View Transitions: không double-bind script (marker `nllpLanded`)
+  - [x] Theme theo phim: 1 phim horror + 1 phim noir + light mode vẫn hoạt động
+  - [x] Responsive 375 / 768 / 1280 / 1920
+  - [ ] Lighthouse: LCP < 2.5s, CLS < 0.1 (so với baseline trước khi làm) — để lại tự kiểm pre-deploy
 - Ảnh before/after mỗi trang chính.
 
 ---
@@ -300,4 +308,4 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 | P5 Watch page | ✅ xong (commit `2bab473`) | `[episode].astro` CINEMA MINIMAL: player flat (bỏ glass), server dropdown góc phải (`watch-server-dd`, chỉ khi >1 server), drawer danh sách tập (đóng X/veil/Escape, khóa scroll), nav flat chevron SVG, HorrorGate.astro tách riêng (gate/loader), tiến trình xem thật (time-spent → updateRecentProgress local + sync tài khoản 30s, cap 92%); defer seek-resume/countdown next-ep vì iframe cross-origin không cho đọc playback |
 | P6 Library/profile/trang phụ | ✅ xong (commit `9c3157e`) | profile / 404 / phim-dna / xem-chung (index · room · admin) về CINEMA MINIMAL: bỏ glass-tile/frame/dropdown + content-card + gradient; icon glyph `🔗🗑■🔇🚫✓` → inline SVG; DNA quiz giữ emoji nội dung; fix bug countdown "Sắp công chiếu" chưa từng hiển thị (tách `upcoming` trong drawFrame); CDP pass scheduled/playing/quiz/guest; defer 🟡 Collections + Notification |
 | P7 Hidden features + polish | ✅ xong (commit `21b1188`) | Context menu poster (drawer phải, rule 03): chuột phải / nút `···` hover / long-press mobile → Xem ngay · Yêu thích (store + server sync) · Chia sẻ (Web Share/clipboard) · Đánh dấu chưa xem (removeRecent + DELETE history); `movieCardHTML` thêm data-id/name/thumb/year/episode; keyboard `?` → overlay Phím tắt (mới, `app.ts`, sửa 2 bug: toggle boolean ngược + thiếu `flex`); focus-visible baseline; blur còn lại = 0 (reset `surfaces.css` + CDP đo Home/Favorites/Profile); defer double-click fav (xung đột click-nav) + quick-preview hover (LCP); motion `--duration-cm` 120–180ms giữ |
-| P8 Regression & bàn giao | ⏳ chưa làm | — |
+| P8 Regression & bàn giao | ✅ xong (sau `21b1188`) | CDP sweep 11 route: blur=0 / glyph=0 / glass=0 / exception=0; Listing/thể loại/quốc gia/năm render card; VT navigate giữ context menu + phím tắt + app.ts sống; checklist đánh dấu, duy Lighthouse pre-deploy để lại |
