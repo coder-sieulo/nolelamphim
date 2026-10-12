@@ -218,10 +218,6 @@ html[data-theme='light'] .poster-shell {
   background: linear-gradient(180deg, rgba(200, 222, 245, 0.35), rgba(200, 222, 245, 0.1));
 }
 
-html[data-theme='light'] .star-empty {
-  color: rgba(29, 58, 95, 0.25);
-}
-
 html[data-theme='light'] ::selection {
   background: rgba(74, 158, 255, 0.3);
   color: #1d3a5f;

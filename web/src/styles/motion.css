@@ -51,16 +51,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Ken Burns slow zoom */
-@keyframes ken-burns {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.08); }
-}
-
-.ken-burns {
-  animation: ken-burns 9s ease-out forwards;
-}
-
 /* Hero content entrance */
 @keyframes hero-fade-up {
   from { opacity: 0; transform: translateY(28px); }

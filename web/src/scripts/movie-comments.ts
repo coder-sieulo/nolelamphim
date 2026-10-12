@@ -14,23 +14,23 @@ const PAGE = 20
 
 function avatarHTML(c: CommentLite): string {
   if (c.avatar) {
-    return `<img src="https://cdn.discordapp.com/avatars/${escapeHTML(c.userId)}/${escapeHTML(c.avatar)}.png?size=64" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover"></img>`
+    return `<img src="https://cdn.discordapp.com/avatars/${escapeHTML(c.userId)}/${escapeHTML(c.avatar)}.png?size=64" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover bg-cm-elevated"></img>`
   }
-  return `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D] flex items-center justify-center text-white text-sm font-bold">${escapeHTML((c.username || '?').slice(0, 1).toUpperCase())}</div>`
+  return `<div class="w-10 h-10 rounded-full bg-cm-elevated flex items-center justify-center text-cm-text-2 text-sm font-bold shrink-0">${escapeHTML((c.username || '?').slice(0, 1).toUpperCase())}</div>`
 }
 
 function itemHTML(c: CommentLite, canDelete: boolean): string {
   return `
-    <div class="movie-comment flex gap-3 py-3.5 border-b border-white/5 group" data-cid="${escapeHTML(c.id)}">
+    <div class="movie-comment flex gap-3 py-3.5 border-b border-cm-border group" data-cid="${escapeHTML(c.id)}">
       ${avatarHTML(c)}
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-sm font-semibold text-text-primary truncate">${escapeHTML(c.username)}</span>
-          <span class="text-[11px] text-text-muted">vừa xong</span>
+          <span class="text-sm font-semibold text-cm-text truncate">${escapeHTML(c.username)}</span>
+          <span class="text-cm-meta text-cm-text-3">vừa xong</span>
         </div>
-        <p class="text-sm text-text-secondary mt-1 break-words whitespace-pre-wrap">${escapeHTML(c.text)}</p>
+        <p class="text-cm-body text-cm-text-2 mt-1 break-words whitespace-pre-wrap">${escapeHTML(c.text)}</p>
       </div>
-      ${canDelete ? `<button type="button" class="cmt-delete shrink-0 self-start w-7 h-7 rounded-lg glass-tile text-text-muted hover:text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-cid="${escapeHTML(c.id)}" aria-label="Xoá bình luận">
+      ${canDelete ? `<button type="button" class="cmt-delete shrink-0 self-start w-7 h-7 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-3 hover:text-red-400 hover:border-cm-border-strong flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-cid="${escapeHTML(c.id)}" aria-label="Xoá bình luận">
         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>` : ''}
     </div>

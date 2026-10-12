@@ -1,5 +1,9 @@
 ---
-import { FaStar } from 'react-icons/fa6'
+/**
+ * RatingBox — đánh giá 5 mức độ bằng icon khuôn mặt (CINEMA MINIMAL, Phase 4).
+ * Schema Redis không đổi (map 1–5). Không emoji — dùng react-icons.
+ */
+import { FaFaceFrown, FaFaceFrownOpen, FaFaceMeh, FaFaceSmile, FaFaceLaughSquint } from 'react-icons/fa6'
 
 interface Props {
   slug: string
@@ -7,29 +11,38 @@ interface Props {
 }
 
 const { slug } = Astro.props
+
+const LEVELS = [
+  { n: 1, icon: FaFaceFrown, label: 'Tệ' },
+  { n: 2, icon: FaFaceFrownOpen, label: 'Không hay' },
+  { n: 3, icon: FaFaceMeh, label: 'Bình thường' },
+  { n: 4, icon: FaFaceSmile, label: 'Hay' },
+  { n: 5, icon: FaFaceLaughSquint, label: 'Xuất sắc' },
+]
 ---
 
 <div
-  class="rating-box flex flex-col items-center gap-1 group/rating cursor-pointer"
+  class="rating-box inline-flex items-center gap-1.5 cursor-pointer"
   data-slug={slug}
   title="Đánh giá phim này — lưu vào tài khoản khi đăng nhập"
 >
-  <div class="flex gap-0.5">
-    {
-      [1, 2, 3, 4, 5].map((n) => (
+  {
+    LEVELS.map((l) => {
+      const Icon = l.icon
+      return (
         <button
-         
           type="button"
-          aria-label={`${n} sao`}
-          class="rating-star p-0.5 transition-transform duration-150 hover:scale-110"
-          data-value={n}
+          aria-label={`${l.label} (${l.n}/5)`}
+          title={l.label}
+          class="rate-face"
+          data-value={l.n}
         >
-          <FaStar className="w-5 h-5 star-empty transition-colors duration-150" />
+          <Icon className="w-6 h-6" />
         </button>
-      ))
-    }
-  </div>
-  <span class="rating-label text-[10px] text-text-muted leading-none">Đánh giá của bạn</span>
+      )
+    })
+  }
+  <span class="rating-label ml-1 text-cm-meta text-cm-text-3">Đánh giá của bạn</span>
 </div>
 
 <script>
@@ -38,84 +51,81 @@ const { slug } = Astro.props
 
   registerPageInit(() => {
     document.querySelectorAll<HTMLElement>('.rating-box').forEach((box) => {
-    const slug = box.dataset.slug || ''
-    const stars = Array.from(box.querySelectorAll<HTMLButtonElement>('.rating-star'))
-    const label = box.querySelector('.rating-label')
-    let value = getRatings()[slug] ?? 0
+      const slug = box.dataset.slug || ''
+      const faces = Array.from(box.querySelectorAll<HTMLButtonElement>('.rate-face'))
+      const label = box.querySelector('.rating-label')
+      let value = getRatings()[slug] ?? 0
 
-    let hover = 0
+      let hover = 0
 
-    function paint() {
-      const display = hover || value
-      stars.forEach((star, i) => {
-        const svg = star.querySelector('svg')
-        if (!svg) return
-        const filled = i + 1 <= display
-        svg.classList.toggle('star-filled', filled)
-        svg.classList.toggle('star-empty', !filled)
-      })
-    }
-
-    // Đã đăng nhập → lấy điểm đã lưu trên tài khoản, hợp nhất lên máy.
-    void (async () => {
-      try {
-        const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
-        if (!me?.user) return
-        const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
-        const server = (res?.lib?.ratings ?? {}) as Record<string, number>
-        writeJSON('ratings', { ...getRatings(), ...server })
-        const synced = server[slug] ?? 0
-        if (synced) {
-          value = synced
-          if (label) label.textContent = `Bạn: ${value}/5`
-          box.title = `Bạn đã đánh giá ${value}/5 (đã đồng bộ tài khoản)`
-          paint()
-        }
-      } catch {
-        /* vẫn dùng điểm trên máy */
+      function paint() {
+        const display = hover || value
+        faces.forEach((face, i) => {
+          const on = i + 1 <= display
+          face.classList.toggle('on', on)
+        })
       }
-    })()
 
-    stars.forEach((star) => {
-      star.addEventListener('mouseenter', () => {
-        hover = Number(star.dataset.value)
+      // Đã đăng nhập → lấy điểm đã lưu trên tài khoản, hợp nhất lên máy.
+      void (async () => {
+        try {
+          const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
+          if (!me?.user) return
+          const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
+          const server = (res?.lib?.ratings ?? {}) as Record<string, number>
+          writeJSON('ratings', { ...getRatings(), ...server })
+          const synced = server[slug] ?? 0
+          if (synced) {
+            value = synced
+            if (label) label.textContent = `Bạn: ${value}/5`
+            box.title = `Bạn đã đánh giá ${value}/5 (đã đồng bộ tài khoản)`
+            paint()
+          }
+        } catch {
+          /* vẫn dùng điểm trên máy */
+        }
+      })()
+
+      faces.forEach((face) => {
+        face.addEventListener('mouseenter', () => {
+          hover = Number(face.dataset.value)
+          paint()
+        })
+        face.addEventListener('click', () => {
+          value = Number(face.dataset.value)
+          saveRating(slug, value)
+          if (label) label.textContent = `Bạn: ${value}/5`
+          box.title = `Bạn đã đánh giá ${value}/5 (lưu trên máy này)`
+          paint()
+          void (async () => {
+            try {
+              const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
+              if (!me?.user) return
+              await fetch('/api/user/rate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ slug, value }),
+              })
+              box.title = `Bạn đã đánh giá ${value}/5 (đã đồng bộ tài khoản)`
+            } catch {
+              /* lưu trên máy */
+            }
+          })()
+        })
+      })
+
+      box.addEventListener('mouseleave', () => {
+        hover = 0
         paint()
       })
-      star.addEventListener('click', () => {
-        value = Number(star.dataset.value)
-        saveRating(slug, value)
+
+      if (value) {
         if (label) label.textContent = `Bạn: ${value}/5`
         box.title = `Bạn đã đánh giá ${value}/5 (lưu trên máy này)`
-        paint()
-        void (async () => {
-          try {
-            const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
-            if (!me?.user) return
-            await fetch('/api/user/rate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'same-origin',
-              body: JSON.stringify({ slug, value }),
-            })
-            box.title = `Bạn đã đánh giá ${value}/5 (đã đồng bộ tài khoản)`
-          } catch {
-            /* lưu trên máy */
-          }
-        })()
-      })
-    })
+      }
 
-    box.addEventListener('mouseleave', () => {
-      hover = 0
       paint()
-    })
-
-    if (value) {
-      if (label) label.textContent = `Bạn: ${value}/5`
-      box.title = `Bạn đã đánh giá ${value}/5 (lưu trên máy này)`
-    }
-
-    paint()
     })
   })
 </script>

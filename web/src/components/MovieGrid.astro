@@ -38,21 +38,21 @@ const initialPages = pageList(1, totalPages)
   <div class="flex flex-wrap items-center justify-center gap-1.5 mt-8">
     <button
       type="button"
-      class="mg-first w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
+      class="mg-first w-9 h-9 inline-flex items-center justify-center rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       disabled
       title="Trang đầu"
       aria-label="Trang đầu"
     >
-      «
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.4 16.6L13.8 12l4.6-4.6L17 6l-6 6 6 6 1.4-1.4zM6 6h2v12H6z"/></svg>
     </button>
     <button
       type="button"
-      class="mg-prev w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
+      class="mg-prev w-9 h-9 inline-flex items-center justify-center rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       disabled
       title="Trang trước"
       aria-label="Trang trước"
     >
-      ‹
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.4 7.4L14 6l-6 6 6 6 1.4-1.4L10.8 12l4.6-4.6z"/></svg>
     </button>
     <span class="mg-pages flex flex-wrap items-center justify-center gap-1.5">
       {
@@ -77,19 +77,19 @@ const initialPages = pageList(1, totalPages)
     </span>
     <button
       type="button"
-      class="mg-next w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
+      class="mg-next w-9 h-9 inline-flex items-center justify-center rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       title="Trang sau"
       aria-label="Trang sau"
     >
-      ›
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.6 7.4 13.2 12l-4.6 4.6L10 18l6-6-6-6z"/></svg>
     </button>
     <button
       type="button"
-      class="mg-last w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
+      class="mg-last w-9 h-9 inline-flex items-center justify-center rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)]"
       title="Trang cuối"
       aria-label="Trang cuối"
     >
-      »
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.6 7.4L10.2 12l-4.6 4.6L7 18l6-6-6-6-1.4-1.4zM18 6h-2v12h2z"/></svg>
     </button>
   </div>
   <div class="mg-loading hidden flex justify-center mt-4">

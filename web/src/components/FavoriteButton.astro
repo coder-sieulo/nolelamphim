@@ -1,93 +1,143 @@
 ---
+/**
+ * FavoriteButton — toggle "Danh sách" (CINEMA MINIMAL, Phase 4).
+ * Hai biến thể cùng nguồn: `action` = [＋ Danh sách] → [✓ Đã thêm],
+ * `icon` = trái tim rỗng ↔ đầy. Mọi nút cùng slug tự đồng bộ qua store.
+ * Không emoji/glass — icon là SVG react-icons, nền phẳng.
+ */
+import { FaPlus, FaCheck, FaHeart, FaRegHeart } from 'react-icons/fa6'
+
 interface Props {
   id: number
   name: string
   slug: string
   thumb: string
   vote?: string
+  variant?: 'action' | 'icon'
 }
 
-const { id, name, slug, thumb, vote = '' } = Astro.props
+const { id, name, slug, thumb, vote = '', variant = 'action' } = Astro.props
 ---
 
-<button
-  class="fav-button px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 glass-tile text-text-secondary hover:text-white"
-  data-id={id}
-  data-name={name}
-  data-slug={slug}
-  data-thumb={thumb}
-  data-vote={vote}
-  aria-pressed="false"
->
-  <span class="fav-label">♡ Yêu thích</span>
-</button>
+{
+  variant === 'action' ? (
+    <button
+      type="button"
+      class="fav-button fav-action inline-flex h-11 items-center gap-2 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface/80 px-5 text-sm font-medium text-cm-text transition-colors duration-[var(--duration-cm)] hover:border-cm-border-strong hover:bg-cm-elevated hover:text-cm-text"
+      data-id={id}
+      data-name={name}
+      data-slug={slug}
+      data-thumb={thumb}
+      data-vote={vote}
+      aria-pressed="false"
+      title="Thêm vào danh sách"
+    >
+      <FaPlus className="fav-plus w-3.5 h-3.5 text-cm-text-3" />
+      <FaCheck className="fav-check hidden w-3.5 h-3.5" />
+      <span class="fav-label">Danh sách</span>
+    </button>
+  ) : (
+    <button
+      type="button"
+      class="fav-button fav-round flex h-11 w-11 items-center justify-center rounded-full border border-cm-border bg-cm-surface/80 text-cm-text-2 transition-colors duration-[var(--duration-cm)] hover:border-cm-border-strong hover:bg-cm-elevated hover:text-cm-text"
+      data-id={id}
+      data-name={name}
+      data-slug={slug}
+      data-thumb={thumb}
+      data-vote={vote}
+      aria-pressed="false"
+      aria-label="Yêu thích"
+      title="Yêu thích"
+    >
+      <FaRegHeart className="fav-heart-off w-[18px] h-[18px]" />
+      <FaHeart className="fav-heart-on hidden w-[18px] h-[18px]" />
+    </button>
+  )
+}
 
 <script>
   import { isFavorite, toggleFavorite, getFavorites, writeJSON } from '../scripts/store'
   import { registerPageInit } from '../scripts/lifecycle'
 
   registerPageInit(() => {
-    document.querySelectorAll<HTMLButtonElement>('.fav-button').forEach((btn) => {
-      const id = Number(btn.dataset.id)
-      const item = {
-        id,
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.fav-button'))
+    if (buttons.length === 0) return () => {}
+
+    function itemOf(btn: HTMLButtonElement) {
+      return {
+        id: Number(btn.dataset.id),
         name: btn.dataset.name || '',
         slug: btn.dataset.slug || '',
         thumb: btn.dataset.thumb || '',
         tmdb_vote: btn.dataset.vote || undefined,
       }
-      const label = btn.querySelector('.fav-label')
+    }
 
-      const update = (active: boolean) => {
-        btn.classList.toggle('fav-active', active)
-        btn.classList.toggle('glass-tile', !active)
-        btn.classList.toggle('text-text-secondary', !active)
-        if (label) label.textContent = active ? '♥ Đã thích' : '♡ Yêu thích'
-        btn.setAttribute('aria-pressed', String(active))
+    function paint(btn: HTMLButtonElement) {
+      const active = isFavorite(Number(btn.dataset.id))
+      btn.classList.toggle('fav-active', active)
+      btn.setAttribute('aria-pressed', String(active))
+      if (btn.classList.contains('fav-action')) {
+        const plus = btn.querySelector<HTMLElement>('.fav-plus')
+        const check = btn.querySelector<HTMLElement>('.fav-check')
+        const label = btn.querySelector('.fav-label')
+        if (plus) plus.classList.toggle('hidden', active)
+        if (check) check.classList.toggle('hidden', !active)
+        if (label) label.textContent = active ? 'Đã thêm' : 'Danh sách'
+        btn.title = active ? 'Có trong danh sách của bạn' : 'Thêm vào danh sách'
+      } else {
+        const off = btn.querySelector<HTMLElement>('.fav-heart-off')
+        const on = btn.querySelector<HTMLElement>('.fav-heart-on')
+        if (off) off.classList.toggle('hidden', active)
+        if (on) on.classList.toggle('hidden', !active)
+        btn.title = active ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích'
       }
+    }
 
-      async function authedUser(): Promise<boolean> {
-        try {
-          const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
-          const d = await r.json()
-          return Boolean(d?.user)
-        } catch {
-          return false
+    // Đã đăng nhập → hợp nhất thư viện tài khoản vào máy để mọi nút hiện đúng trạng thái.
+    void (async () => {
+      try {
+        const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
+        if (!me?.user) return
+        const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
+        const server = Array.isArray(res?.lib?.favorites) ? res.lib.favorites : []
+        const merged = server.slice()
+        for (const f of getFavorites()) {
+          if (!merged.some((m: { slug: string }) => m.slug === f.slug)) merged.push(f)
         }
+        writeJSON('favorites', merged)
+        buttons.forEach((b) => {
+          const item = itemOf(b)
+          if (merged.some((f: { slug: string }) => f.slug === item.slug)) paint(b)
+        })
+      } catch {
+        /* thư viện máy vẫn hoạt động */
       }
+    })()
 
-      update(isFavorite(id))
-
-      void (async () => {
-        // Đã đăng nhập → hợp nhất thư viện trên tài khoản vào máy để nút hiện đúng trạng thái.
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const item = itemOf(btn)
+        const active = toggleFavorite(item)
+        paint(btn)
+        buttons.forEach((b) => {
+          if (b !== btn) paint(b)
+        })
         try {
           const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
           if (!me?.user) return
-          const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
-          const server = Array.isArray(res?.lib?.favorites) ? res.lib.favorites : []
-          const merged = server.slice()
-          for (const f of getFavorites()) {
-            if (!merged.some((m: { slug: string }) => m.slug === f.slug)) merged.push(f)
-          }
-          writeJSON('favorites', merged)
-          update(merged.some((f: { slug: string }) => f.slug === item.slug))
-        } catch {
-          /* thư viện máy vẫn hoạt động */
-        }
-      })()
-
-      btn.addEventListener('click', async () => {
-        const active = toggleFavorite(item)
-        update(active)
-        if (await authedUser()) {
-          fetch('/api/user/favorite', {
+          await fetch('/api/user/favorite', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ item: { ...item }, on: active }),
+            body: JSON.stringify({ item, on: active }),
           }).catch(() => {})
+        } catch {
+          /* offline */
         }
       })
     })
+
+    return () => {}
   })
 </script>

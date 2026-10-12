@@ -20,32 +20,46 @@ const current = servers[0]
 const totalPages = Math.max(1, Math.ceil((current?.list.length ?? 0) / PER_PAGE))
 const initialEpisodes = current ? current.list.slice(0, PER_PAGE) : []
 
+/* Chip server đang chọn (phẳng) */
+const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-xs font-medium border sort-active'
+const serverIdle =
+  'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-xs font-medium border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]'
+
+/* Nút phân trang (phẳng) */
+const pgBtn =
+  'w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)] inline-flex items-center justify-center'
+
 function pagesHTML(page: number, total: number): string {
   return pageList(page, total)
     .map((p) =>
       p === '...'
-        ? `<span class="px-2 text-text-muted text-xs">...</span>`
-        : `<button type="button" class="ep-page w-9 h-9 rounded-xl text-sm font-medium transition-all duration-200 ${
-            p === page ? 'pagination-active' : 'glass-tile text-text-secondary hover:text-white'
+        ? `<span class="px-2 text-cm-text-3 text-xs">...</span>`
+        : `<button type="button" class="ep-page w-9 h-9 rounded-[var(--radius-cm-btn)] text-sm font-medium transition-all duration-200 ${
+            p === page ? 'pagination-active' : 'bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated'
           }" data-page="${p}">${p}</button>`,
     )
     .join('')
 }
 
 const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
+
+const ico = {
+  first: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.4 16.6L13.8 12l4.6-4.6L17 6l-6 6 6 6 1.4-1.4zM6 6h2v12H6z"/></svg>',
+  prev: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.4 7.4L14 6l-6 6 6 6 1.4-1.4L10.8 12l4.6-4.6z"/></svg>',
+  next: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.6 7.4 13.2 12l-4.6 4.6L10 18l6-6-6-6z"/></svg>',
+  last: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.6 7.4L10.2 12l-4.6 4.6L7 18l6-6-6-6-1.4-1.4zM18 6h-2v12h2z"/></svg>',
+}
 ---
 
 <div class="episode-list" data-slug={slug} data-servers={dataAttr} data-per-page={PER_PAGE}>
   <div class="episode-panel">
-    <div class="episode-header flex items-center justify-between gap-3 px-5 py-3 border-b border-white/10">
-      <h3 class="flex items-center gap-2 text-sm font-bold text-text-primary">
-        <span class="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-[#FF6B9D] to-[#C44BED] text-white shadow-[0_2px_10px_rgba(196,75,237,0.4)]">
-          <FaPlay className="w-3.5 h-3.5" />
-        </span>
+    <div class="episode-header flex items-center justify-between gap-3 px-4 sm:px-5 py-3">
+      <h3 class="flex items-center gap-2 text-sm font-bold text-cm-text">
+        <FaPlay className="w-3.5 h-3.5 text-cm-accent" />
         <span class="episode-title-text">Tập phim</span>
         {totalPages > 1 && (
-          <span class="ep-count text-[11px] font-medium text-text-muted ml-1">
-            ({current?.list.length ?? 0} tập)
+          <span class="ep-count text-cm-meta text-cm-text-3 font-normal ml-1">
+            {current?.list.length ?? 0} tập
           </span>
         )}
       </h3>
@@ -57,30 +71,25 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
           inputmode="numeric"
           placeholder="Số tập"
           aria-label="Nhập số tập"
-          class="w-20 px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-text-secondary text-xs outline-none placeholder:text-text-muted focus:ring-1 focus:ring-[#C44BED]/60 focus:border-[#C44BED]/50 text-center"
+          class="w-20 h-9 px-2.5 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 outline-none placeholder:text-cm-text-3 focus:border-cm-border-strong text-center"
         />
         <button
           type="submit"
-          class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-text-secondary text-xs hover:text-white hover:border-[#C44BED]/50 transition-all"
+          class="h-9 px-3.5 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]"
         >
           Nhảy
         </button>
       </form>
     </div>
 
-    <div class="px-5 py-4">
+    <div class="px-4 sm:px-5 py-4">
       <div class="flex items-center gap-2 mb-3 flex-wrap">
         {
           servers.length > 1 &&
             servers.map((s, i) => (
               <button
-                
                 type="button"
-                class={`ep-server px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                  i === 0
-                    ? 'glass-tile-active text-white border-white/20'
-                    : 'glass-tile text-text-secondary border-white/10'
-                }`}
+                class={`${i === 0 ? serverActive : serverIdle}`}
                 data-server={i}
               >
                 {s.server_name.trim()}
@@ -89,25 +98,21 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
         }
       </div>
 
-      <div
-        id="episode-grid"
-        class="flex flex-wrap gap-2"
-      >
+      <div id="episode-grid" class="flex flex-wrap gap-2">
         {
           initialEpisodes.length > 0 ? (
             initialEpisodes.map((ep) => (
               <a
-                
                 href={`/xem/${slug}/${ep.slug}`}
-                class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-xl text-xs flex items-center justify-center"
+                class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius-cm-btn)] text-cm-meta flex items-center justify-center font-medium"
               >
                 {ep.name}
               </a>
             ))
           ) : (
             <div class="w-full py-8 flex flex-col items-center justify-center text-center">
-              <p class="text-text-muted text-xs">Chưa có tập nào cho bộ phim này</p>
-              <p class="text-text-muted/70 text-[11px] mt-1">Vui lòng quay lại sau</p>
+              <p class="text-cm-meta text-cm-text-3">Chưa có tập nào cho bộ phim này</p>
+              <p class="text-cm-meta text-cm-text-3/70 mt-1">Vui lòng quay lại sau</p>
             </div>
           )
         }
@@ -115,15 +120,23 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
     </div>
   </div>
 
-  <div id="episode-pagination" class="flex flex-wrap items-center justify-center gap-1.5 mt-3">
+  <div id="episode-pagination" class="flex flex-wrap items-center justify-center gap-1.5 mt-3.5">
     {
       totalPages > 1 && (
         <>
-          <button type="button" class="w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors" disabled>«</button>
-          <button type="button" class="w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors" disabled>‹</button>
-          {pagesHTML(1, totalPages)}
-          <button type="button" class="w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white transition-colors">›</button>
-          <button type="button" class="w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white transition-colors">»</button>
+          <button type="button" class={`ep-first ${pgBtn}`} disabled aria-label="Trang đầu" title="Trang đầu">
+            <span set:html={ico.first} />
+          </button>
+          <button type="button" class={`ep-prev ${pgBtn}`} disabled aria-label="Trang trước" title="Trang trước">
+            <span set:html={ico.prev} />
+          </button>
+          <span set:html={pagesHTML(1, totalPages)} />
+          <button type="button" class={`ep-next ${pgBtn}`} aria-label="Trang sau" title="Trang sau">
+            <span set:html={ico.next} />
+          </button>
+          <button type="button" class={`ep-last ${pgBtn}`} aria-label="Trang cuối" title="Trang cuối">
+            <span set:html={ico.last} />
+          </button>
         </>
       )
     }
@@ -156,6 +169,19 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
     let serverIdx = 0
     let page = 1
 
+    const serverActive =
+      'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-xs font-medium border sort-active'
+    const serverIdle =
+      'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-xs font-medium border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]'
+    const pgBtn =
+      'w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-[var(--duration-cm)] inline-flex items-center justify-center'
+    const ico = {
+      first: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.4 16.6L13.8 12l4.6-4.6L17 6l-6 6 6 6 1.4-1.4zM6 6h2v12H6z"/></svg>',
+      prev: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.4 7.4L14 6l-6 6 6 6 1.4-1.4L10.8 12l4.6-4.6z"/></svg>',
+      next: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.6 7.4 13.2 12l-4.6 4.6L10 18l6-6-6-6z"/></svg>',
+      last: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.6 7.4L10.2 12l-4.6 4.6L7 18l6-6-6-6-1.4-1.4zM18 6h-2v12h2z"/></svg>',
+    }
+
     function toggleJumpVisibility() {
       const totalItems = currentServer().items.length
       if (jumpForm) jumpForm.classList.toggle('hidden', totalItems <= PER_PAGE)
@@ -181,9 +207,9 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
       return pageList(page, total)
         .map((p) =>
           p === '...'
-            ? `<span class="px-2 text-text-muted text-xs">...</span>`
-            : `<button type="button" class="ep-page w-9 h-9 rounded-xl text-sm font-medium transition-all duration-200 ${
-                p === page ? 'pagination-active' : 'glass-tile text-text-secondary hover:text-white'
+            ? `<span class="px-2 text-cm-text-3 text-xs">...</span>`
+            : `<button type="button" class="ep-page w-9 h-9 rounded-[var(--radius-cm-btn)] text-sm font-medium transition-all duration-200 ${
+                p === page ? 'pagination-active' : 'bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated'
               }" data-page="${p}">${p}</button>`,
         )
         .join('')
@@ -202,21 +228,17 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
             ? visible
                 .map(
                   (ep) =>
-                    `<a href="/xem/${slug}/${escapeHTML(ep.slug)}" class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-xl text-xs flex items-center justify-center">${escapeHTML(ep.name)}</a>`,
+                    `<a href="/xem/${slug}/${escapeHTML(ep.slug)}" class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius-cm-btn)] text-cm-meta flex items-center justify-center font-medium">${escapeHTML(ep.name)}</a>`,
                 )
                 .join('')
             : `<div class="w-full py-8 flex flex-col items-center justify-center text-center">
-                <p class="text-text-muted text-xs">Chưa có tập nào cho bộ phim này</p>
-                <p class="text-text-muted/70 text-[11px] mt-1">Vui lòng quay lại sau</p>
+                <p class="text-cm-meta text-cm-text-3">Chưa có tập nào cho bộ phim này</p>
+                <p class="text-cm-meta text-cm-text-3/70 mt-1">Vui lòng quay lại sau</p>
               </div>`
       }
 
       serverBtns.forEach((btn) => {
-        const i = Number(btn.dataset.server)
-        const active = i === serverIdx
-        btn.className = active
-          ? `ep-server px-3 py-1.5 rounded-xl text-xs font-medium transition-all glass-tile-active text-white`
-          : `ep-server px-3 py-1.5 rounded-xl text-xs font-medium transition-all glass-tile text-text-secondary`
+        btn.className = Number(btn.dataset.server) === serverIdx ? serverActive : serverIdle
       })
 
       if (countEl) countEl.textContent = `${items.length} tập`
@@ -226,11 +248,11 @@ const dataAttr = serverData.length > 0 ? JSON.stringify(serverData) : '[]'
         pagination.innerHTML =
           total > 1
             ? `
-              <button type="button" class="ep-first w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors" ${page <= 1 ? 'disabled' : ''}>«</button>
-              <button type="button" class="ep-prev w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors" ${page <= 1 ? 'disabled' : ''}>‹</button>
+              <button type="button" class="ep-first ${pgBtn}" ${page <= 1 ? 'disabled' : ''} aria-label="Trang đầu" title="Trang đầu"><span>${ico.first}</span></button>
+              <button type="button" class="ep-prev ${pgBtn}" ${page <= 1 ? 'disabled' : ''} aria-label="Trang trước" title="Trang trước"><span>${ico.prev}</span></button>
               ${pagesHTML(total)}
-              <button type="button" class="ep-next w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors" ${page >= total ? 'disabled' : ''}>›</button>
-              <button type="button" class="ep-last w-9 h-9 rounded-xl glass-tile text-text-secondary hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors" ${page >= total ? 'disabled' : ''}>»</button>
+              <button type="button" class="ep-next ${pgBtn}" ${page >= total ? 'disabled' : ''} aria-label="Trang sau" title="Trang sau"><span>${ico.next}</span></button>
+              <button type="button" class="ep-last ${pgBtn}" ${page >= total ? 'disabled' : ''} aria-label="Trang cuối" title="Trang cuối"><span>${ico.last}</span></button>
             `
             : ''
         pagination.querySelectorAll<HTMLButtonElement>('.ep-page').forEach((btn) => {

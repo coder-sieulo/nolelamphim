@@ -153,6 +153,9 @@ Gỡ: `.liquid-glass` bọc mỗi section, gradient blob 3 màu trong `BaseLayou
 
 ### PHASE 4 — Trang chi tiết phim `/phim/[slug]`
 
+> ✅ **Đã hoàn thành (Phase 4).** Làm đúng theo brief §11 — xem bảng trạng thái §5. Khác biệt đã chốt khi làm:
+> icon toàn bộ là SVG (react-icons) · không render tab Trailer khi `trailer_url` rỗng (data vsmov hiện không có trailer sau khi scan 120 phim) · `ReportButton` chuyển xuống chân trang phim cạnh `Quay lại` · `Xem chung` chỉ render khi là admin. CTA sticky mobile đặt trên bottom-nav (`bottom: calc(58px + safe-area)`).
+
 Brief §11:
 - **Backdrop 1 lớp** (bỏ `ken-burns` + gradient chồng), title, meta, **CTA row**: `[▶ Xem ngay] [+ Danh sách] [♡] [↗ Chia sẻ]` — chỉ 1 CTA primary (accent), còn lại ghost.
 - Meta line: diễn viên (đã có `movie.actor`), đạo diễn.
@@ -265,4 +268,8 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 | P2 Homepage | ✅ xong (commit `efde8ce`) | HeroSingle, ForYou, hot row (getNewMovies sort vote), Khám phá gom Subteam+thể loại, bỏ ThemeSection, nền phẳng, movieCardHTML cm, CW progress bar |
 | P6 · `/download` (làm sớm) | ✅ xong (commit `ff8c800`) | Khôi phục link `Tải App` → `/download` trong Footer (Phase 1 đã bỏ); skin CINEMA MINIMAL cho trang download; giữ nguyên fetch GitHub release (`vien105200318/nolelamphim`) |
 | P3 Listing + Search | ✅ xong (commit `b0ad041`) | `ListingPage.astro` dùng chung 4 trang `/danh-sach`/`/the-loai`/`/quoc-gia`/`/nam`; thêm route `/danh-sach/phim-moi-cap-nhat` (dead link cũ từ Home+Footer); MovieFilters + SearchClient + pagination + recent/favorites scripts cm; bỏ glyph ✓ / ★ → SVG |
-| P4–P8 | ⏳ chưa làm | — |
+| P4 Chi tiết phim | ✅ xong (commit `TBD`) | `[slug].astro` CINEMA MINIMAL: breadcrumb cm, backdrop 1 lớp (bỏ ken-burns/glass-frame), CTA row `[▶ Xem ngay][＋ Danh sách][♡][↗ Chia sẻ]` (icon SVG, không glyph), `Tabs.astro` mới (Tổng quan·Trailer lazy·Diễn viên·Tập phim·Đánh giá, panel `data-panel`, iframe `data-src`), sidebar tech-info + thể loại (desktop), CTA sticky mobile trên bottom-nav, mô tả clamp 3 dòng + `Xem thêm`, bỏ Reveal.astro + ken-burns; Flat skin cho FavoriteButton (2 variant action/icon đồng bộ), ShareButton, RatingBox (5 face icon), EpisodeList (pagination SVG `«‹›»`→SVG), MovieComments, ReportButton, XemChungButton; state.css `.fav-active` flat, bỏ `.star-*`; MovieGrid + pagination.ts bỏ glyph `«‹›»` |
+| P5 Watch page | ⏳ chưa làm | — |
+| P6 Library/profile/trang phụ | ⏳ chưa làm | — |
+| P7 Hidden features + polish | ⏳ chưa làm | — |
+| P8 Regression & bàn giao | ⏳ chưa làm | — |

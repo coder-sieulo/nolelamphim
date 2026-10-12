@@ -1,0 +1,146 @@
+/* ══════════════════════════════════════════════════════════════
+   Movie detail — CINEMA MINIMAL (Phase 4).
+   Thêm CUỐI global.css → thắng cascade của surfaces/state cũ.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---------- Tabs ---------- */
+.movie-tabbar {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--color-cm-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.movie-tabbar::-webkit-scrollbar {
+  display: none;
+}
+.movie-tab {
+  flex: 0 0 auto;
+  padding: 12px 14px;
+  font-size: var(--text-cm-meta);
+  font-weight: 600;
+  color: var(--color-cm-text-3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--duration-cm) var(--ease-cm),
+    border-color var(--duration-cm) var(--ease-cm);
+}
+.movie-tab:hover {
+  color: var(--color-cm-text-2);
+}
+.movie-tab.active {
+  color: var(--color-cm-text);
+  border-bottom-color: var(--color-cm-accent);
+}
+
+/* ---------- Mô tả clamp + Xem thêm ---------- */
+.movie-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--color-cm-text-2);
+}
+.movie-desc.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+/* ---------- Rating 5 icon mức độ ---------- */
+.rate-face {
+  color: var(--color-cm-text-3);
+  padding: 2px;
+  transition:
+    color var(--duration-cm) var(--ease-cm),
+    transform var(--duration-cm-fast) var(--ease-cm);
+}
+.rate-face:hover {
+  transform: scale(1.14);
+}
+.rate-face:active {
+  transform: scale(0.92);
+}
+.rate-face.on {
+  color: var(--color-cm-accent);
+}
+
+/* ---------- Sidebar thông tin kỹ thuật ---------- */
+.tech-list {
+  display: flex;
+  flex-direction: column;
+}
+.tech-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-cm-border);
+  font-size: var(--text-cm-meta);
+  line-height: var(--text-cm-meta--line-height);
+}
+.tech-row:last-child {
+  border-bottom: none;
+}
+.tech-row dt {
+  color: var(--color-cm-text-3);
+  flex-shrink: 0;
+}
+.tech-row dd {
+  color: var(--color-cm-text-2);
+  text-align: right;
+  min-width: 0;
+}
+
+/* ---------- CTA sticky mobile (trên bottom-nav) ---------- */
+.mobile-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  z-index: 75;
+  background: var(--color-cm-bg-2);
+  border-top: 1px solid var(--color-cm-border);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .mobile-cta {
+    display: none;
+  }
+}
+
+/* ---------- EpisodeList (flat, thay surfaces .ep-*) ---------- */
+.episode-panel {
+  background: var(--color-cm-surface);
+  border: 1px solid var(--color-cm-border);
+  border-radius: var(--radius-cm-card);
+  overflow: hidden;
+}
+.episode-header {
+  background: var(--color-cm-bg-2);
+  border-bottom: 1px solid var(--color-cm-border);
+  border-radius: 0;
+}
+.ep-btn {
+  background: var(--color-cm-surface);
+  border: 1px solid var(--color-cm-border);
+  border-radius: var(--radius-cm-btn);
+  color: var(--color-cm-text-2);
+  transition:
+    color var(--duration-cm) var(--ease-cm),
+    border-color var(--duration-cm) var(--ease-cm),
+    background-color var(--duration-cm) var(--ease-cm);
+}
+.ep-btn:hover {
+  color: var(--color-cm-text);
+  border-color: var(--color-cm-border-strong);
+  background: var(--color-cm-elevated);
+}
+.ep-btn:active {
+  transform: scale(0.96);
+}

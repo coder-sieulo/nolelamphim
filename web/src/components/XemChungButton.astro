@@ -17,24 +17,33 @@ const dataServers = JSON.stringify(
   servers.map((s) => ({ name: s.server_name.trim(), items: s.list.map((e) => ({ name: e.name, slug: e.slug, embed: e.embed })) })),
 )
 const dataMovie = JSON.stringify({ slug, name, thumb })
+
+const serverActive =
+  'xc-quick-server px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-[11px] font-medium transition-all border sort-active'
+const serverIdle =
+  'xc-quick-server px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-[11px] font-medium transition-all border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong'
 ---
 
 <div class="xc-quick relative" data-slug={slug} data-servers={dataServers} data-movie={dataMovie} data-has-multiple={servers.length > 1}>
   <button
     type="button"
-    class="xc-quick-trigger w-9 h-9 rounded-full glass-tile flex items-center justify-center text-[#FF6B9D] hover:bg-[#FF6B9D]/15 hover:text-white hover:border-[#FF6B9D]/30 transition-colors"
+    class="xc-quick-trigger flex h-11 w-11 items-center justify-center rounded-full border border-cm-border bg-cm-surface/80 text-cm-text-2 transition-colors duration-[var(--duration-cm)] hover:border-cm-border-strong hover:bg-cm-elevated hover:text-cm-text"
     aria-label="Tạo phòng xem chung"
     title="Tạo phòng xem chung phim này"
   >
-    <FaTv className="w-4 h-4" />
+    <FaTv className="w-[18px] h-[18px]" />
   </button>
 
-  <div class="xc-quick-panel dropdown absolute right-0 top-12 z-50 w-64 rounded-xl glass-dropdown p-3 shadow-2xl">
+  <div class="xc-quick-panel dropdown absolute right-0 top-13 z-50 w-64 rounded-[var(--radius-cm-modal)] border border-cm-border bg-cm-elevated p-3 shadow-[var(--shadow-cm-up)]">
     <div class="flex items-center gap-2.5 mb-3">
-      <img alt="" class="xc-quick-thumb w-9 h-[3.25rem] rounded-md object-cover shrink-0 bg-bg-card glass-frame" src={thumb || '/logo.png'} />
+      <img
+        alt=""
+        class="xc-quick-thumb w-9 h-[3.25rem] rounded-[6px] object-cover shrink-0 bg-cm-surface"
+        src={thumb || '/logo.png'}
+      />
       <div class="min-w-0">
-        <p class="text-sm font-bold text-text-primary truncate">{name}</p>
-        <p class="text-[11px] text-text-muted">Chọn tập để tạo phòng mới</p>
+        <p class="text-sm font-bold text-cm-text truncate">{name}</p>
+        <p class="text-cm-meta text-cm-text-3">Chọn tập để tạo phòng mới</p>
       </div>
     </div>
 
@@ -42,7 +51,7 @@ const dataMovie = JSON.stringify({ slug, name, thumb })
       {serverNames.map((sname, i) => (
         <button
           type="button"
-          class="xc-quick-server px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border"
+          class={i === 0 ? serverActive : serverIdle}
           data-server={i}
         >
           {sname}
@@ -51,12 +60,12 @@ const dataMovie = JSON.stringify({ slug, name, thumb })
     </div>
 
     <div class="flex items-center justify-between mb-1.5">
-      <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide px-1">Tập phim</p>
-      <p class="xc-quick-count text-[11px] text-text-muted"></p>
+      <p class="text-cm-meta font-semibold text-cm-text-3 uppercase tracking-wide px-1">Tập phim</p>
+      <p class="xc-quick-count text-cm-meta text-cm-text-3"></p>
     </div>
     <div class="xc-quick-grid grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto p-1"></div>
 
-    <p class="xc-quick-msg hidden mt-2 text-[11px] text-red-400"></p>
+    <p class="xc-quick-msg hidden mt-2 text-cm-meta text-red-400"></p>
   </div>
 </div>
 
@@ -101,6 +110,15 @@ const dataMovie = JSON.stringify({ slug, name, thumb })
       let serverIdx = 0
       let busy = false
 
+      const serverActive =
+        'xc-quick-server px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-[11px] font-medium transition-all border sort-active'
+      const serverIdle =
+        'xc-quick-server px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-[11px] font-medium transition-all border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong'
+      const epActive =
+        'xc-quick-ep px-1 py-2 rounded-[var(--radius-cm-btn)] text-[11px] font-medium truncate border border-cm-border-strong bg-cm-elevated text-cm-text'
+      const epIdle =
+        'xc-quick-ep px-1 py-2 rounded-[var(--radius-cm-btn)] text-[11px] font-medium truncate border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong'
+
       function current() {
         return servers[serverIdx] || servers[0] || { name: '', items: [] }
       }
@@ -112,15 +130,15 @@ const dataMovie = JSON.stringify({ slug, name, thumb })
           ? items
               .map(
                 (ep, i) =>
-                  `<button type="button" class="xc-quick-ep ${i === 0 ? 'bg-white/10 text-white' : 'glass-tile text-text-secondary hover:bg-white/10 hover:text-white'} px-1 py-2 rounded-lg text-[11px] font-medium truncate" data-index="${i}" title="${ep.name}">${ep.name}</button>`,
+                  `<button type="button" class="${i === 0 ? epActive : epIdle}" data-index="${i}" title="${ep.name}">${ep.name}</button>`,
               )
               .join('')
-          : '<p class="col-span-5 text-center text-[11px] text-text-muted py-4">Chưa có tập</p>'
+          : '<p class="col-span-5 text-center text-cm-meta text-cm-text-3 py-4">Chưa có tập</p>'
         if (countEl) countEl.textContent = `${items.length} tập`
         grid.querySelectorAll<HTMLButtonElement>('.xc-quick-ep').forEach((b) => {
           b.addEventListener('click', () => {
-            grid.querySelectorAll('.xc-quick-ep').forEach((x) => x.classList.remove('bg-white/10', 'text-white'))
-            b.classList.add('bg-white/10', 'text-white')
+            grid.querySelectorAll('.xc-quick-ep').forEach((x) => (x.className = epIdle))
+            b.className = epActive
           })
         })
       }
@@ -129,10 +147,7 @@ const dataMovie = JSON.stringify({ slug, name, thumb })
         btn.addEventListener('click', () => {
           serverIdx = Number(btn.dataset.server)
           serverBtns.forEach((b) => {
-            const active = b === btn
-            b.className = `xc-quick-server px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
-              active ? 'glass-tile-active text-white border-white/20' : 'glass-tile text-text-secondary border-white/10'
-            }`
+            b.className = b === btn ? serverActive : serverIdle
           })
           render()
         }, { signal: ac.signal })
@@ -145,10 +160,7 @@ const dataMovie = JSON.stringify({ slug, name, thumb })
           const multi = box.dataset.hasMultiple === 'true' && servers.length > 1
           if (serversWrap) serversWrap.classList.toggle('hidden', !multi)
           serverBtns.forEach((btn, i) => {
-            const active = i === serverIdx
-            btn.className = `xc-quick-server px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
-              active ? 'glass-tile-active text-white border-white/20' : 'glass-tile text-text-secondary border-white/10'
-            }`
+            btn.className = i === serverIdx ? serverActive : serverIdle
           })
         }
         panel.classList.toggle('open')

@@ -1,0 +1,76 @@
+---
+/**
+ * Tabs — thanh tab tối giản cho trang chi tiết phim (Phase 4, CINEMA MINIMAL).
+ * Panel con truyền vào kèm `data-panel={id}`; panel đầu hiển thị sẵn, panel sau
+ * đặt `hidden`. Iframe `data-src` chỉ nạp nguồn lần đầu khi tab được mở (lazy).
+ */
+interface Tab {
+  id: string
+  label: string
+}
+interface Props {
+  tabs: Tab[]
+  class?: string
+}
+const { tabs, class: className = '' } = Astro.props
+const [first] = tabs
+---
+
+<div class:list={['movie-tabs', className]}>
+  <div class="movie-tabbar" role="tablist" aria-label="Nội dung phim">
+    {
+      tabs.map((t, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`tab-${t.id}`}
+          aria-controls={`panel-${t.id}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          class:list={['movie-tab', first?.id === t.id && 'active']}
+          data-tab={t.id}
+        >
+          {t.label}
+        </button>
+      ))
+    }
+  </div>
+  <div class="mt-6">
+    <slot />
+  </div>
+</div>
+
+<script>
+  import { registerPageInit } from '../scripts/lifecycle'
+
+  registerPageInit(() => {
+    const root = document.querySelector('.movie-tabs')
+    if (!root) return () => {}
+    const tabBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('.movie-tab'))
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-panel]'))
+    if (tabBtns.length === 0) return () => {}
+
+    function select(id: string) {
+      tabBtns.forEach((b) => {
+        const on = b.dataset.tab === id
+        b.classList.toggle('active', on)
+        b.setAttribute('aria-selected', on ? 'true' : 'false')
+      })
+      panels.forEach((p) => {
+        const on = p.dataset.panel === id
+        p.hidden = !on
+        // Lazy iframe: chỉ gán src lần đầu khi tab mở.
+        if (on) {
+          p.querySelectorAll<HTMLIFrameElement>('iframe[data-src]').forEach((f) => {
+            if (!f.getAttribute('src')) f.setAttribute('src', f.dataset.src || '')
+          })
+        }
+      })
+    }
+
+    tabBtns.forEach((b) => {
+      b.addEventListener('click', () => select(b.dataset.tab || ''))
+    })
+
+    return () => {}
+  })
+</script>

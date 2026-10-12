@@ -1,4 +1,8 @@
 ---
+/**
+ * ShareButton — chia sẻ phim (CINEMA MINIMAL, Phase 4).
+ * Nút tròn phẳng; popover dropdown phẳng (không glass). Giữ logic cũ.
+ */
 import { SITE_URL } from '../lib/site'
 import { FiShare2, FiLink } from 'react-icons/fi'
 import { FaSquareFacebook } from 'react-icons/fa6'
@@ -14,20 +18,21 @@ const url = `${SITE_URL}/phim/${slug}`
 
 <div class="share-btn relative" data-url={url} data-name={name}>
   <button
-    class="share-trigger w-9 h-9 rounded-full glass-tile flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/15 transition-colors"
+    type="button"
+    class="share-trigger flex h-11 w-11 items-center justify-center rounded-full border border-cm-border bg-cm-surface/80 text-cm-text-2 transition-colors duration-[var(--duration-cm)] hover:border-cm-border-strong hover:bg-cm-elevated hover:text-cm-text"
     aria-label="Chia sẻ"
     title="Chia sẻ phim"
   >
-    <FiShare2 className="w-4 h-4" />
+    <FiShare2 className="w-[18px] h-[18px]" />
   </button>
 
-  <div class="share-popover dropdown absolute right-0 top-12 z-50 w-48 rounded-xl glass-tile p-2 flex flex-col gap-1">
-    <button class="share-copy flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-text-secondary hover:bg-white/10 hover:text-white transition-colors">
+  <div class="share-popover dropdown absolute right-0 top-13 z-50 w-48 rounded-[var(--radius-cm-modal)] border border-cm-border bg-cm-elevated p-1.5 flex flex-col gap-0.5 shadow-[var(--shadow-cm-up)]">
+    <button class="share-copy flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-cm-btn)] text-xs text-cm-text-2 hover:bg-cm-surface hover:text-cm-text transition-colors">
       <FiLink className="w-4 h-4" />
       <span class="share-copy-label">Copy liên kết</span>
     </button>
     <a
-      class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-text-secondary hover:bg-white/10 hover:text-white transition-colors"
+      class="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-cm-btn)] text-xs text-cm-text-2 hover:bg-cm-surface hover:text-cm-text transition-colors"
       href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
       target="_blank"
       rel="noopener noreferrer"

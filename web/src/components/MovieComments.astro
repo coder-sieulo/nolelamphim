@@ -15,7 +15,6 @@ const { slug, comments, total, user, isAdmin } = Astro.props
 const currentId = user?.sub || ''
 
 
-
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts
   const min = Math.floor(diff / 60000)
@@ -31,26 +30,32 @@ function timeAgo(ts: number): string {
 
 function avatarHTML(c: MovieComment): string {
   if (c.avatar) {
-    return `<img src="https://cdn.discordapp.com/avatars/${escapeHTML(c.userId)}/${escapeHTML(c.avatar)}.png?size=64" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover" /></img>`
+    return `<img src="https://cdn.discordapp.com/avatars/${escapeHTML(c.userId)}/${escapeHTML(c.avatar)}.png?size=64" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover bg-cm-elevated"></img>`
   }
-  return `<div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D] flex items-center justify-center text-white text-sm font-bold">${escapeHTML((c.username || '?').slice(0, 1).toUpperCase())}</div>`
+  return `<div class="w-10 h-10 rounded-full bg-cm-elevated flex items-center justify-center text-cm-text-2 text-sm font-bold shrink-0">${escapeHTML((c.username || '?').slice(0, 1).toUpperCase())}</div>`
 }
 
-
 function commentItemHTML(c: MovieComment, canDelete: boolean): string {
+  const flagHTML = c.userId === currentId ? `<span class="text-[10px] px-1.5 py-0.5 rounded-[4px] bg-cm-surface border border-cm-border text-cm-text-3 font-medium">Bạn</span>` : ''
+  const adminFlagHTML = isAdmin ? `<span class="text-[10px] px-1.5 py-0.5 rounded-[4px] bg-cm-surface border border-cm-border text-cm-text-3 font-medium">Admin</span>` : ''
+  const deleteHTML = canDelete
+    ? `<button type="button" class="cmt-delete shrink-0 self-start w-7 h-7 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-3 hover:text-red-400 hover:border-cm-border-strong flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-cid="${escapeHTML(c.id)}" aria-label="Xoá bình luận">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>`
+    : ''
   return `
-    <div class="movie-comment flex gap-3 py-3.5 border-b border-white/5 group" data-cid="${escapeHTML(c.id)}">
+    <div class="movie-comment flex gap-3 py-3.5 border-b border-cm-border group" data-cid="${escapeHTML(c.id)}">
       ${avatarHTML(c)}
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-sm font-semibold text-text-primary truncate">${escapeHTML(c.username)}</span>
-          '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#5865F2]/20 text-[#8b99ff]">Bạn</span>'
-          '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FF6B9D]/15 text-[#FF6B9D]">Admin</span>'
-          <span class="text-[11px] text-text-muted">${escapeHTML(timeAgo(c.ts))}</span>
+          <span class="text-sm font-semibold text-cm-text truncate">${escapeHTML(c.username)}</span>
+          ${flagHTML}
+          ${adminFlagHTML}
+          <span class="text-cm-meta text-cm-text-3">${escapeHTML(timeAgo(c.ts))}</span>
         </div>
-        <p class="text-sm text-text-secondary mt-1 break-words whitespace-pre-wrap">${escapeHTML(c.text)}</p>
+        <p class="text-cm-body text-cm-text-2 mt-1 break-words whitespace-pre-wrap">${escapeHTML(c.text)}</p>
       </div>
-      <button type="button" class="cmt-delete shrink-0 self-start w-7 h-7 rounded-lg glass-tile text-text-muted hover:text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-cid="${escapeHTML(c.id)}" aria-label="Xoá bình luận"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+      ${deleteHTML}
     </div>
   `
 }
@@ -59,11 +64,11 @@ const commentsHTML = (() => { const _r: string[] = []; for (const c of comments)
 const countText = total > 0 ? '(' + total + ')' : ''
 ---
 
-<section id="comments-root" class="mt-8" data-slug={slug} data-init-shown={comments.length} data-total={total} data-me={currentId} data-admin={isAdmin ? '1' : '0'}>
-  <h2 class="text-base font-semibold text-text-primary mb-4 flex items-center gap-2">
-    <svg class="w-4 h-4 text-[#4A9EFF]" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+<section id="comments-root" class="mt-2" data-slug={slug} data-init-shown={comments.length} data-total={total} data-me={currentId} data-admin={isAdmin ? '1' : '0'}>
+  <h2 class="text-cm-h3 font-semibold text-cm-text mb-4 flex items-center gap-2">
+    <svg class="w-4 h-4 text-cm-text-3" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
     Bình luận
-    <span id="cmt-count" class="text-[11px] text-text-muted font-normal">{countText}</span>
+    <span id="cmt-count" class="text-cm-meta text-cm-text-3 font-normal">{countText}</span>
   </h2>
 
   {
@@ -76,17 +81,17 @@ const countText = total > 0 ? '(' + total + ')' : ''
             maxlength={500}
             required
             placeholder="Chia sẻ cảm nghĩ về phim… (đã đăng nhập là @{user.username})"
-            class="flex-1 resize-none px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:ring-1 focus:ring-[#C44BED]/50 transition-colors"
+            class="flex-1 resize-none px-3.5 py-2.5 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-body text-cm-text placeholder:text-cm-text-3 focus:outline-none focus:border-cm-border-strong transition-colors"
           ></textarea>
-          <button id="cmt-submit" type="submit" class="self-end px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity">
+          <button id="cmt-submit" type="submit" class="self-end px-4 h-10 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-cm-body font-semibold hover:bg-cm-accent-hover disabled:opacity-50 transition-colors duration-[var(--duration-cm)]">
             Gửi
           </button>
         </form>
-        <p id="cmt-error" class="hidden text-[11px] text-red-400 mb-2"></p>
+        <p id="cmt-error" class="hidden text-cm-meta text-red-400 mb-2"></p>
       </>
     ) : (
-      <a href="/api/auth/discord" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-sm text-text-secondary hover:text-white hover:bg-white/[0.07] transition-colors mb-2">
-        <span class="text-[#5865F2]">Đăng nhập Discord</span> để bình luận
+      <a href="/api/auth/discord" class="flex items-center justify-center gap-2 px-4 py-3 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] mb-2">
+        Đăng nhập để bình luận
       </a>
     )
   }
@@ -94,7 +99,7 @@ const countText = total > 0 ? '(' + total + ')' : ''
   <div id="cmt-list" set:html={commentsHTML}></div>
 
   {comments.length < total && (
-    <button id="cmt-more" type="button" class="mt-4 w-full py-2.5 rounded-xl glass-tile text-xs text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
+    <button id="cmt-more" type="button" class="mt-4 w-full h-10 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">
       Xem thêm bình luận…
     </button>
   )}
