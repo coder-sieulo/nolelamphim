@@ -29,7 +29,12 @@ const STATUS_OPTIONS = [
 ]
 
 const chevronBg =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23a0a0b8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E\")"
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%2371717a'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E\")"
+
+/* Chip inactive — CINEMA MINIMAL: surface phẳng + border (active dùng `.sort-active`) */
+const chipIdle = 'mf-chip px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated'
+const chipTransition = 'transition-colors duration-[var(--duration-cm)]'
+const selectBase = 'px-3 py-1.5 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 text-cm-meta font-medium outline-none cursor-pointer appearance-none bg-no-repeat pr-8 transition-colors duration-[var(--duration-cm)]'
 ---
 
 <div class="movie-filters" data-path={path} data-year={options.year ? '1' : ''} data-country={options.country ? '1' : ''} data-default-params={JSON.stringify(defaultParams || {})}>
@@ -39,9 +44,8 @@ const chevronBg =
         <div class="flex items-center gap-1.5 mr-1">
           {TYPE_OPTIONS.map((o) => (
             <button
-             
               type="button"
-              class="mf-chip glass-tile text-text-secondary hover:text-white px-3.5 py-1.5 rounded-xl text-[11px] font-medium transition-all"
+              class={`${chipIdle} ${chipTransition}`}
               data-chip="type"
               data-value={o.key}
             >
@@ -57,9 +61,8 @@ const chevronBg =
         <div class="flex items-center gap-1.5 mr-1">
           {STATUS_OPTIONS.map((o) => (
             <button
-             
               type="button"
-              class="mf-chip glass-tile text-text-secondary hover:text-white px-3.5 py-1.5 rounded-xl text-[11px] font-medium transition-all"
+              class={`${chipIdle} ${chipTransition}`}
               data-chip="status"
               data-value={o.key}
             >
@@ -73,10 +76,10 @@ const chevronBg =
     {
       options.year && (
         <select
-          class="mf-select-year px-3 py-1.5 rounded-xl glass-tile text-text-secondary text-[11px] font-medium outline-none cursor-pointer appearance-none bg-no-repeat pr-8"
+          class={`mf-select-year ${selectBase}`}
           style={`backgroundImage:${chevronBg};backgroundPosition:right 10px center`}
         >
-          <option value="" class="bg-bg-card">Đang tải...</option>
+          <option value="" class="bg-cm-surface text-cm-text">Đang tải...</option>
         </select>
       )
     }
@@ -84,26 +87,26 @@ const chevronBg =
     {
       options.country && (
         <select
-          class="mf-select-country px-3 py-1.5 rounded-xl glass-tile text-text-secondary text-[11px] font-medium outline-none cursor-pointer appearance-none bg-no-repeat pr-8"
+          class={`mf-select-country ${selectBase}`}
           style={`backgroundImage:${chevronBg};backgroundPosition:right 10px center`}
         >
-          <option value="" class="bg-bg-card">Đang tải...</option>
+          <option value="" class="bg-cm-surface text-cm-text">Đang tải...</option>
         </select>
       )
     }
 
     <button
       type="button"
-      class="mf-clear hidden px-3 py-1.5 rounded-xl text-[11px] text-text-muted hover:text-white transition-colors"
+      class="mf-clear hidden px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)]"
     >
       Xoá bộ lọc
     </button>
 
     <div class="flex items-center gap-1.5 ml-auto">
-      <span class="text-[10px] text-text-muted mr-1">Sắp xếp:</span>
+      <span class="text-cm-meta text-cm-text-3 mr-1">Sắp xếp:</span>
       <button
         type="button"
-        class="mf-sort px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all glass-tile text-text-secondary"
+        class="mf-sort px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium transition-colors duration-[var(--duration-cm)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong"
       >
         Mới nhất
       </button>
@@ -146,14 +149,14 @@ const chevronBg =
       return p.toString()
     }
 
+    const chipOn = 'mf-chip px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium transition-colors duration-[var(--duration-cm)] sort-active'
+    const chipOff = 'mf-chip px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium transition-colors duration-[var(--duration-cm)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated'
+
     function paintChips() {
       chips.forEach((chip) => {
         const k = chip.dataset.chip || ''
         const v = chip.dataset.value || ''
-        const active = state[k] === v
-        chip.className = active
-          ? `mf-chip glass-tile-active text-white px-3.5 py-1.5 rounded-xl text-[11px] font-medium transition-all`
-          : `mf-chip glass-tile text-text-secondary hover:text-white px-3.5 py-1.5 rounded-xl text-[11px] font-medium transition-all`
+        chip.className = state[k] === v ? chipOn : chipOff
       })
     }
 
@@ -180,8 +183,8 @@ const chevronBg =
     function fillSelect(select: HTMLSelectElement | null, items: { slug: string; name: string }[]) {
       if (!select) return
       select.innerHTML =
-        `<option value="" class="bg-bg-card">${select === yearSelect ? 'Năm' : 'Quốc gia'}</option>` +
-        items.map((i) => `<option value="${i.slug}" class="bg-bg-card">${i.name}</option>`).join('')
+        `<option value="" class="bg-cm-surface text-cm-text">${select === yearSelect ? 'Năm' : 'Quốc gia'}</option>` +
+        items.map((i) => `<option value="${i.slug}" class="bg-cm-surface text-cm-text">${i.name}</option>`).join('')
       select.addEventListener('change', () => {
         const k = select === yearSelect ? 'year' : 'country'
         state[k] = select.value
@@ -219,12 +222,13 @@ const chevronBg =
       refresh()
     })
 
+    const sortOn = 'mf-sort px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium transition-colors duration-[var(--duration-cm)] sort-active'
+    const sortOff = 'mf-sort px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium transition-colors duration-[var(--duration-cm)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong'
+
     sortBtn?.addEventListener('click', () => {
       sort = sort === 'newest' ? 'year' : 'newest'
       sortBtn.textContent = sort === 'newest' ? 'Mới nhất' : 'Năm giảm dần'
-      sortBtn.className = sort === 'year'
-        ? `mf-sort px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all sort-active`
-        : `mf-sort px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all glass-tile text-text-secondary`
+      sortBtn.className = sort === 'year' ? sortOn : sortOff
       refresh()
     })
 

@@ -1,0 +1,63 @@
+---
+/**
+ * ListingPage — khung chung trang danh sách (Phase 3, CINEMA MINIMAL).
+ * Breadcrumb cm + tiêu đề + mô tả + MovieFilters/EmptyState.
+ * Giữ nguyên data-binding của MovieFilters/MovieGrid (filter + pagination).
+ */
+import Breadcrumb from './ui/Breadcrumb.astro'
+import EmptyState from './ui/EmptyState.astro'
+import MovieFilters from './MovieFilters.astro'
+import type { Movie } from '../lib/types'
+
+interface Props {
+  title: string
+  desc?: string
+  crumb: { label: string; href?: string }[]
+  items: Movie[]
+  totalPages?: number
+  path: string
+  apiPath?: string
+  defaultParams?: Record<string, string>
+  options?: {
+    type?: boolean
+    status?: boolean
+    year?: boolean
+    country?: boolean
+  }
+}
+
+const {
+  title,
+  desc,
+  crumb,
+  items,
+  totalPages,
+  path,
+  apiPath = '',
+  defaultParams,
+  options = {},
+} = Astro.props
+---
+
+<div class="px-4 sm:px-6 md:px-8 py-8 max-w-[1600px] mx-auto w-full">
+  <div class="mb-6">
+    <Breadcrumb items={crumb} class="mb-4" />
+    <h1 class="text-cm-h2 font-semibold text-cm-text tracking-tight">{title}</h1>
+    {desc && <p class="text-cm-meta text-cm-text-3 mt-1.5 max-w-2xl">{desc}</p>}
+  </div>
+
+  {
+    items.length > 0 ? (
+      <MovieFilters
+        initialItems={items}
+        totalPages={totalPages}
+        path={path}
+        apiPath={apiPath}
+        defaultParams={defaultParams}
+        options={options}
+      />
+    ) : (
+      <EmptyState title="Không có phim nào" hint="Thử bỏ bớt bộ lọc hoặc quay lại sau." />
+    )
+  }
+</div>

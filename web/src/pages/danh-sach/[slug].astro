@@ -1,33 +1,47 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import MovieFilters from '../../components/MovieFilters.astro'
+import ListingPage from '../../components/ListingPage.astro'
 import { getMoviesByListPath } from '../../lib/api'
 import { breadcrumbLd } from '../../lib/seo'
+import type { Movie, ListResponse } from '../../lib/types'
 
 export const prerender = true
 export const revalidate = 60
 export const fallback = 'blocking'
 
 export function getStaticPaths() {
-  return ['phim-bo', 'phim-le', 'phim-dang-chieu'].map((slug) => ({ params: { slug } }))
+  return ['phim-bo', 'phim-le', 'phim-dang-chieu', 'phim-moi-cap-nhat'].map((slug) => ({
+    params: { slug },
+  }))
 }
 
 const slug = Astro.params.slug ?? ''
 
-const LISTS: Record<string, { title: string; desc: string; apiPath?: string; defaultParams?: Record<string, string> }> = {
+const LISTS: Record<
+  string,
+  { title: string; desc: string; apiPath?: string; defaultParams?: Record<string, string>; options?: Record<string, boolean> }
+> = {
   'phim-bo': {
     title: 'Phim Bộ',
     desc: 'Xem các bộ phim truyền hình dài tập mới nhất, hay nhất với chất lượng HD VietSub miễn phí.',
+    options: { status: true, year: true, country: true },
   },
   'phim-le': {
     title: 'Phim Lẻ',
     desc: 'Xem các bộ phim điện ảnh mới nhất, hay nhất với chất lượng HD VietSub miễn phí.',
+    options: { status: true, year: true, country: true },
   },
   'phim-dang-chieu': {
     title: 'Phim Đang Chiếu',
     desc: 'Xem các bộ phim đang phát sóng mới nhất, cập nhật tập mới liên tục với chất lượng HD VietSub miễn phí.',
     apiPath: '/danh-sach/phim-bo',
     defaultParams: { status: 'ongoing' },
+    options: { status: true, year: true, country: true },
+  },
+  'phim-moi-cap-nhat': {
+    title: 'Phim Mới Cập Nhật',
+    desc: 'Phim mới được cập nhật liên tục mỗi ngày, chất lượng HD VietSub miễn phí.',
+    options: { status: true, year: true, country: true },
   },
 }
 
@@ -37,48 +51,36 @@ if (!meta) {
   return Astro.redirect('/404', 404)
 }
 
+const empty: ListResponse<Movie> = { status: false, items: [] as Movie[] }
+
 const data = await getMoviesByListPath(
   slug === 'phim-dang-chieu' ? 'phim-bo' : slug,
   1,
   24,
   meta.defaultParams,
-).catch(() => ({
-  status: false,
-  items: [],
-  pagination: undefined,
-}))
+).catch(() => empty)
+
 const breadcrumb = [
   { name: 'Trang chủ', path: '/' },
   { name: meta.title, path: `/danh-sach/${slug}` },
+]
+const crumb = [
+  { label: 'Trang chủ', href: '/' },
+  { label: meta.title },
 ]
 ---
 
 <BaseLayout title={meta.title} description={meta.desc}>
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
-  <div class="px-4 md:px-8 py-6">
-    <div class="flex items-center gap-2 text-xs text-text-muted mb-4">
-      <a href="/" class="hover:text-white transition-colors">Trang chủ</a>
-      <span>/</span>
-      <span class="text-white">{meta.title}</span>
-    </div>
-
-    <h1 class="text-lg font-semibold text-text-primary mb-5">{meta.title}</h1>
-
-    {
-      data.items?.length > 0 ? (
-        <MovieFilters
-          initialItems={data.items}
-          totalPages={data.pagination?.totalPages}
-          path={`/danh-sach/${slug}`}
-          apiPath={meta.apiPath || ''}
-          defaultParams={meta.defaultParams}
-          options={{ status: true, year: true, country: true }}
-        />
-      ) : (
-        <div class="content-card px-8 py-16 flex flex-col items-center">
-          <p class="text-text-secondary text-sm">Không có phim nào</p>
-        </div>
-      )
-    }
-  </div>
+  <ListingPage
+    title={meta.title}
+    desc={meta.desc}
+    crumb={crumb}
+    items={data.items ?? []}
+    totalPages={data.pagination?.totalPages}
+    path={`/danh-sach/${slug}`}
+    apiPath={meta.apiPath}
+    defaultParams={meta.defaultParams}
+    options={meta.options}
+  />
 </BaseLayout>

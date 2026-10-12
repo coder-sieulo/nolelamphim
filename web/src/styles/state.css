@@ -4,10 +4,11 @@
   color: #fff;
 }
 
+/* sort-active: Phase 3 — chip/bộ lọc đang chọn, phẳng (bỏ gradient glass) */
 .sort-active {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  background: var(--color-cm-elevated);
+  color: var(--color-cm-text);
+  border: 1px solid var(--color-cm-border-strong);
 }
 
 .fav-active {

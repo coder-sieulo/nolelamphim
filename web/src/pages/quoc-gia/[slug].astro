@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import MovieFilters from '../../components/MovieFilters.astro'
+import ListingPage from '../../components/ListingPage.astro'
 import { getMoviesByCountry, getCountries } from '../../lib/api'
 import { breadcrumbLd } from '../../lib/seo'
+import type { Movie, ListResponse } from '../../lib/types'
 
 export const prerender = true
 export const revalidate = 60
@@ -21,44 +22,30 @@ const country = countries?.data?.items?.find((c) => c.slug === slug)
 const title = country ? `Phim ${country.name}` : `Phim ${name}`
 const desc = `Xem các bộ phim ${country?.name ?? name} mới nhất, hay nhất với chất lượng HD VietSub miễn phí tại Nô Lệ Làm Phim.`
 
-const data = await getMoviesByCountry(slug, { page: 1, limit: 24 }).catch(() => ({
-  status: false,
-  items: [],
-  pagination: undefined,
-}))
+const empty: ListResponse<Movie> = { status: false, items: [] as Movie[] }
+const data = await getMoviesByCountry(slug, { page: 1, limit: 24 }).catch(() => empty)
+
 const breadcrumb = [
   { name: 'Trang chủ', path: '/' },
   { name: 'Danh mục', path: '/search' },
   { name: country?.name ?? name, path: `/quoc-gia/${slug}` },
 ]
+const crumb = [
+  { label: 'Trang chủ', href: '/' },
+  { label: 'Danh mục', href: '/search' },
+  { label: country?.name ?? name },
+]
 ---
 
 <BaseLayout title={title} description={desc}>
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
-  <div class="px-4 md:px-8 py-6">
-    <div class="flex items-center gap-2 text-xs text-text-muted mb-4">
-      <a href="/" class="hover:text-white transition-colors">Trang chủ</a>
-      <span>/</span>
-      <a href="/search" class="hover:text-white transition-colors">Danh mục</a>
-      <span>/</span>
-      <span class="text-white">{name}</span>
-    </div>
-
-    <h1 class="text-lg font-semibold text-text-primary mb-5">{name}</h1>
-
-    {
-      data.items?.length > 0 ? (
-        <MovieFilters
-          initialItems={data.items}
-          totalPages={data.pagination?.totalPages}
-          path={`/quoc-gia/${slug}`}
-          options={{ type: true, status: true, year: true }}
-        />
-      ) : (
-        <div class="content-card px-8 py-16 flex flex-col items-center">
-          <p class="text-text-secondary text-sm">Không có phim nào</p>
-        </div>
-      )
-    }
-  </div>
+  <ListingPage
+    title={name}
+    desc={desc}
+    crumb={crumb}
+    items={data.items ?? []}
+    totalPages={data.pagination?.totalPages}
+    path={`/quoc-gia/${slug}`}
+    options={{ type: true, status: true, year: true }}
+  />
 </BaseLayout>
