@@ -262,5 +262,6 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 |---|---|---|
 | P0 Nền tảng | ✅ xong (commit `00a1478`) | tokens, CSS modules, primitive, MovieCard gom nguồn |
 | P1 Shell | ✅ xong (commit `a4b5482`) | Navbar mới, search overlay, bottom nav, footer |
-| P2 Homepage | ✅ xong (commit ở đây) | HeroSingle, ForYou, hot row (getNewMovies sort vote), Khám phá gom Subteam+thể loại, bỏ ThemeSection, nền phẳng, movieCardHTML cm, CW progress bar |
+| P2 Homepage | ✅ xong (commit `efde8ce`) | HeroSingle, ForYou, hot row (getNewMovies sort vote), Khám phá gom Subteam+thể loại, bỏ ThemeSection, nền phẳng, movieCardHTML cm, CW progress bar |
+| P6 · `/download` (làm sớm) | ✅ xong (cùng đợt P2) | Khôi phục link `Tải App` → `/download` trong Footer (Phase 1 đã bỏ); skin CINEMA MINIMAL cho trang download; giữ nguyên fetch GitHub release (`vien105200318/nolelamphim`) |
 | P3–P8 | ⏳ chưa làm | — |

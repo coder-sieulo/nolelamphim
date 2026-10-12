@@ -1,6 +1,12 @@
 ---
+/**
+ * Tải ứng dụng — skin CINEMA MINIMAL (Phase 2).
+ * Nguồn: GitHub release mới nhất (vien105200318/nolelamphim).
+ * Không đổi logic fetch; bỏ glass/gradient → surface phẳng + accent.
+ */
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { FaAndroid, FaApple, FaTv, FaMobileScreenButton } from 'react-icons/fa6'
+import EmptyState from '../components/ui/EmptyState.astro'
+import { FaAndroid, FaApple, FaTv, FaMobileScreenButton, FaChevronLeft } from 'react-icons/fa6'
 
 interface ReleaseAsset {
   name: string
@@ -67,77 +73,88 @@ const platforms = [
     Icon: FaMobileScreenButton,
   },
 ]
+const hasAny = platforms.some((p) => p.url)
 ---
 
 <BaseLayout title="Tải ứng dụng" description="Tải ứng dụng Nô Lệ Làm Phim cho điện thoại và máy tính.">
-  <div class="px-4 md:px-8 py-16">
-    <div class="flex flex-col items-center text-center mb-14">
-      <img
-        src="/logo.png"
-        alt="Nô Lệ Làm Phim"
-        width="80"
-        height="80"
-        class="rounded-2xl shadow-2xl shadow-[#C44BED]/30 mb-8"
-      />
-      <h1 class="text-3xl font-bold text-text-primary mb-3">
-        Tải ứng dụng
-      </h1>
-      <p class="text-text-secondary text-sm max-w-md">
-        Chọn nền tảng phù hợp để tải xuống. Hỗ trợ Android, iOS, Android TV và LG webOS.
-      </p>
-      {
-        release && (
-          <div class="mt-4 px-4 py-2 rounded-full glass-tile text-text-muted text-xs inline-flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-            Phiên bản {release.tag_name.replace(/^v/i, '')}
-          </div>
-        )
-      }
-    </div>
+  <div class="px-4 sm:px-6 md:px-8 py-14">
+    <div class="max-w-3xl mx-auto">
+      <div class="flex flex-col items-center text-center mb-12">
+        <img
+          src="/logo.png"
+          alt="Nô Lệ Làm Phim"
+          width="72"
+          height="72"
+          class="rounded-[var(--radius-cm-card)] mb-6"
+        />
+        <h1 class="text-2xl md:text-3xl font-bold text-cm-text mb-3">Tải ứng dụng</h1>
+        <p class="text-sm text-cm-text-2 max-w-md">
+          Chọn nền tảng phù hợp để tải xuống. Hỗ trợ Android, iOS, Android TV và LG webOS.
+        </p>
+        {
+          release && (
+            <p class="mt-4 px-3 py-1 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-3 text-xs inline-flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-cm-accent" aria-hidden />
+              Phiên bản {release.tag_name.replace(/^v/i, '')}
+            </p>
+          )
+        }
+      </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
       {
-        platforms.map((p) => (
-          <div class="glass-tile rounded-2xl p-7 flex flex-col items-center text-center">
-            <div class="w-14 h-14 rounded-xl bg-white/5 flex items-center justify-center text-[#C44BED] mb-5">
-              <p.Icon className="w-8 h-8" />
-            </div>
-            <h2 class="text-lg font-semibold text-text-primary mb-3">{p.label}</h2>
-
+        hasAny ? (
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {
-              p.url ? (
-                <>
-                  <a
-                    href={p.url}
-                    download
-                    class="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF6B9D] via-[#C44BED] to-[#4A9EFF] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#C44BED]/25 transition-all duration-300 text-center"
-                  >
-                    Tải xuống
-                  </a>
-                  {p.note && <p class="mt-3 text-text-muted text-xs leading-relaxed">{p.note}</p>}
-                  {p.filename && <p class="mt-1.5 text-text-muted text-[11px] font-mono">{p.filename}</p>}
-                </>
-              ) : (
-                <>
-                  <div class="w-full py-3 rounded-xl bg-white/5 text-text-muted text-sm font-semibold text-center cursor-not-allowed">
-                    Đang phát triển
+              platforms.map((p) => (
+                <div class="rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border p-6 flex flex-col items-center text-center">
+                  <div class="w-12 h-12 rounded-[var(--radius-cm-card)] bg-cm-elevated flex items-center justify-center text-cm-text mb-5">
+                    <p.Icon className="w-6 h-6" />
                   </div>
-                  <p class="mt-3 text-text-muted text-xs">Sẽ sớm ra mắt</p>
-                </>
-              )
+                  <h2 class="text-base font-semibold text-cm-text mb-4">{p.label}</h2>
+
+                  {
+                    p.url ? (
+                      <>
+                        <a
+                          href={p.url}
+                          download
+                          class="w-full h-10 inline-flex items-center justify-center rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-sm font-semibold hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]"
+                        >
+                          Tải xuống
+                        </a>
+                        {p.note && <p class="mt-3 text-xs text-cm-text-3 leading-relaxed">{p.note}</p>}
+                        {p.filename && <p class="mt-1.5 text-cm-meta text-cm-text-3 font-mono truncate w-full">{p.filename}</p>}
+                      </>
+                    ) : (
+                      <>
+                        <div class="w-full h-10 inline-flex items-center justify-center rounded-[var(--radius-cm-btn)] bg-cm-bg text-cm-text-3 text-sm font-medium border border-cm-border cursor-not-allowed">
+                          Đang phát triển
+                        </div>
+                        <p class="mt-3 text-xs text-cm-text-3">Sẽ sớm ra mắt</p>
+                      </>
+                    )
+                  }
+                </div>
+              ))
             }
           </div>
-        ))
+        ) : (
+          <EmptyState
+            title="Chưa có bản release nào"
+            hint="Kiểm tra GitHub repository để biết khi nào ứng dụng sẵn sàng"
+          />
+        )
       }
-    </div>
 
-    <div class="flex justify-center mt-12">
-      <a
-        href="/"
-        class="px-5 py-2.5 rounded-xl glass-tile text-text-secondary text-xs hover:text-white transition-all"
-      >
-        ← Quay lại trang chủ
-      </a>
+      <div class="flex justify-center mt-12">
+        <a
+          href="/"
+          class="inline-flex items-center gap-2 px-4 h-10 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-sm text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]"
+        >
+          <FaChevronLeft className="w-3.5 h-3.5" />
+          Quay lại trang chủ
+        </a>
+      </div>
     </div>
   </div>
 </BaseLayout>
