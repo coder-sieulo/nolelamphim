@@ -33,6 +33,36 @@ registerPageInit(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   })
 
+  // ── Phím tắt: `?` mở overlay, Esc / backdrop đóng (Phase 7) ──
+  const shortcutsOverlay = document.getElementById('shortcuts-overlay')
+  if (shortcutsOverlay) {
+    const isTyping = (t: EventTarget | null) => {
+      if (!(t instanceof HTMLElement)) return false
+      return t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable
+    }
+    const setShortcuts = (open: boolean) => {
+      shortcutsOverlay.classList.toggle('hidden', !open)
+      document.body.classList.toggle('overflow-hidden', open)
+    }
+    document.addEventListener(
+      'keydown',
+      (e) => {
+        if (isTyping(e.target)) return
+        if (e.key === '?') {
+          if (document.getElementById('ctx-menu')?.classList.contains('open')) return
+          e.preventDefault()
+          // Đang ẩn -> mở; đang mở -> đóng
+          setShortcuts(shortcutsOverlay.classList.contains('hidden'))
+        }
+        if (e.key === 'Escape') setShortcuts(false)
+      },
+      { signal: ac.signal },
+    )
+    shortcutsOverlay.addEventListener('click', (e) => {
+      if ((e.target as Element | null)?.closest('[data-close-shortcuts]')) setShortcuts(false)
+    }, { signal: ac.signal })
+  }
+
   document.addEventListener(
     'error',
     (e) => {

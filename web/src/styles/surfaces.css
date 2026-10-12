@@ -364,3 +364,22 @@
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* ────────────────────────────────────────────────────────────────
+   Phase 7 — Tối ưu blur còn lại (brief: cấm glassmorphism).
+   Ngôn ngữ glass cũ (`glass-*`, `liquid-glass`) đã bị bỏ khỏi UI bởi
+   Phase 1–6; các lớp này không còn được tham chiếu trong markup.
+   Reset chủ động ở đây để chắc chắn KHÔNG có lớp backdrop-blur nào
+   render được nếu có đường code cũ quay lại.
+   ──────────────────────────────────────────────────────────────── */
+.glass-pane, .liquid-glass,
+.glass-frame, .glass-tile, .glass-chip, .glass-dropdown,
+.glass-btn, .glass-input, .glass-nav, .glass-modal {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+[class*="glass-"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

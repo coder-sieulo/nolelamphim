@@ -25,3 +25,10 @@ body::before {
     radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.035) 0%, transparent 55%),
     #0b0b0c;
 }
+
+/* Phase 7 — baseline keyboard focus (a11y): mọi phần tử tương tác hiện
+   focus ring rõ, khớp accent cm, khi điều hướng bằng bàn phím. */
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-cm-accent);
+  outline-offset: 2px;
+}

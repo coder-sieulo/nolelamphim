@@ -53,7 +53,8 @@ export function movieCardHTML(movie: CardMovie, dot?: 'new' | 'hot'): string {
     ? `<span class="absolute bottom-2 right-2 z-20 px-1.5 py-0.5 rounded-[4px] bg-black/60 text-[10px] font-medium text-white/90 pointer-events-none">${episode}</span>`
     : ''
   return `
-    <a href="/phim/${slug}" class="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-cm-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cm-bg rounded-[var(--radius-cm-card)]">
+  <div class="group relative" data-slug="${slug}" data-id="${String(movie._id ?? '')}" data-name="${name}" data-thumb="${escapeHTML(imgUrl(movie.thumb_url, 320))}" data-year="${year}" data-episode="${episode}">
+    <a href="/phim/${slug}" class="block focus:outline-none focus-visible:ring-2 focus-visible:ring-cm-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cm-bg rounded-[var(--radius-cm-card)]" draggable="false">
       <div class="relative aspect-[2/3] overflow-hidden rounded-[var(--radius-cm-card)] bg-cm-surface poster-shell">
         ${
           movie.thumb_url
@@ -68,6 +69,10 @@ export function movieCardHTML(movie: CardMovie, dot?: 'new' | 'hot'): string {
         ${meta ? `<p class="text-xs text-cm-text-3 mt-0.5 truncate">${meta}</p>` : ''}
       </div>
     </a>
+    <button type="button" class="card-menu-btn absolute top-2 right-2 z-30 w-7 h-7 hidden sm:flex items-center justify-center rounded-full bg-black/55 text-white/90 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-[var(--duration-cm)]" aria-label="Thêm tuỳ chọn: ${name}" title="Tuỳ chọn" tabindex="0">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+    </button>
+  </div>
   `
 }
 

@@ -217,6 +217,16 @@ Brief §12/§13:
 
 ### PHASE 7 — Hidden features & polish (brief §22/§23/§24)
 
+> ✅ **Đã hoàn thành (Phase 7).**
+> - **Context menu poster** → drawer trượt phải (rule 03): mở bằng chuột phải, nút `···` (hover desktop trên poster, `movieCardHTML` thêm `data-slug/id/name/thumb/year/episode`), long-press 520ms mobile. Hành động: **Xem ngay** (đi thẳng, dùng href thật cả continue-card) · **Yêu thích** (toggle store + sync nút `.fav-button` + server khi có tài khoản) · **Chia sẻ** (Web Share / copy clipboard kèm feedback "Đã chép link") · **Đánh dấu chưa xem** (`removeRecent` + DELETE `/api/user/history`). Đóng: Escape / veil / X / `astro:before-swap`.
+> - **Double-click poster → toggle favorite**: bỏ — xung đột với điều hướng click (phải trì hoãn mọi click vào poster 250ms để chờ double-click, làm chậm UX); thay bằng context menu + nút `···` như trên.
+> - **Quick preview on hover**: defer (ưu tiên thấp, nếu làm phải giữ LCP — không chấp nhận trì hoãn poster load).
+> - **Keyboard**: `/` focus search (Phase 1 đã có), `?` → overlay Phím tắt mới (`app.ts`), Esc đóng, có `[data-close-shortcuts]` backdrop + X. Icon phím mũi tên trong overlay dùng inline SVG (không glyph).
+> - **Focus ring**: baseline `:focus-visible` toàn cục (outline accent) thêm vào `base.css`; `aria-current` đã có ở Navbar; tap target ≥ 44px giữ.
+> - **Blur**: triệt tiêu — gỡ hết `glass-*`/`liquid-glass` khỏi markup các phase trước + reset chủ động trong `surfaces.css` (`backdrop-filter: none` cho mọi class glass) → đo CDP trên Home/Favorites/Profile: số phần tử có `backdrop-filter != none` = **0**.
+> - Motion 120–180ms (đúng token `--duration-cm`), `prefers-reduced-motion` giữ.
+> - CDP xác minh: mở drawer qua right-click, toggle fav (label + aria-pressed), chia sẻ clipboard, "Đã xoá khỏi đã xem", Escape đóng, `?` mở/đóng overlay (đã sửa 2 bug: toggle boolean ngược + thiếu class `flex`), `astro check` 0 lỗi + build pass.
+
 - **Poster context menu** (right-click / nút `···` / long-press mobile): `Xem ngay · Thêm danh sách · Yêu thích · Chia sẻ · Đánh dấu chưa xem` — dùng lại API `/api/user/favorite` + `history`.
 - **Double-click poster** → toggle favorite.
 - **Quick preview on hover** (poster mở rộng nhẹ + nútoplay) — ưu tiên thấp, chỉ nếu không tăng LCP.
@@ -289,5 +299,5 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 | P4 Chi tiết phim | ✅ xong (commit `21b187f`) | `[slug].astro` CINEMA MINIMAL: breadcrumb cm, backdrop 1 lớp (bỏ ken-burns/glass-frame), CTA row `[▶ Xem ngay][＋ Danh sách][♡][↗ Chia sẻ]` (icon SVG, không glyph), `Tabs.astro` mới (Tổng quan·Trailer lazy·Diễn viên·Tập phim·Đánh giá, panel `data-panel`, iframe `data-src`), sidebar tech-info + thể loại (desktop), CTA sticky mobile trên bottom-nav, mô tả clamp 3 dòng + `Xem thêm`, bỏ Reveal.astro + ken-burns; Flat skin cho FavoriteButton (2 variant action/icon đồng bộ), ShareButton, RatingBox (5 face icon), EpisodeList (pagination SVG `«‹›»`→SVG), MovieComments, ReportButton, XemChungButton; state.css `.fav-active` flat, bỏ `.star-*`; MovieGrid + pagination.ts bỏ glyph `«‹›»` |
 | P5 Watch page | ✅ xong (commit `2bab473`) | `[episode].astro` CINEMA MINIMAL: player flat (bỏ glass), server dropdown góc phải (`watch-server-dd`, chỉ khi >1 server), drawer danh sách tập (đóng X/veil/Escape, khóa scroll), nav flat chevron SVG, HorrorGate.astro tách riêng (gate/loader), tiến trình xem thật (time-spent → updateRecentProgress local + sync tài khoản 30s, cap 92%); defer seek-resume/countdown next-ep vì iframe cross-origin không cho đọc playback |
 | P6 Library/profile/trang phụ | ✅ xong (commit `9c3157e`) | profile / 404 / phim-dna / xem-chung (index · room · admin) về CINEMA MINIMAL: bỏ glass-tile/frame/dropdown + content-card + gradient; icon glyph `🔗🗑■🔇🚫✓` → inline SVG; DNA quiz giữ emoji nội dung; fix bug countdown "Sắp công chiếu" chưa từng hiển thị (tách `upcoming` trong drawFrame); CDP pass scheduled/playing/quiz/guest; defer 🟡 Collections + Notification |
-| P7 Hidden features + polish | ⏳ chưa làm | — |
+| P7 Hidden features + polish | ✅ xong (commit `TBD`) | Context menu poster (drawer phải, rule 03): chuột phải / nút `···` hover / long-press mobile → Xem ngay · Yêu thích (store + server sync) · Chia sẻ (Web Share/clipboard) · Đánh dấu chưa xem (removeRecent + DELETE history); `movieCardHTML` thêm data-id/name/thumb/year/episode; keyboard `?` → overlay Phím tắt (mới, `app.ts`, sửa 2 bug: toggle boolean ngược + thiếu `flex`); focus-visible baseline; blur còn lại = 0 (reset `surfaces.css` + CDP đo Home/Favorites/Profile); defer double-click fav (xung đột click-nav) + quick-preview hover (LCP); motion `--duration-cm` 120–180ms giữ |
 | P8 Regression & bàn giao | ⏳ chưa làm | — |

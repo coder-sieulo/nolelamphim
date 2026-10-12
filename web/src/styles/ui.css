@@ -56,3 +56,101 @@
     animation: none;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Context menu poster (Phase 7) — drawer trượt phải (rule 03).
+   Mở: right-click / nút ··· / long-press mobile. Đóng: Escape/veil/X.
+   ════════════════════════════════════════════════════════════════ */
+.ctx-menu {
+  visibility: hidden;
+}
+.ctx-menu.open {
+  visibility: visible;
+}
+.ctx-menu .ctx-panel {
+  transform: translateX(100%);
+  transition:
+    transform var(--duration-cm-slow) var(--ease-cm),
+    visibility 0s linear var(--duration-cm-slow);
+}
+.ctx-menu.open .ctx-panel {
+  transform: translateX(0);
+  transition:
+    transform var(--duration-cm-slow) var(--ease-cm),
+    visibility 0s linear 0s;
+}
+.ctx-menu .ctx-veil {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-cm) var(--ease-cm);
+}
+.ctx-menu.open .ctx-veil {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-cm-btn);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-cm-text);
+  text-align: left;
+  transition:
+    background-color var(--duration-cm) var(--ease-cm),
+    color var(--duration-cm) var(--ease-cm);
+}
+.ctx-item svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--color-cm-text-2);
+  flex-shrink: 0;
+}
+.ctx-item:hover {
+  background-color: var(--color-cm-surface);
+}
+.ctx-item:hover svg {
+  color: var(--color-cm-text);
+}
+.ctx-item.ctx-danger,
+.ctx-item.ctx-danger svg {
+  color: var(--color-cm-text-3);
+}
+.ctx-item.ctx-danger:hover,
+.ctx-item.ctx-danger:hover svg {
+  color: #f87171;
+  background-color: rgba(248, 113, 113, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctx-menu .ctx-panel,
+  .ctx-menu.open .ctx-panel,
+  .ctx-menu .ctx-veil,
+  .ctx-menu.open .ctx-veil {
+    transition: none;
+  }
+}
+
+/* Phím tắt overlay (Phase 7) — `?` mở, Esc/backdrop đóng */
+.shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-cm-border-strong);
+  background: var(--color-cm-surface);
+  color: var(--color-cm-text-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1;
+}
+.shortcut-key svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
