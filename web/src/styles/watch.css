@@ -1,0 +1,83 @@
+/* ══════════════════════════════════════════════════════════════
+   Watch page — CINEMA MINIMAL (Phase 5).
+   Thêm CUỐI global.css (sau movie.css) → thắng cascade cũ.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---------- Drawer danh sách tập (rule 03: trượt phải) ---------- */
+.watch-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(340px, 92vw);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-cm-bg-2);
+  border-left: 1px solid var(--color-cm-border);
+  box-shadow: var(--shadow-cm-up);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform var(--duration-cm-slow) var(--ease-cm),
+    visibility 0s linear var(--duration-cm-slow);
+}
+.watch-drawer.open {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform var(--duration-cm-slow) var(--ease-cm);
+}
+.drawer-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  background: var(--color-cm-bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-cm) var(--ease-cm);
+}
+.drawer-veil.open {
+  opacity: 0.72;
+  pointer-events: auto;
+}
+
+/* ---------- Server switch (dropdown nhỏ góc phải player) ---------- */
+.watch-server-dd {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+}
+.watch-server-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-cm-btn);
+  background: rgba(10, 10, 12, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-cm-text-2);
+  font-size: var(--text-cm-meta);
+  font-weight: 500;
+  transition:
+    background-color var(--duration-cm) var(--ease-cm),
+    border-color var(--duration-cm) var(--ease-cm),
+    color var(--duration-cm) var(--ease-cm);
+}
+.watch-server-trigger:hover {
+  background: rgba(10, 10, 12, 0.9);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--color-cm-text);
+}
+
+/* ---------- Thanh tiến trình của nút phát (giữ cho UI mở rộng sau) ---------- */
+.watch-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--color-cm-accent);
+  width: 0;
+  transition: width 1s linear;
+}

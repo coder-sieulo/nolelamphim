@@ -7,6 +7,8 @@ export interface RecentItem {
   episodeSlug?: string
   watchedAt: number
   tmdb_vote?: string
+  position?: number
+  duration?: number
 }
 
 export interface FavoriteItem {
@@ -48,6 +50,20 @@ export function addRecent(item: Omit<RecentItem, 'watchedAt'>) {
 
 export function removeRecent(slug: string) {
   writeJSON('recent', getRecent().filter((r) => r.slug !== slug))
+}
+
+/** Cập nhật tiến trình xem (giữ nguyên thứ tự + watchedAt) để "Tiếp tục xem"
+ *  hiện thanh tiến trình thật (Home/Recent/profile dùng chung source này). */
+export function updateRecentProgress(slug: string, position: number, duration: number) {
+  const prev = getRecent()
+  const idx = prev.findIndex((r) => r.slug === slug)
+  if (idx < 0) return
+  prev[idx] = {
+    ...prev[idx],
+    position: Number.isFinite(position) && position >= 0 ? Math.min(position, duration * 0.92) : prev[idx].position,
+    duration: Number.isFinite(duration) && duration > 0 ? duration : prev[idx].duration,
+  }
+  writeJSON('recent', prev)
 }
 
 export function getFavorites(): FavoriteItem[] {

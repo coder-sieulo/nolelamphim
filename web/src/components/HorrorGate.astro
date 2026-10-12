@@ -1,0 +1,160 @@
+---
+/**
+ * HorrorGate — cổng cảnh báo phim kinh dị + loader "mắt đỏ" (Phase 5).
+ * Tách khỏi trang xem: chỉ render khi phim có category kinh-di.
+ * variant="gate"   → overlay toàn màn hình (cảnh báo → cờ pride → Oke).
+ * variant="loader" → lớp nạp phim đặt trong player (id #player-loader, do
+ *                    script trang xem điều khiển show/hide).
+ */
+interface Props {
+  slug?: string
+  variant: 'gate' | 'loader'
+}
+const { slug = '', variant } = Astro.props
+---
+
+{
+  variant === 'gate' && (
+    <div id="horror-warning" data-back={`/phim/${slug}`} class="fixed inset-0 z-[120] flex items-center justify-center p-6 pointer-events-auto">
+      <div class="absolute inset-0 bg-[#080000]/92"></div>
+      <div class="relative w-full max-w-lg rounded-[var(--radius-cm-modal)] overflow-hidden border border-[#FF2222]/25 bg-[#0d0004]/95 shadow-[0_0_80px_-20px_rgba(255,0,30,0.35)]">
+        {/* Bước 1: cảnh báo */}
+        <div id="horror-step-alert" class="p-8 md:p-10 space-y-6">
+          <div class="space-y-4">
+            <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
+              Bạn sắp xem một bộ phim kinh dị siêu biến thái về mặt tâm lý.
+              Nếu bạn có bị giật mình mà ném bay cả điện thoại vào tường
+              thì tự chịu tiền thay màn hình chứ web không đền.
+            </p>
+            <p class="text-[13px] md:text-[15px] leading-relaxed text-[#ffccaa]">
+              Đặc biệt, đội ngũ Dev đang trùm chăn code cái dòng này
+              cũng đang rất sợ, nên đêm nay có bị bóng đè thì tự đi mà niệm chú
+              chứ tuyệt đối không được lên mạng chửi tụi tôi.
+            </p>
+            <p class="text-base md:text-lg font-bold text-[#FF3344] tracking-wide">
+              Bạn có đồng tình không?
+            </p>
+          </div>
+          <div class="flex gap-3">
+            <button
+              id="horror-agree"
+              type="button"
+              class="flex-1 rounded-[var(--radius-cm-btn)] px-5 py-3 text-sm font-bold tracking-wide bg-[#FF0033] text-white border border-[#FF3344]/40 hover:brightness-110 transition-all"
+            >
+              TOI DONG TINH
+            </button>
+            <button
+              id="horror-decline"
+              type="button"
+              class="flex-1 rounded-[var(--radius-cm-btn)] px-5 py-3 text-sm font-bold tracking-wide bg-[#1a0006] text-[#ff8888] border border-[#ff2222]/25 hover:bg-[#2a0008] transition-all"
+            >
+              TOI KHONG DONG TINH
+            </button>
+          </div>
+        </div>
+
+        {/* Bước 2: cờ 7 màu */}
+        <div id="horror-step-pride" class="hidden p-8 md:p-10 space-y-6 text-center border-t border-white/10">
+          <div class="flex justify-center mb-5">
+            <div class="pride-flag-svg relative">
+              <svg width="260" height="150" viewBox="0 0 260 160" fill="none" aria-label="Cờ 7 màu" role="img">
+                <defs>
+                  <clipPath id="pride-wave">
+                    <path d="M8 20 C 50 8, 90 30, 130 18 C 170 6, 215 28, 250 14 L 252 140 C 215 154, 170 132, 130 144 C 90 156, 50 134, 10 146 Z" />
+                  </clipPath>
+                </defs>
+                <g clip-path="url(#pride-wave)">
+                  <rect x="0" y="0" width="260" height="23" fill="#FF0000" />
+                  <rect x="0" y="23" width="260" height="23" fill="#FF7F00" />
+                  <rect x="0" y="46" width="260" height="23" fill="#FFFF00" />
+                  <rect x="0" y="69" width="260" height="23" fill="#00C21F" />
+                  <rect x="0" y="92" width="260" height="23" fill="#1A00C2" />
+                  <rect x="0" y="115" width="260" height="23" fill="#7B00C2" />
+                  <rect x="0" y="138" width="260" height="22" fill="#FF00B0" />
+                </g>
+                <rect x="-2" y="-2" width="258" height="158" rx="4" stroke="rgba(255,255,255,0.25)" fill="none" />
+              </svg>
+              <div class="pride-pole absolute -left-1 top-0 bottom-0 w-[5px] rounded bg-gradient-to-b from-white/70 to-white/30"></div>
+            </div>
+          </div>
+          <p class="text-base md:text-lg leading-relaxed text-gray-100 font-medium">
+            Cảm ơn bạn đã dũng cảm công khai xu hướng tính dục!
+            <br />
+            Chúc bạn xem phim ma vui vẻ cùng bạn đời.
+          </p>
+          <button
+            id="horror-oke"
+            type="button"
+            class="inline-block rounded-[var(--radius-cm-btn)] px-10 py-3 text-sm font-bold tracking-wide text-white bg-white/10 border border-white/30 hover:bg-white/20 transition-all"
+          >
+            Oke
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{
+  variant === 'loader' && (
+    <div
+      id="player-loader"
+      class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center gap-5"
+      aria-live="polite"
+      role="status"
+    >
+      <div class="horror-loader relative w-28 h-28 md:w-32 md:h-32">
+        <div class="horror-ring absolute inset-0 rounded-full border-2 border-[#FF0033]/25"></div>
+        <div class="horror-ring absolute inset-2 rounded-full border border-[#FF0033]/40"></div>
+        <div class="horror-eye absolute inset-0 flex items-center justify-center">
+          <div class="horror-pupil w-16 h-16 md:w-[4.5rem] md:h-[4.5rem] rounded-full bg-[#5a0000]"></div>
+          <div class="horror-glint absolute w-5 h-5 rounded-full bg-white/30 blur-[2px] horror-glint-move"></div>
+        </div>
+      </div>
+      <div class="flex flex-col items-center gap-1.5">
+        <p class="horror-title text-lg md:text-xl font-bold text-[#FF3344] tracking-wide">Đang nạp phim</p>
+        <p class="text-[11px] text-red-200/30 tracking-[0.3em] uppercase">Đèn đã tắt... hãy bình tĩnh</p>
+      </div>
+      <div class="film-bar w-44 h-1 rounded-full overflow-hidden bg-[#FF0033]/10 relative">
+        <div class="horror-bar h-full rounded-full bg-[#FF0033]"></div>
+      </div>
+    </div>
+  )
+}
+
+{
+  variant === 'gate' && (
+    <script>
+      import { registerPageInit } from '../scripts/lifecycle'
+
+      registerPageInit(() => {
+        const warning = document.getElementById('horror-warning')
+        if (!warning) return () => {}
+        const root = warning
+        const backHref = root.dataset.back || '/'
+        const alertStep = document.getElementById('horror-step-alert')
+        const prideStep = document.getElementById('horror-step-pride')
+        const agree = document.getElementById('horror-agree')
+        const decline = document.getElementById('horror-decline')
+        const oke = document.getElementById('horror-oke')
+
+        function closeWarning() {
+          root.classList.add('hidden')
+          document.body.classList.remove('overflow-hidden')
+          const play = document.getElementById('player-play') as HTMLButtonElement | null
+          play?.click()
+        }
+        agree?.addEventListener('click', () => {
+          alertStep?.classList.add('hidden')
+          prideStep?.classList.remove('hidden')
+        })
+        decline?.addEventListener('click', () => {
+          window.location.href = backHref
+        })
+        oke?.addEventListener('click', closeWarning)
+        document.body.classList.add('overflow-hidden')
+        return () => {}
+      })
+    </script>
+  )
+}

@@ -144,3 +144,9 @@
 .ep-btn:active {
   transform: scale(0.96);
 }
+.ep-btn.current {
+  background: var(--color-cm-accent);
+  border-color: var(--color-cm-accent);
+  color: #fff;
+  font-weight: 600;
+}

@@ -172,6 +172,15 @@ Brief §11:
 
 ### PHASE 5 — Trang xem phim `/xem/[slug]/[episode]`
 
+> ✅ **Đã hoàn thành (Phase 5).**
+> - Player flat trên cùng (bỏ `glass-frame`/ken-burns): poster + nút phát + `Bấm để phát`, tự phát phim kinh dị.
+> - Server switch → **dropdown nhỏ góc phải player** (`.watch-server-dd`, popover `.dropdown`, chỉ render khi >1 server); drawer có server chips.
+> - Episode list → **drawer trượt phải** (rule 03): `watch-drawer` + veil, mở bằng nút `Danh sách tập`, đóng bằng X/veil/Escape, khóa scroll khi mở.
+> - Nav `Tập trước · Danh sách tập · Tập tiếp` flat, chevron SVG; giữ keyboard `←/→/F/Escape`.
+> - **Tiếp tục xem thật**: iframe embed là cross-origin bên thứ 3 nên **không đọc được** `timeupdate/ended` → không làm được resume-seek tại thời điểm cụ thể hay countdown next-ep (defer, ghi chú §5 mục Smart player). Thay vào đó record **time-spent**: `store.updateRecentProgress(position,duration)` mỗi 10s (cap 92% thời lượng), sync lên tài khoản mỗi 30s → thanh tiến trình `Tiếp tục xem` ở Home/Recent/profile thành thật.
+> - **HorrorGate.astro** (tách khỏi trang, 2 variant `gate`/`loader`), skin flat (bỏ gradient nặng), giữ cờ pride + chặn scroll + click play khi Oke.
+> - CDP xác minh desktop + mobile (drawer 340px trượt trong viewport 390px), không glass/glyph trong body.
+
 Brief §12/§13:
 - **Player chiếm toàn bộ viewport** (khối video trước, `100dvh` trên mobile), phần info cuộn xuống dưới.
 - Controls tối giản theo wireframe: play/seek/time · quality/CC/volume/fullscreen.
@@ -269,7 +278,7 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 | P6 · `/download` (làm sớm) | ✅ xong (commit `ff8c800`) | Khôi phục link `Tải App` → `/download` trong Footer (Phase 1 đã bỏ); skin CINEMA MINIMAL cho trang download; giữ nguyên fetch GitHub release (`vien105200318/nolelamphim`) |
 | P3 Listing + Search | ✅ xong (commit `b0ad041`) | `ListingPage.astro` dùng chung 4 trang `/danh-sach`/`/the-loai`/`/quoc-gia`/`/nam`; thêm route `/danh-sach/phim-moi-cap-nhat` (dead link cũ từ Home+Footer); MovieFilters + SearchClient + pagination + recent/favorites scripts cm; bỏ glyph ✓ / ★ → SVG |
 | P4 Chi tiết phim | ✅ xong (commit `21b187f`) | `[slug].astro` CINEMA MINIMAL: breadcrumb cm, backdrop 1 lớp (bỏ ken-burns/glass-frame), CTA row `[▶ Xem ngay][＋ Danh sách][♡][↗ Chia sẻ]` (icon SVG, không glyph), `Tabs.astro` mới (Tổng quan·Trailer lazy·Diễn viên·Tập phim·Đánh giá, panel `data-panel`, iframe `data-src`), sidebar tech-info + thể loại (desktop), CTA sticky mobile trên bottom-nav, mô tả clamp 3 dòng + `Xem thêm`, bỏ Reveal.astro + ken-burns; Flat skin cho FavoriteButton (2 variant action/icon đồng bộ), ShareButton, RatingBox (5 face icon), EpisodeList (pagination SVG `«‹›»`→SVG), MovieComments, ReportButton, XemChungButton; state.css `.fav-active` flat, bỏ `.star-*`; MovieGrid + pagination.ts bỏ glyph `«‹›»` |
-| P5 Watch page | ⏳ chưa làm | — |
+| P5 Watch page | ✅ xong (commit `TBD`) | `[episode].astro` CINEMA MINIMAL: player flat (bỏ glass), server dropdown góc phải (`watch-server-dd`, chỉ khi >1 server), drawer danh sách tập (đóng X/veil/Escape, khóa scroll), nav flat chevron SVG, HorrorGate.astro tách riêng (gate/loader), tiến trình xem thật (time-spent → updateRecentProgress local + sync tài khoản 30s, cap 92%); defer seek-resume/countdown next-ep vì iframe cross-origin không cho đọc playback |
 | P6 Library/profile/trang phụ | ⏳ chưa làm | — |
 | P7 Hidden features + polish | ⏳ chưa làm | — |
 | P8 Regression & bàn giao | ⏳ chưa làm | — |

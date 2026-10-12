@@ -19,3 +19,4 @@
 @import "./shell.css"; /* Shell header/bottom-nav/search (Phase 1) — dùng token cm-* */
 @import "./home.css"; /* Homepage (Phase 2) — CINEMA MINIMAL */
 @import "./movie.css"; /* Movie detail (Phase 4) — CINEMA MINIMAL */
+@import "./watch.css"; /* Watch page (Phase 5) — CINEMA MINIMAL, cuối cùng → thắng hết */
