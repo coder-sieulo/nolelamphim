@@ -198,6 +198,15 @@ Brief §12/§13:
 
 ### PHASE 6 — Thư viện, Profile, trang phụ (🟡 có backend nhỏ)
 
+> ✅ **Đã hoàn thành (Phase 6).**
+> - `/profile` → skin CINEMA MINIMAL: header avatar + chỉ số (yêu thích/đã xem), nhóm Yêu thích · Tiếp tục xem · Đánh giá · Đã xem gần đây; nút Discord giữ màu thương hiệu; 3 trạng thái (chưa đăng nhập / trống / có data).
+> - `/404` → số 404 bằng `--color-cm-accent` phẳng (bỏ `gradient-text` + `glass-tile`).
+> - `/phim-dna` → toàn bộ surface/chip/button về `cm-*` phẳng, nút CTA nhấn accent, thanh tiến trình flat; giữ emoji làm **nội dung** câu hỏi/kết quả (không phải icon UI); bar DNA giữ 2 màu của profile như decor dữ liệu.
+> - `/xem-chung` (index/room/admin) → bỏ hết `glass-*`/`content-card`/gradient; chat + room + lookup dùng inline SVG cho icon (link/stop/trash/xoá-mute/ban) thay glyph `🔗🗑■🔇🚫✓`; nút dashboard/host accent phẳng.
+> - **Fix bug sẵn có**: countdown "Sắp công chiếu" trong phòng chưa bao giờ hiển thị (nhánh `!playingNow()` nuốt nhánh scheduled) — tách `upcoming` để ring countdown chạy thật, đã test CDP (scheduled → đếm ngược; playing → overlay chặn khách mới).
+> - CDP xác minh: DNA quiz 5 câu → kết quả (6 bar + 6 gợi ý), guest xem-chung, profile guest, room scheduled/playing, `astro check` 0 lỗi + build pass. Collections + notification defer (giữ nguyên mục 🟡 dưới).
+> - `/download` đã xong trước đó (commit `ff8c800`), `/favorites` + `/recent` đã phẳng từ Phase 3.
+
 - `/profile` → brief §14: header avatar + 6 mục (Tiếp tục xem / Danh sách của tôi / Lịch sử / Đánh giá / Bộ sưu tập / Cài đặt), **không dashboard**.
 - `/favorites` → "Danh sách của tôi" grid + tabs `[Tất cả][Phim][Series]` (đã có `type` trên Movie).
 - **🟡 Collections** (brief §15/§16): Redis `user:coll:{sub}` (id, name, slugs[], visibility) + API `pages/api/user/collections.ts` (GET/POST/PUT/DELETE) + route `/collection/[id]`. *Phase riêng, làm sau khi UI ổn.*
@@ -279,6 +288,6 @@ Mỗi phase = 1 commit/PR chạy được, không để main vỡ.
 | P3 Listing + Search | ✅ xong (commit `b0ad041`) | `ListingPage.astro` dùng chung 4 trang `/danh-sach`/`/the-loai`/`/quoc-gia`/`/nam`; thêm route `/danh-sach/phim-moi-cap-nhat` (dead link cũ từ Home+Footer); MovieFilters + SearchClient + pagination + recent/favorites scripts cm; bỏ glyph ✓ / ★ → SVG |
 | P4 Chi tiết phim | ✅ xong (commit `21b187f`) | `[slug].astro` CINEMA MINIMAL: breadcrumb cm, backdrop 1 lớp (bỏ ken-burns/glass-frame), CTA row `[▶ Xem ngay][＋ Danh sách][♡][↗ Chia sẻ]` (icon SVG, không glyph), `Tabs.astro` mới (Tổng quan·Trailer lazy·Diễn viên·Tập phim·Đánh giá, panel `data-panel`, iframe `data-src`), sidebar tech-info + thể loại (desktop), CTA sticky mobile trên bottom-nav, mô tả clamp 3 dòng + `Xem thêm`, bỏ Reveal.astro + ken-burns; Flat skin cho FavoriteButton (2 variant action/icon đồng bộ), ShareButton, RatingBox (5 face icon), EpisodeList (pagination SVG `«‹›»`→SVG), MovieComments, ReportButton, XemChungButton; state.css `.fav-active` flat, bỏ `.star-*`; MovieGrid + pagination.ts bỏ glyph `«‹›»` |
 | P5 Watch page | ✅ xong (commit `2bab473`) | `[episode].astro` CINEMA MINIMAL: player flat (bỏ glass), server dropdown góc phải (`watch-server-dd`, chỉ khi >1 server), drawer danh sách tập (đóng X/veil/Escape, khóa scroll), nav flat chevron SVG, HorrorGate.astro tách riêng (gate/loader), tiến trình xem thật (time-spent → updateRecentProgress local + sync tài khoản 30s, cap 92%); defer seek-resume/countdown next-ep vì iframe cross-origin không cho đọc playback |
-| P6 Library/profile/trang phụ | ⏳ chưa làm | — |
+| P6 Library/profile/trang phụ | ✅ xong (commit `TBD`) | profile / 404 / phim-dna / xem-chung (index · room · admin) về CINEMA MINIMAL: bỏ glass-tile/frame/dropdown + content-card + gradient; icon glyph `🔗🗑■🔇🚫✓` → inline SVG; DNA quiz giữ emoji nội dung; fix bug countdown "Sắp công chiếu" chưa từng hiển thị (tách `upcoming` trong drawFrame); CDP pass scheduled/playing/quiz/guest; defer 🟡 Collections + Notification |
 | P7 Hidden features + polish | ⏳ chưa làm | — |
 | P8 Regression & bàn giao | ⏳ chưa làm | — |

@@ -12,85 +12,85 @@ if (!user || !isAdmin(user)) {
 
 <BaseLayout title="Quản trị Công chiếu" description="Dashboard quản trị buổi công chiếu Xem Chung." noIndex>
   <ThemeBG name="xem-chung" />
-  <main class="px-4 md:px-8 py-6 max-w-5xl mx-auto" data-admin-page data-room-code="">
+  <main class="px-4 sm:px-6 md:px-8 py-6 pb-24 lg:pb-12 max-w-5xl mx-auto" data-admin-page data-room-code="">
     <div class="flex items-center justify-between gap-3 flex-wrap mb-6">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl glass-tile flex items-center justify-center text-[#FF6B9D]"><FaCalendarCheck className="w-5 h-5" /></div>
+        <div class="w-10 h-10 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border flex items-center justify-center text-cm-accent"><FaCalendarCheck className="w-5 h-5" /></div>
         <div>
-          <h1 class="text-lg font-bold text-text-primary">Quản trị buổi công chiếu</h1>
-          <p class="text-xs text-text-muted">Tạo lịch chiếu & quản lý phòng — chỉ admin xem được.</p>
+          <h1 class="text-lg font-bold text-cm-text">Quản trị buổi công chiếu</h1>
+          <p class="text-cm-meta text-cm-text-3">Tạo lịch chiếu & quản lý phòng — chỉ admin xem được.</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="xc-refresh" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors"><FaRotate className="w-3 h-3" /> Làm mới</button>
-        <a href="/xem-chung" class="px-3 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors">Trang Xem Chung</a>
+        <button id="xc-refresh" type="button" class="inline-flex items-center gap-1.5 h-10 px-3 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-meta font-medium text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]"><FaRotate className="w-3 h-3" /> Làm mới</button>
+        <a href="/xem-chung" class="inline-flex items-center h-10 px-3 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-meta font-medium text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">Trang Xem Chung</a>
       </div>
     </div>
 
     <div class="grid lg:grid-cols-2 gap-4 items-start mb-6">
       <!-- Tạo buổi công chiếu -->
-      <div class="content-card p-5 space-y-3">
-        <h2 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaPlus className="w-3.5 h-3.5 text-[#FF6B9D]" /> Tạo buổi công chiếu</h2>
+      <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] p-5 space-y-3">
+        <h2 class="text-cm-body font-bold text-cm-text flex items-center gap-2"><FaPlus className="w-3.5 h-3.5 text-cm-accent" /> Tạo buổi công chiếu</h2>
 
         <div class="relative">
-          <FaMagnifyingGlass className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+          <FaMagnifyingGlass className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-cm-text-3" />
           <input
             id="xc-lookup"
             type="text"
             placeholder="Gõ tên phim để tìm..."
             autocomplete="off"
-            class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50"
+            class="w-full pl-10 pr-4 h-11 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-body text-cm-text placeholder:text-cm-text-3 focus:outline-none focus:border-cm-accent/60 transition-colors duration-[var(--duration-cm)]"
           />
-          <div id="xc-lookup-res" class="hidden absolute left-0 right-0 top-full mt-2 z-30 max-h-72 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
+          <div id="xc-lookup-res" class="hidden absolute left-0 right-0 top-full mt-2 z-30 max-h-72 overflow-y-auto rounded-[var(--radius-cm-card)] bg-cm-elevated border border-cm-border shadow-[var(--shadow-cm-up)]"></div>
         </div>
 
         <div id="xc-ep-picker" class="hidden space-y-2">
-          <div class="flex items-center gap-3 p-3 rounded-xl glass-tile">
-            <img id="xc-pick-thumb" alt="" class="w-14 h-20 rounded-md object-cover shrink-0 bg-bg-card glass-frame" />
+          <div class="flex items-center gap-3 p-3 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border">
+            <img id="xc-pick-thumb" alt="" class="w-14 h-20 rounded-[var(--radius-cm-btn)] object-cover shrink-0 bg-cm-bg-2 border border-cm-border" />
             <div class="min-w-0">
-              <p id="xc-pick-name" class="text-sm font-bold text-text-primary truncate"></p>
-              <p id="xc-pick-meta" class="text-[11px] text-text-muted"></p>
+              <p id="xc-pick-name" class="text-cm-body font-bold text-cm-text truncate"></p>
+              <p id="xc-pick-meta" class="text-[11px] text-cm-text-3"></p>
             </div>
           </div>
-          <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1 px-1">Chọn tập/nguồn</p>
+          <p class="text-[11px] font-semibold text-cm-text-3 uppercase tracking-wide mb-1 px-1">Chọn tập/nguồn</p>
           <div id="xc-ep-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-44 overflow-y-auto p-1"></div>
         </div>
 
         <div id="xc-schedule-pick" class="hidden space-y-3 pt-1">
           <div>
-            <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1.5 px-1">Giờ công chiếu (giờ địa phương)</p>
-            <input id="xc-schedule-dt" type="datetime-local" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary focus:outline-none focus:border-[#C44BED]/50" />
+            <p class="text-[11px] font-semibold text-cm-text-3 uppercase tracking-wide mb-1.5 px-1">Giờ công chiếu (giờ địa phương)</p>
+            <input id="xc-schedule-dt" type="datetime-local" class="w-full px-4 h-11 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-body text-cm-text focus:outline-none focus:border-cm-accent/60 transition-colors duration-[var(--duration-cm)]" />
           </div>
           <div>
-            <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1.5 px-1">Mã phòng (tuỳ chọn, 4–8 ký tự)</p>
+            <p class="text-[11px] font-semibold text-cm-text-3 uppercase tracking-wide mb-1.5 px-1">Mã phòng (tuỳ chọn, 4–8 ký tự)</p>
             <input id="xc-code"
               type="text"
               maxlength="8"
               autocapitalize="characters"
               autocomplete="off"
               placeholder="VD: MMA404"
-              class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary uppercase tracking-widest placeholder:text-text-muted placeholder:normal-case focus:outline-none focus:border-[#C44BED]/50"
+              class="w-full px-4 h-11 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-body text-cm-text uppercase tracking-widest placeholder:text-cm-text-3 placeholder:normal-case focus:outline-none focus:border-cm-accent/60 transition-colors duration-[var(--duration-cm)]"
             />
           </div>
-          <button id="xc-create" type="button" class="w-full px-5 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Tạo lịch công chiếu</button>
-          <p id="xc-create-msg" class="hidden text-xs text-red-400"></p>
+          <button id="xc-create" type="button" class="w-full h-12 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-[var(--duration-cm)]">Tạo lịch công chiếu</button>
+          <p id="xc-create-msg" class="hidden text-cm-meta text-red-400"></p>
         </div>
       </div>
 
       <!-- Danh sách phòng -->
-      <div class="content-card p-5">
+      <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] p-5">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaFilm className="w-3.5 h-3.5 text-[#FF6B9D]" /> Phòng công chiếu</h2>
-          <span id="xc-count" class="text-[11px] text-text-muted"></span>
+          <h2 class="text-cm-body font-bold text-cm-text flex items-center gap-2"><FaFilm className="w-3.5 h-3.5 text-cm-accent" /> Phòng công chiếu</h2>
+          <span id="xc-count" class="text-[11px] text-cm-text-3"></span>
         </div>
         <div id="xc-rooms" class="space-y-2 max-h-[34rem] overflow-y-auto pr-1">
-          <p class="text-xs text-text-muted py-6 text-center">Đang tải...</p>
+          <p class="text-cm-meta text-cm-text-3 py-6 text-center">Đang tải...</p>
         </div>
       </div>
     </div>
 
     <!-- Link chia sẻ nổi -->
-    <div id="xc-share-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl glass-dropdown text-sm font-semibold text-text-primary shadow-2xl"></div>
+    <div id="xc-share-toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-[var(--radius-cm-btn)] bg-cm-elevated border border-cm-border text-cm-body font-semibold text-cm-text shadow-[var(--shadow-cm-up)]"></div>
   </main>
 
   <script>
@@ -107,6 +107,15 @@ if (!user || !isAdmin(user)) {
     function escapeHTML(s: string): string {
       return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
     }
+
+    const ICON_LINK =
+      '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.59 13.41c.41.39.41 1.03 0 1.42-.39.39-1.03.39-1.42 0a5.001 5.001 0 0 1 0-7.07l3.54-3.54a5.001 5.001 0 0 1 7.07 0 5.001 5.001 0 0 1 0 7.07l-1.49 1.49c.01-.82-.12-1.64-.4-2.42l.47-.48a2.982 2.982 0 0 0 0-4.24 2.982 2.982 0 0 0-4.24 0l-3.53 3.53a2.982 2.982 0 0 0 0 4.24l.26.26zM13.41 10.59a1.003 1.003 0 0 0-1.42 0 1.003 1.003 0 0 0 0 1.42l.01.01a5.001 5.001 0 0 1 0 7.07l-3.54 3.54a5.001 5.001 0 0 1-7.07 0 5.001 5.001 0 0 1 0-7.07l1.49-1.49c-.01.82.12 1.64.4 2.42l-.47.48a2.982 2.982 0 0 0 0 4.24 2.982 2.982 0 0 0 4.24 0l3.53-3.53a2.982 2.982 0 0 0 0-4.24z"/></svg>'
+    const ICON_STOP =
+      '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>'
+    const ICON_TRASH =
+      '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 7h12l-.9 12.6a2 2 0 0 1-2 1.9H8.9a2 2 0 0 1-2-1.9L6 7zm3 .6l.5 11.4h1l-.4-11.4H9zm3 0v11.4h1V7.6h-1zm3 0l-.4 11.4h1l.5-11.4H15zM9 3h6v2H9V3z"/></svg>'
+    const ICON_CLOCK =
+      '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-.6-12h1.8v4.4l3.6 2.1-.9 1.5-4.5-2.7V8z"/></svg>'
 
     registerPageInit(() => {
       const page = document.querySelector<HTMLElement>('[data-admin-page]')
@@ -134,10 +143,11 @@ if (!user || !isAdmin(user)) {
         return `${s}s`
       }
       function statusBadge(r: AdminRoom): string {
-        if (r.status === 'ended') return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-text-muted">Đã kết thúc</span>'
-        if (r.status === 'playing') return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-400">● Đang công chiếu</span>'
-        if (r.status === 'scheduled') return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#C44BED]/20 text-[#E2A6FF]">⏳ Sắp chiếu</span>'
-        return '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-text-muted">Mở tự do</span>'
+        const pill = 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold'
+        if (r.status === 'ended') return `<span class="${pill} bg-cm-surface text-cm-text-3 border border-cm-border">Đã kết thúc</span>`
+        if (r.status === 'playing') return `<span class="${pill} bg-emerald-500/10 text-emerald-400 border border-emerald-500/15"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Đang công chiếu</span>`
+        if (r.status === 'scheduled') return `<span class="${pill} bg-cm-surface text-cm-accent border border-cm-border">${ICON_CLOCK}Sắp chiếu</span>`
+        return `<span class="${pill} bg-cm-surface text-cm-text-3 border border-cm-border">Mở tự do</span>`
       }
 
       function renderRooms() {
@@ -146,29 +156,29 @@ if (!user || !isAdmin(user)) {
         if (!list) return
         if (count) count.textContent = `${rooms.length} phòng`
         if (!rooms.length) {
-          list.innerHTML = '<p class="text-xs text-text-muted py-6 text-center">Chưa có phòng nào. Tạo buổi công chiếu ở bên trái.</p>'
+          list.innerHTML = '<p class="text-cm-meta text-cm-text-3 py-6 text-center">Chưa có phòng nào. Tạo buổi công chiếu ở bên trái.</p>'
           return
         }
         list.innerHTML = rooms.map((r) => `
-          <div class="rounded-xl glass-tile p-3">
+          <div class="rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border p-3">
             <div class="flex items-center justify-between gap-2">
               <div class="min-w-0">
-                <p class="text-sm font-bold text-text-primary truncate flex items-center gap-2">
+                <p class="text-cm-body font-bold text-cm-text truncate flex items-center gap-2">
                   ${escapeHTML(r.movie?.movieName || 'Phòng trống')}
                   ${statusBadge(r)}
                 </p>
-                <p class="text-[11px] text-text-muted mt-0.5 truncate">#${r.code} ${r.movie?.epName ? '• ' + escapeHTML(r.movie.epName) : ''}</p>
-                <p class="text-[11px] text-text-secondary mt-0.5">
-                  ${r.status === 'scheduled' ? `Chiếu lúc <b class="text-text-primary">${fmtDT(r.startTime)}</b> • còn <b class="text-[#E2A6FF]">${fmtRemain(r.startTime)}</b>` : r.status === 'playing' ? `Đang phát từ ${fmtDT(r.startTime)}` : '—'}
+                <p class="text-[11px] text-cm-text-3 mt-0.5 truncate">#${r.code} ${r.movie?.epName ? '• ' + escapeHTML(r.movie.epName) : ''}</p>
+                <p class="text-[11px] text-cm-text-2 mt-0.5">
+                  ${r.status === 'scheduled' ? `Chiếu lúc <b class="text-cm-text">${fmtDT(r.startTime)}</b> • còn <b class="text-cm-accent">${fmtRemain(r.startTime)}</b>` : r.status === 'playing' ? `Đang phát từ ${fmtDT(r.startTime)}` : '—'}
                   • ${r.members.length} người
                 </p>
               </div>
             </div>
             <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-              <button type="button" class="xc-copy px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-text-secondary hover:text-white" data-code="${r.code}">🔗 Link</button>
-              <button type="button" class="xc-goto px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-text-secondary hover:text-white" data-code="${r.code}">Vào phòng</button>
-              ${r.status !== 'ended' ? `<button type="button" class="xc-end px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-text-muted hover:text-white" data-code="${r.code}">■ Kết thúc</button>` : ''}
-              <button type="button" class="xc-del px-2.5 py-1.5 rounded-lg glass-tile text-[11px] font-medium text-red-400 hover:text-red-300" data-code="${r.code}">🗑 Xoá</button>
+              <button type="button" class="xc-copy inline-flex items-center gap-1 px-2.5 h-8 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-[11px] font-medium text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]" data-code="${r.code}">${ICON_LINK}Link</button>
+              <button type="button" class="xc-goto inline-flex items-center gap-1 px-2.5 h-8 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-[11px] font-medium text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]" data-code="${r.code}">Vào phòng</button>
+              ${r.status !== 'ended' ? `<button type="button" class="xc-end inline-flex items-center gap-1 px-2.5 h-8 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-[11px] font-medium text-cm-text-3 hover:text-cm-text hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]" data-code="${r.code}">${ICON_STOP}Kết thúc</button>` : ''}
+              <button type="button" class="xc-del inline-flex items-center gap-1 px-2.5 h-8 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-[11px] font-medium text-red-400 hover:text-red-300 hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]" data-code="${r.code}">${ICON_TRASH}Xoá</button>
             </div>
           </div>
         `).join('')
@@ -226,17 +236,17 @@ if (!user || !isAdmin(user)) {
             const res = (d.results || []).slice(0, 6)
             if (!lookupRes) return
             if (!res.length) {
-              lookupRes.innerHTML = '<p class="px-4 py-2 text-xs text-text-muted">Không tìm thấy phim.</p>'
+              lookupRes.innerHTML = '<p class="px-4 py-2 text-cm-meta text-cm-text-3">Không tìm thấy phim.</p>'
               lookupRes.classList.remove('hidden')
               return
             }
             lookupRes.innerHTML = res.map((mv: AdminMovie) => `
-              <button type="button" class="xc-mv block w-full text-left px-3 py-2.5 hover:bg-white/5 transition-colors" data-slug="${escapeHTML(mv.slug)}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb || '')}">
+              <button type="button" class="xc-mv block w-full text-left px-3 py-2.5 hover:bg-cm-surface transition-colors duration-[var(--duration-cm)]" data-slug="${escapeHTML(mv.slug)}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb || '')}">
                 <span class="flex items-center gap-3">
-                  ${mv.thumb ? `<img src="${escapeHTML(mv.thumb)}" alt="" loading="lazy" decoding="async" class="w-8 h-11 rounded-md object-cover shrink-0 bg-bg-card glass-frame" />` : '<span class="w-8 shrink-0"></span>'}
+                  ${mv.thumb ? `<img src="${escapeHTML(mv.thumb)}" alt="" loading="lazy" decoding="async" class="w-8 h-11 rounded-[var(--radius-cm-btn)] object-cover shrink-0 bg-cm-bg-2 border border-cm-border" />` : '<span class="w-8 shrink-0"></span>'}
                   <span class="min-w-0">
-                    <span class="block text-sm text-text-primary truncate">${escapeHTML(mv.name)}</span>
-                    <span class="block text-[11px] text-text-muted">Chọn phim</span>
+                    <span class="block text-cm-body text-cm-text truncate">${escapeHTML(mv.name)}</span>
+                    <span class="block text-[11px] text-cm-text-3">Chọn phim</span>
                   </span>
                 </span>
               </button>
@@ -277,7 +287,7 @@ if (!user || !isAdmin(user)) {
         if (nameEl) nameEl.textContent = mv.name
         if (metaEl) metaEl.textContent = `${episodes.length} nguồn/tập`
         grid.innerHTML = episodes.map((ep, i) => `
-          <button type="button" class="xc-ep px-1.5 py-2 rounded-lg text-[11px] font-medium glass-tile text-text-secondary hover:text-white hover:bg-white/10 transition-colors truncate" data-index="${i}" title="${escapeHTML(ep.name)}">
+          <button type="button" class="xc-ep px-1.5 py-2 rounded-[var(--radius-cm-btn)] text-[11px] font-medium border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] truncate" data-index="${i}" title="${escapeHTML(ep.name)}">
             ${escapeHTML(ep.name)}
           </button>
         `).join('')
@@ -287,8 +297,8 @@ if (!user || !isAdmin(user)) {
             const ep = episodes[Number(b.dataset.index || 0)]
             if (!ep) return
             selected = { movie: mv, ep }
-            grid.querySelectorAll('.xc-ep').forEach((x) => x.classList.remove('bg-white/10', 'text-white'))
-            b.classList.add('bg-white/10', 'text-white')
+            grid.querySelectorAll('.xc-ep').forEach((x) => x.classList.remove('border-cm-border-strong', 'text-cm-text', 'bg-cm-elevated'))
+            b.classList.add('border-cm-border-strong', 'text-cm-text', 'bg-cm-elevated')
             if (metaEl) metaEl.textContent = `${mv.name} • ${ep.name}`
             $('xc-schedule-pick')?.classList.remove('hidden')
           })
@@ -322,7 +332,7 @@ if (!user || !isAdmin(user)) {
         if (!r) return showMsg('Không kết nối được server.')
         const d = await r.json()
         if (!d.ok || !d.room) return showMsg(d.error || 'Tạo thất bại.')
-        toast(`✓ Tạo phòng #${d.room.code}. Link đã sao vào clipboard.`)
+        toast(`Đã tạo phòng #${d.room.code}. Link đã chép vào clipboard.`)
         navigator.clipboard?.writeText(`${window.location.origin}/xem-chung/${d.room.code}`).catch(() => {})
         selected = null
         const inp = $('xc-code') as HTMLInputElement | null

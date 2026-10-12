@@ -1,48 +1,48 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { FaFilm, FaLink, FaDiscord, FaGaugeHigh } from 'react-icons/fa6'
+import { FaFilm, FaLink, FaGaugeHigh } from 'react-icons/fa6'
 ---
 
 <BaseLayout title="Xem Chung" description="Tạo phòng xem phim cùng bạn bè tại Nô Lệ Làm Phim." noIndex>
   <main class="flex-1" data-grid-page>
-    <div class="px-4 md:px-8 py-10 max-w-2xl mx-auto">
+    <div class="px-4 sm:px-6 md:px-8 py-10 pb-24 lg:pb-12 max-w-2xl mx-auto">
       <div class="mb-8">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h1 class="text-2xl md:text-3xl font-bold text-text-primary">Xem Chung</h1>
-            <p class="text-text-secondary text-sm mt-2">
+            <h1 class="text-2xl md:text-3xl font-bold text-cm-text">Xem Chung</h1>
+            <p class="text-cm-text-2 text-cm-body mt-2">
               Tạo phòng riêng, mời bạn bè bằng mã — mọi người cùng xem một bộ phim, không ai tua được.
               Chỉ phát sóng theo lịch của host.
             </p>
           </div>
           <a id="xc-admin-link" href="/xem-chung/admin"
-            class="hidden items-center gap-1.5 px-4 py-2 rounded-xl glass-tile text-xs font-bold text-[#E2A6FF] hover:text-white hover:bg-white/5 transition-colors">
+            class="hidden items-center gap-1.5 h-10 px-4 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-meta font-bold text-cm-accent hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">
             <FaGaugeHigh className="w-3.5 h-3.5" /> Dashboard công chiếu
           </a>
         </div>
       </div>
 
       <div class="grid gap-4 md:grid-cols-2">
-        <div class="content-card p-5">
+        <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] p-5">
           <div class="flex items-center gap-2 mb-4">
-            <div class="w-9 h-9 rounded-xl glass-tile flex items-center justify-center text-[#FF6B9D]"><FaFilm className="w-5 h-5" /></div>
+            <div class="w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border flex items-center justify-center text-cm-accent"><FaFilm className="w-5 h-5" /></div>
             <div>
-              <h2 class="text-base font-bold text-text-primary">Tạo phòng</h2>
-              <p class="text-xs text-text-muted">Bạn là host, quyết định phim + giờ chiếu</p>
+              <h2 class="text-cm-body font-bold text-cm-text">Tạo phòng</h2>
+              <p class="text-cm-meta text-cm-text-3">Bạn là host, quyết định phim + giờ chiếu</p>
             </div>
           </div>
           <button id="xc-create" type="button"
-            class="w-full px-5 py-3 rounded-xl text-sm font-bold tracking-wide bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            class="w-full h-12 rounded-[var(--radius-cm-btn)] text-cm-body font-bold tracking-wide bg-cm-accent text-white hover:bg-cm-accent-hover transition-all duration-[var(--duration-cm)] disabled:opacity-50 disabled:cursor-not-allowed">
             Tạo phòng mới
           </button>
         </div>
 
-        <div class="content-card p-5">
+        <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] p-5">
           <div class="flex items-center gap-2 mb-4">
-            <div class="w-9 h-9 rounded-xl glass-tile flex items-center justify-center text-[#FF6B9D]"><FaLink className="w-5 h-5" /></div>
+            <div class="w-9 h-9 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border flex items-center justify-center text-cm-accent"><FaLink className="w-5 h-5" /></div>
             <div>
-              <h2 class="text-base font-bold text-text-primary">Vào phòng</h2>
-              <p class="text-xs text-text-muted">Nhập mã phòng được bạn bè gửi</p>
+              <h2 class="text-cm-body font-bold text-cm-text">Vào phòng</h2>
+              <p class="text-cm-meta text-cm-text-3">Nhập mã phòng được bạn bè gửi</p>
             </div>
           </div>
           <form id="xc-join" class="flex gap-2">
@@ -54,36 +54,32 @@ import { FaFilm, FaLink, FaDiscord, FaGaugeHigh } from 'react-icons/fa6'
               autocomplete="off"
               maxlength="6"
               placeholder="ABC123"
-              class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary uppercase tracking-widest placeholder:text-text-muted placeholder:normal-case focus:outline-none focus:border-[#C44BED]/50 disabled:opacity-50"
+              class="flex-1 min-w-0 px-4 h-12 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-body text-cm-text uppercase tracking-widest placeholder:text-cm-text-3 placeholder:normal-case focus:outline-none focus:border-cm-accent/60 disabled:opacity-50 transition-colors duration-[var(--duration-cm)]"
             />
             <button type="submit"
-              class="px-5 py-3 rounded-xl text-sm font-bold glass-tile-active text-white hover:brightness-110 transition-all disabled:opacity-50">
+              class="px-5 h-12 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-all duration-[var(--duration-cm)] disabled:opacity-50">
               Vào
             </button>
           </form>
-          <p id="xc-error" class="hidden mt-3 text-xs text-red-400"></p>
+          <p id="xc-error" class="hidden mt-3 text-cm-meta text-red-400"></p>
         </div>
       </div>
 
-      <div id="xc-login-note" class="hidden mt-6 p-4 rounded-xl glass-tile text-center">
-        <p class="text-sm text-text-secondary mb-3">Cần đăng nhập Discord để xem cùng nhau.</p>
-        <a id="xc-login-btn" href="/api/auth/discord"
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">
-          <FaDiscord className="w-5 h-5" />
-          Đăng nhập bằng Discord
-        </a>
-      </div>
+      <div id="xc-login-note" class="hidden mt-6 p-4 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border text-center"></div>
 
-      <div id="xc-profile" class="hidden mt-6 p-4 rounded-xl glass-tile flex items-center gap-3">
-        <img id="xc-avatar" alt="" class="w-11 h-11 rounded-full" />
+      <div id="xc-profile" class="hidden mt-6 p-4 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border flex items-center gap-3">
+        <img id="xc-avatar" alt="" class="w-11 h-11 rounded-full border border-cm-border" />
         <div class="min-w-0">
-          <p id="xc-name" class="text-sm font-bold text-text-primary truncate"></p>
-          <p id="xc-logged" class="text-xs text-emerald-400">✓ Đã đăng nhập — bạn có thể tạo hoặc vào phòng</p>
+          <p id="xc-name" class="text-cm-body font-bold text-cm-text truncate"></p>
+          <p id="xc-logged" class="text-cm-meta text-emerald-400 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" /></svg>
+            Đã đăng nhập — bạn có thể tạo hoặc vào phòng
+          </p>
         </div>
       </div>
 
       <div id="xc-my" class="hidden mt-6">
-        <h3 class="text-sm font-bold text-text-primary mb-3">Phòng của tôi</h3>
+        <h3 class="text-cm-body font-bold text-cm-text mb-3">Phòng của tôi</h3>
         <div id="xc-my-list" class="grid gap-2"></div>
       </div>
     </div>
@@ -155,8 +151,8 @@ import { FaFilm, FaLink, FaDiscord, FaGaugeHigh } from 'react-icons/fa6'
           // Chỉ admin tạo phòng/làm host; người khác vào xem dưới tư cách guest.
           loginNote.classList.toggle('hidden', canCreate)
           const guestOrUser = authed ? escapeName(user?.global_name || user?.username || '') : escapeName(guest.name)
-          loginNote.innerHTML = `<p class="text-sm text-text-secondary mb-3">Vào với tư cách <b class="text-text-primary">${guestOrUser}</b> (xem + chat được). Chỉ admin mới được tạo phòng / làm host.</p>
-            ${authed ? '' : '<a href="/api/auth/discord" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">Đăng nhập bằng Discord</a>'}`
+          loginNote.innerHTML = `<p class="text-cm-body text-cm-text-2 mb-3">Vào với tư cách <b class="text-cm-text">${guestOrUser}</b> (xem + chat được). Chỉ admin mới được tạo phòng / làm host.</p>
+            ${authed ? '' : '<a href="/api/auth/discord" class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition-colors duration-[var(--duration-cm)]">Đăng nhập bằng Discord</a>'}`
         }
         if (!profileBox) return
         profileBox.classList.toggle('hidden', !authed)
@@ -195,13 +191,16 @@ import { FaFilm, FaLink, FaDiscord, FaGaugeHigh } from 'react-icons/fa6'
           const codes: string[] = data?.codes || []
           myBox.classList.remove('hidden')
           if (!codes.length) {
-            myList.innerHTML = '<p class="text-xs text-text-muted">Bạn chưa tham gia phòng nào.</p>'
+            myList.innerHTML = '<p class="text-cm-meta text-cm-text-3">Bạn chưa tham gia phòng nào.</p>'
             return
           }
           myList.innerHTML = codes.map((c) => `
-            <a href="/xem-chung/${c}" class="flex items-center justify-between px-4 py-3 rounded-xl glass-tile text-sm hover:bg-white/5 transition-colors">
-              <span class="font-mono tracking-widest">${c}</span>
-              <span class="text-xs text-text-muted">Vào phòng →</span>
+            <a href="/xem-chung/${c}" class="flex items-center justify-between px-4 h-12 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border text-cm-body hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">
+              <span class="font-mono tracking-widest text-cm-text">${c}</span>
+              <span class="flex items-center gap-1 text-cm-meta text-cm-text-3">
+                Vào phòng
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6L8.6 7.4 13.2 12l-4.6 4.6L10 18l6-6-6-6z"/></svg>
+              </span>
             </a>
           `).join('')
         } catch {}

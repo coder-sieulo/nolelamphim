@@ -13,28 +13,28 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
     <!-- LANDING -->
     <div id="dna-landing" class="flex flex-col items-center justify-center text-center gap-6 py-16">
       <div class="text-6xl mb-2"><FaDna /></div>
-      <h1 class="text-3xl sm:text-4xl font-bold text-text-primary leading-tight">Phim DNA</h1>
-      <p class="text-text-secondary text-sm sm:text-base max-w-md leading-relaxed">
+      <h1 class="text-3xl sm:text-4xl font-bold text-cm-text leading-tight">Phim DNA</h1>
+      <p class="text-cm-text-2 text-cm-body sm:text-base max-w-md leading-relaxed">
         Mỗi người có một "DNA phim" riêng. Trả lời 5 câu hỏi ngắn — chúng tôi sẽ phân tích thể loại yêu thích của bạn và gợi ý phim hợp nhất.
       </p>
       <button
         id="dna-start"
-        class="mt-4 px-8 py-3 rounded-2xl bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white font-semibold text-sm shadow-[0_8px_32px_rgba(196,75,237,0.4)] hover:shadow-[0_12px_40px_rgba(196,75,237,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+        class="mt-4 h-12 px-8 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white font-semibold text-cm-body hover:bg-cm-accent-hover active:scale-[0.98] transition-all duration-[var(--duration-cm)]"
       >
         Bắt đầu ngay
       </button>
-      <p class="text-text-muted text-xs">Chỉ mất 30 giây</p>
+      <p class="text-cm-text-3 text-cm-meta">Chỉ mất 30 giây</p>
     </div>
 
     <!-- QUIZ -->
     <div id="dna-quiz" class="hidden">
       <div class="flex items-center gap-3 mb-6">
-        <span id="dna-progress-text" class="text-xs text-text-muted font-medium">1 / 5</span>
-        <div class="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div id="dna-progress-bar" class="h-full rounded-full bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] transition-all duration-500 ease-out" style="width:20%"></div>
+        <span id="dna-progress-text" class="text-cm-meta text-cm-text-3 font-medium">1 / 5</span>
+        <div class="flex-1 h-1.5 rounded-full bg-cm-surface border border-cm-border overflow-hidden">
+          <div id="dna-progress-bar" class="h-full rounded-full bg-cm-accent transition-all duration-500 ease-out" style="width:20%"></div>
         </div>
       </div>
-      <h2 id="dna-question-title" class="text-xl sm:text-2xl font-bold text-text-primary mb-6"></h2>
+      <h2 id="dna-question-title" class="text-xl sm:text-2xl font-bold text-cm-text mb-6"></h2>
       <div id="dna-options" class="grid grid-cols-2 gap-3"></div>
     </div>
 
@@ -42,20 +42,20 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
     <div id="dna-result" class="hidden">
       <div class="text-center mb-8">
         <div id="dna-avatar" class="text-6xl mb-3"></div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-text-primary mb-2">Bạn là...</h1>
-        <h2 id="dna-type-name" class="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B9D] via-[#C44BED] to-[#4A9EFF] mb-2"></h2>
-        <p id="dna-type-desc" class="text-text-secondary text-sm max-w-md mx-auto leading-relaxed"></p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-cm-text mb-2">Bạn là...</h1>
+        <h2 id="dna-type-name" class="text-xl sm:text-2xl font-bold text-cm-accent mb-2"></h2>
+        <p id="dna-type-desc" class="text-cm-text-2 text-cm-body max-w-md mx-auto leading-relaxed"></p>
       </div>
 
       <!-- DNA BARS -->
       <div class="mb-8">
-        <h3 class="text-sm font-semibold text-text-secondary mb-4">DNA Phim của bạn</h3>
+        <h3 class="text-cm-body font-semibold text-cm-text-2 mb-4">DNA Phim của bạn</h3>
         <div id="dna-bars" class="space-y-3"></div>
       </div>
 
       <!-- RECOMMENDATIONS -->
       <div class="mb-8">
-        <h3 class="text-sm font-semibold text-text-secondary mb-4">Phim dành cho bạn</h3>
+        <h3 class="text-cm-body font-semibold text-cm-text-2 mb-4">Phim dành cho bạn</h3>
         <div id="dna-movies" class="space-y-3"></div>
       </div>
 
@@ -63,13 +63,13 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
       <div class="text-center space-y-3 mb-8">
         <button
           id="dna-share"
-          class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white font-semibold text-sm shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+          class="h-11 px-6 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white font-semibold text-cm-body hover:bg-cm-accent-hover active:scale-[0.98] transition-all duration-[var(--duration-cm)]"
         >
           Chia sẻ kết quả
         </button>
         <button
           id="dna-retry"
-          class="px-6 py-2.5 rounded-xl glass-tile text-text-secondary text-sm font-medium hover:text-white transition-colors"
+          class="h-11 px-6 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-text-2 text-cm-body font-medium hover:text-cm-text hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]"
         >
           Làm lại
         </button>
@@ -78,8 +78,8 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
 
     <!-- LOADING -->
     <div id="dna-loading" class="hidden flex flex-col items-center justify-center py-20 gap-4">
-      <div class="w-10 h-10 border-3 border-[#C44BED]/30 border-t-[#C44BED] rounded-full animate-spin"></div>
-      <p class="text-text-muted text-sm">Đang phân tích DNA phim của bạn...</p>
+      <div class="w-10 h-10 border-2 border-cm-border border-t-cm-accent rounded-full animate-spin"></div>
+      <p class="text-cm-text-3 text-cm-body">Đang phân tích DNA phim của bạn...</p>
     </div>
   </div>
 
@@ -244,10 +244,10 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
       q.options.forEach((opt, i) => {
         const btn = document.createElement('button')
         btn.className =
-          'flex flex-col items-center gap-2 p-4 rounded-2xl glass-tile hover:bg-white/[0.08] hover:border-[#C44BED]/40 border border-white/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+          'flex flex-col items-center gap-2 p-4 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] hover:scale-[1.02] active:scale-[0.98]'
         btn.innerHTML = `
           <span class="text-3xl">${opt.emoji}</span>
-          <span class="text-text-secondary text-sm font-medium">${opt.label}</span>
+          <span class="text-cm-text-2 text-cm-body font-medium">${opt.label}</span>
         `
         btn.addEventListener('click', () => selectOption(i))
         optionsEl.appendChild(btn)
@@ -342,10 +342,10 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
         const bar = document.createElement('div')
         bar.innerHTML = `
           <div class="flex items-center justify-between mb-1">
-            <span class="text-xs text-text-secondary font-medium">${name}</span>
-            <span class="text-xs text-text-muted">${pct}%</span>
+            <span class="text-xs text-cm-text-2 font-medium">${name}</span>
+            <span class="text-xs text-cm-text-3">${pct}%</span>
           </div>
-          <div class="h-2.5 rounded-full bg-white/10 overflow-hidden">
+          <div class="h-2.5 rounded-full bg-cm-surface border border-cm-border overflow-hidden">
             <div class="h-full rounded-full transition-all duration-1000 ease-out" style="width:0%;background:linear-gradient(90deg,${profile.color1},${profile.color2})"></div>
           </div>
         `
@@ -393,18 +393,18 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
           const card = document.createElement('a')
           card.href = `/phim/${m.slug}`
           card.className =
-            'flex items-center gap-3 p-3 rounded-xl glass-tile hover:bg-white/[0.06] transition-all duration-200 group'
+            'flex items-center gap-3 p-3 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] group'
           card.innerHTML = `
-            ${m.thumb_url ? `<img src="${m.thumb_url.startsWith('http') ? m.thumb_url : 'https://vsmov.com' + m.thumb_url}" alt="" class="w-12 h-[72px] rounded-lg object-cover shrink-0" loading="lazy" decoding="async" />` : ''}
+            ${m.thumb_url ? `<img src="${m.thumb_url.startsWith('http') ? m.thumb_url : 'https://vsmov.com' + m.thumb_url}" alt="" class="w-12 h-[72px] rounded-[var(--radius-cm-btn)] object-cover shrink-0" loading="lazy" decoding="async" />` : ''}
             <div class="min-w-0">
-              <p class="text-sm text-text-primary font-medium truncate group-hover:text-white transition-colors">${name}${year}</p>
-              ${episode ? `<p class="text-xs text-text-muted mt-0.5">${episode}</p>` : ''}
+              <p class="text-sm text-cm-text font-medium truncate group-hover:text-cm-text transition-colors">${name}${year}</p>
+              ${episode ? `<p class="text-xs text-cm-text-3 mt-0.5">${episode}</p>` : ''}
             </div>
           `
           moviesEl.appendChild(card)
         })
       } else {
-        moviesEl.innerHTML = '<p class="text-text-muted text-xs">Không thể tải phim gợi ý lúc này. Thử lại sau!</p>'
+        moviesEl.innerHTML = '<p class="text-cm-text-3 text-xs">Không thể tải phim gợi ý lúc này. Thử lại sau!</p>'
       }
 
       loading!.classList.add('hidden')

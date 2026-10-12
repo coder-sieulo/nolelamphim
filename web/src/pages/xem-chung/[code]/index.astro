@@ -3,7 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ThemeBG from '../../../components/ThemeBG.astro'
 import { getSessionUser } from '../../../lib/auth'
 import { getRoom } from '../../../lib/rooms'
-import { FaDiscord, FaTv, FaCirclePlay, FaClock, FaStop, FaComment, FaSliders, FaLock } from 'react-icons/fa6'
+import { FaDiscord, FaTv, FaCirclePlay, FaClock, FaStop, FaComment, FaSliders, FaLock, FaChevronLeft } from 'react-icons/fa6'
 
 const code = (Astro.params.code || '').toUpperCase()
 
@@ -19,160 +19,160 @@ const isHost = !!user && user.sub === room.hostId
 
 <BaseLayout title={`Xem Chung #${code}`} description="Phòng xem phim cùng nhau trên Nô Lệ Làm Phim." noIndex>
   <ThemeBG name="xem-chung" />
-  <main class="px-4 md:px-8 py-6 space-y-4" data-room-page data-code={code} data-host={String(isHost)}>
-    <div id="xc-login-overlay" class="hidden fixed inset-0 z-50 flex-col items-center justify-center gap-4 bg-black/75 backdrop-blur-sm">
-      <div class="content-card px-8 py-8 text-center max-w-sm mx-4">
-        <div class="w-14 h-14 rounded-full glass-tile flex items-center justify-center mb-3 mx-auto text-[#FF6B9D]"><FaLock className="w-6 h-6" /></div>
-        <h2 class="text-lg font-bold text-text-primary">Đăng nhập để xem cùng nhau</h2>
-        <p class="text-sm text-text-secondary mt-2 mb-5">Bạn cần đăng nhập Discord để tham gia phòng, chat và đồng bộ phim.</p>
+  <main class="px-4 sm:px-6 md:px-8 py-6 pb-14 lg:pb-12 space-y-4" data-room-page data-code={code} data-host={String(isHost)}>
+    <div id="xc-login-overlay" class="hidden fixed inset-0 z-50 flex-col items-center justify-center gap-4 bg-cm-bg/80">
+      <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-modal)] px-8 py-8 text-center max-w-sm mx-4">
+        <div class="w-14 h-14 rounded-full bg-cm-surface border border-cm-border flex items-center justify-center mb-3 mx-auto text-cm-accent"><FaLock className="w-6 h-6" /></div>
+        <h2 class="text-lg font-bold text-cm-text">Đăng nhập để xem cùng nhau</h2>
+        <p class="text-cm-body text-cm-text-2 mt-2 mb-5">Bạn cần đăng nhập Discord để tham gia phòng, chat và đồng bộ phim.</p>
         <a href="/api/auth/discord"
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">
+          class="inline-flex items-center gap-2 h-12 px-6 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition-colors duration-[var(--duration-cm)]">
           <FaDiscord className="w-5 h-5" />
           Đăng nhập bằng Discord
         </a>
-        <a href="/xem-chung" class="block mt-3 text-xs text-text-muted hover:text-white transition-colors">← Quay lại trang Xem Chung</a>
+        <a href="/xem-chung" class="flex items-center justify-center gap-1 mt-3 text-cm-meta text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)]">
+          <FaChevronLeft className="w-3 h-3" />
+          Quay lại trang Xem Chung
+        </a>
       </div>
     </div>
-    <div id="xc-blocked-overlay" class="hidden fixed inset-0 z-50 flex-col items-center justify-center gap-4 bg-black/75 backdrop-blur-sm">
-      <div class="content-card px-8 py-8 text-center max-w-sm mx-4">
-        <div class="w-14 h-14 rounded-full glass-tile flex items-center justify-center mb-3 mx-auto text-[#FF6B9D]"><FaLock className="w-6 h-6" /></div>
-        <h2 class="text-lg font-bold text-text-primary">Buổi công chiếu đã bắt đầu</h2>
-        <p class="text-sm text-text-secondary mt-2 mb-2">Suất này đã lên sóng — ai vào muộn không xem ghé được giữa chừng.</p>
-        <p id="xc-blocked-info" class="text-xs text-text-muted mb-5"></p>
+    <div id="xc-blocked-overlay" class="hidden fixed inset-0 z-50 flex-col items-center justify-center gap-4 bg-cm-bg/80">
+      <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-modal)] px-8 py-8 text-center max-w-sm mx-4">
+        <div class="w-14 h-14 rounded-full bg-cm-surface border border-cm-border flex items-center justify-center mb-3 mx-auto text-cm-accent"><FaLock className="w-6 h-6" /></div>
+        <h2 class="text-lg font-bold text-cm-text">Buổi công chiếu đã bắt đầu</h2>
+        <p class="text-cm-body text-cm-text-2 mt-2 mb-2">Suất này đã lên sóng — ai vào muộn không xem ghé được giữa chừng.</p>
+        <p id="xc-blocked-info" class="text-cm-meta text-cm-text-3 mb-5"></p>
         <a href="/xem-chung"
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 transition-all">
+          class="inline-flex items-center gap-2 h-12 px-6 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">
           <FaTv className="w-5 h-5" />
           Đến buổi công chiếu khác
         </a>
-        <a href="/xem-chung" class="block mt-3 text-xs text-text-muted hover:text-white transition-colors">← Quay lại trang Xem Chung</a>
+        <a href="/xem-chung" class="flex items-center justify-center gap-1 mt-3 text-cm-meta text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)]">
+          <FaChevronLeft className="w-3 h-3" />
+          Quay lại trang Xem Chung
+        </a>
       </div>
     </div>
     <div class="flex items-center justify-between gap-3 flex-wrap">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl glass-tile flex items-center justify-center text-[#FF6B9D]"><FaTv className="w-5 h-5" /></div>
+        <div class="w-10 h-10 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border flex items-center justify-center text-cm-accent"><FaTv className="w-5 h-5" /></div>
         <div>
-          <h1 class="text-lg font-bold text-text-primary">Phòng <span class="font-mono tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]">#{code}</span></h1>
-          <p id="xc-status" class="text-xs text-text-muted">Đang tải...</p>
-          <p id="xc-guest-note" class="hidden mt-1.5 text-[11px] text-[#FF6B9D]"></p>
+          <h1 class="text-lg font-bold text-cm-text">Phòng <span class="font-mono tracking-widest text-cm-accent">#{code}</span></h1>
+          <p id="xc-status" class="text-cm-meta text-cm-text-3">Đang tải...</p>
+          <p id="xc-guest-note" class="hidden mt-1.5 text-[11px] text-cm-accent"></p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="xc-share" type="button" class="px-4 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors">
+        <button id="xc-share" type="button" class="h-10 px-4 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-meta font-medium text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">
           Sao chép link mời
         </button>
-        <a href="/xem-chung" class="px-4 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-colors">Thoát</a>
+        <a href="/xem-chung" class="h-10 px-4 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-meta font-medium text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">Thoát</a>
       </div>
     </div>
 
     <div class="grid lg:grid-cols-[1fr_340px] gap-4 items-start">
       <div class="space-y-4 min-w-0">
         <!-- Player -->
-        <div class="content-card p-2 md:p-3">
-          <div id="player-stage" class="aspect-video w-full relative rounded-xl overflow-hidden bg-black">
+        <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] p-2 md:p-3">
+          <div id="player-stage" class="aspect-video w-full relative rounded-[var(--radius-cm-card)] overflow-hidden bg-black">
             <div id="xc-now-playing" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-6 text-center">
-              <div class="w-16 h-16 rounded-full glass-tile flex items-center justify-center text-[#FF6B9D]">
+              <div class="w-16 h-16 rounded-full bg-cm-surface border border-cm-border flex items-center justify-center text-cm-accent">
                 <FaCirclePlay className="w-7 h-7" />
               </div>
-              <p id="xc-no-movie-text" class="text-sm text-text-secondary">Chưa có suất chiếu nào trong phòng này.</p>
-              <p class="text-xs text-text-muted">Admin sẽ công chiếu phim theo lịch — mọi người vào phòng trước giờ chiếu.</p>
+              <p id="xc-no-movie-text" class="text-cm-body text-cm-text-2">Chưa có suất chiếu nào trong phòng này.</p>
+              <p class="text-cm-meta text-cm-text-3">Admin sẽ công chiếu phim theo lịch — mọi người vào phòng trước giờ chiếu.</p>
             </div>
             <iframe id="xc-frame" title="Phát phim" class="hidden absolute inset-0 w-full h-full border-0" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
             <div id="xc-countdown" class="hidden absolute inset-0 z-20 flex-col items-center justify-center bg-[#08081a]/90">
               <div class="relative flex items-center justify-center w-40 h-40 md:w-48 md:h-48">
                 <svg class="xc-countdown-ring absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4" />
-                  <circle id="xc-countdown-ring-bar" cx="50" cy="50" r="46" fill="none" stroke="url(#xc-countdown-grad)" stroke-width="4" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="0" />
-                  <defs>
-                    <linearGradient id="xc-countdown-grad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stop-color="#FF6B9D" />
-                      <stop offset="100%" stop-color="#C44BED" />
-                    </linearGradient>
-                  </defs>
+                  <circle id="xc-countdown-ring-bar" cx="50" cy="50" r="46" fill="none" stroke="#e50914" stroke-width="4" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="0" />
                 </svg>
-                <span id="xc-countdown-num" class="text-6xl md:text-7xl font-black text-white drop-shadow-[0_0_28px_rgba(196,75,237,0.55)] tracking-tight leading-none">10</span>
+                <span id="xc-countdown-num" class="text-6xl md:text-7xl font-black text-white tracking-tight leading-none">10</span>
               </div>
-              <p class="text-sm md:text-base font-semibold text-white mt-4">Sắp công chiếu...</p>
-              <p class="text-[11px] text-text-muted mt-1">Phim sẽ tự động phát đồng bộ khi tới giờ</p>
+              <p class="text-cm-body md:text-base font-semibold text-white mt-4">Sắp công chiếu...</p>
+              <p class="text-[11px] text-cm-text-3 mt-1">Phim sẽ tự động phát đồng bộ khi tới giờ</p>
             </div>
             <div id="xc-buffering" class="hidden absolute inset-0 z-30 items-center justify-center bg-black/60">
-              <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#C44BED] animate-spin"></div>
+              <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#e50914] animate-spin"></div>
             </div>
           </div>
         </div>
 
         <!-- Now playing info -->
-        <div id="xc-movie-info" class="content-card px-5 py-4 hidden">
+        <div id="xc-movie-info" class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] px-5 py-4 hidden">
           <div class="flex items-center gap-3">
-            <img id="xc-thumb" alt="" class="w-16 h-[4.5rem] rounded-lg object-cover shrink-0" />
+            <img id="xc-thumb" alt="" class="w-16 h-[4.5rem] rounded-[var(--radius-cm-btn)] object-cover shrink-0 border border-cm-border" />
             <div class="min-w-0">
-              <h2 id="xc-movie-name" class="font-bold text-text-primary text-sm truncate"></h2>
-              <p id="xc-ep-name" class="text-xs text-text-muted"></p>
-              <p id="xc-clock" class="text-xs text-text-secondary font-mono mt-1"></p>
+              <h2 id="xc-movie-name" class="font-bold text-cm-text text-cm-body truncate"></h2>
+              <p id="xc-ep-name" class="text-cm-meta text-cm-text-3"></p>
+              <p id="xc-clock" class="text-cm-meta text-cm-text-2 font-mono mt-1"></p>
             </div>
             <div class="ml-auto shrink-0">
-              <button id="xc-resync" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-tile text-xs font-medium text-text-secondary hover:text-white transition-all disabled:opacity-40" disabled><FaTv className="w-3.5 h-3.5" /> Tái đồng bộ</button>
+              <button id="xc-resync" type="button" class="inline-flex items-center gap-1.5 h-10 px-3 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-meta font-medium text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-all duration-[var(--duration-cm)] disabled:opacity-40" disabled><FaTv className="w-3.5 h-3.5" /> Tái đồng bộ</button>
             </div>
           </div>
         </div>
 
         <!-- Host controls -->
-        <div id="xc-host-panel" class="content-card px-5 py-4 space-y-3 hidden">
-          <h3 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaSliders className="w-3.5 h-3.5 text-[#FF6B9D]" /> Host</h3>
+        <div id="xc-host-panel" class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] px-5 py-4 space-y-3 hidden">
+          <h3 class="text-cm-body font-bold text-cm-text flex items-center gap-2"><FaSliders className="w-3.5 h-3.5 text-cm-accent" /> Host</h3>
           <div>
             <input
               id="xc-lookup"
               type="text"
               placeholder="Gõ tên phim để chọn..."
               autocomplete="off"
-              class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50"
+              class="w-full px-4 h-11 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-body text-cm-text placeholder:text-cm-text-3 focus:outline-none focus:border-cm-accent/60 transition-colors duration-[var(--duration-cm)]"
             />
-            <div id="xc-lookup-res" class="hidden mt-2 w-full max-h-72 overflow-y-auto rounded-xl glass-tile border border-white/10"></div>
+            <div id="xc-lookup-res" class="hidden mt-2 w-full max-h-72 overflow-y-auto rounded-[var(--radius-cm-card)] bg-cm-elevated border border-cm-border shadow-[var(--shadow-cm-up)]"></div>
           </div>
           <div id="xc-ep-picker" class="hidden space-y-3">
-            <div class="flex items-center gap-3 p-3 rounded-xl glass-tile">
-              <img id="xc-pick-thumb" alt="" class="w-16 h-[4.5rem] rounded-lg object-cover shrink-0" />
+            <div class="flex items-center gap-3 p-3 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border">
+              <img id="xc-pick-thumb" alt="" class="w-16 h-[4.5rem] rounded-[var(--radius-cm-btn)] object-cover shrink-0" />
               <div class="min-w-0">
-                <p id="xc-pick-name" class="text-sm font-bold text-text-primary truncate"></p>
-                <p id="xc-pick-meta" class="text-[11px] text-text-muted"></p>
+                <p id="xc-pick-name" class="text-cm-body font-bold text-cm-text truncate"></p>
+                <p id="xc-pick-meta" class="text-[11px] text-cm-text-3"></p>
               </div>
             </div>
             <div>
-              <p class="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1.5 px-1">Chọn tập</p>
+              <p class="text-[11px] font-semibold text-cm-text-3 uppercase tracking-wide mb-1.5 px-1">Chọn tập</p>
               <div id="xc-ep-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-1"></div>
             </div>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <button id="xc-play-now" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF6B9D] to-[#C44BED] text-white hover:brightness-110 disabled:opacity-40 transition-all" disabled><FaCirclePlay className="w-3.5 h-3.5" /> Phát ngay (10s)</button>
-            <button id="xc-schedule" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-secondary hover:text-white disabled:opacity-40 transition-all" disabled><FaClock className="w-3.5 h-3.5" /> Đặt giờ chiếu</button>
-            <button id="xc-stop" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold glass-tile text-text-muted hover:text-white disabled:opacity-40 transition-all"><FaStop className="w-3 h-3" /> Kết thúc</button>
+            <button id="xc-play-now" type="button" class="inline-flex items-center gap-1.5 h-11 px-4 rounded-[var(--radius-cm-btn)] text-cm-meta font-bold bg-cm-accent text-white hover:bg-cm-accent-hover disabled:opacity-40 transition-all duration-[var(--duration-cm)]" disabled><FaCirclePlay className="w-3.5 h-3.5" /> Phát ngay (10s)</button>
+            <button id="xc-schedule" type="button" class="inline-flex items-center gap-1.5 h-11 px-4 rounded-[var(--radius-cm-btn)] text-cm-meta font-bold border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-40 transition-all duration-[var(--duration-cm)]" disabled><FaClock className="w-3.5 h-3.5" /> Đặt giờ chiếu</button>
+            <button id="xc-stop" type="button" class="inline-flex items-center gap-1.5 h-11 px-4 rounded-[var(--radius-cm-btn)] text-cm-meta font-bold border border-cm-border bg-cm-surface text-cm-text-3 hover:text-cm-text hover:border-cm-border-strong disabled:opacity-40 transition-all duration-[var(--duration-cm)]"><FaStop className="w-3 h-3" /> Kết thúc</button>
           </div>
           <div id="xc-schedule-pick" class="hidden flex items-center gap-2">
-            <input id="xc-schedule-dt" type="datetime-local" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-text-primary flex-1 min-w-0" />
-            <button id="xc-schedule-confirm" type="button" class="px-4 py-2 rounded-xl glass-tile-active text-xs font-bold text-white">Đặt</button>
+            <input id="xc-schedule-dt" type="datetime-local" class="h-11 px-3 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text flex-1 min-w-0 focus:border-cm-accent/60" />
+            <button id="xc-schedule-confirm" type="button" class="h-11 px-4 rounded-[var(--radius-cm-btn)] text-cm-meta font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-all duration-[var(--duration-cm)]">Đặt</button>
           </div>
-          <p id="xc-host-error" class="hidden text-xs text-red-400"></p>
+          <p id="xc-host-error" class="hidden text-cm-meta text-red-400"></p>
         </div>
       </div>
 
       <!-- Chat column -->
-      <div class="content-card flex flex-col min-h-[30rem] lg:min-h-0 lg:h-[calc(100vh-12rem)]">
-        <div class="flex items-center justify-between px-5 py-3 border-b border-white/5">
-          <h3 class="text-sm font-bold text-text-primary flex items-center gap-2"><FaComment className="w-3.5 h-3.5 text-[#FF6B9D]" /> Chat</h3>
-          <span id="xc-members-pop" class="text-xs text-text-muted"></span>
+      <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card)] flex flex-col min-h-[30rem] lg:min-h-0 lg:h-[calc(100vh-12rem)]">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-cm-border">
+          <h3 class="text-cm-body font-bold text-cm-text flex items-center gap-2"><FaComment className="w-3.5 h-3.5 text-cm-accent" /> Chat</h3>
+          <span id="xc-members-pop" class="text-cm-meta text-cm-text-3"></span>
         </div>
         <div id="xc-login-gate" class="hidden flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
-          <p class="text-sm text-text-secondary">Đăng nhập Discord để tham gia chat và xem.</p>
+          <p class="text-cm-body text-cm-text-2">Đăng nhập Discord để tham gia chat và xem.</p>
           <a href="/api/auth/discord"
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-[#5865F2] text-white hover:brightness-110 transition-all">
+            class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition-colors duration-[var(--duration-cm)]">
             <FaDiscord className="w-5 h-5" />
             Đăng nhập bằng Discord
           </a>
         </div>
         <div id="xc-chat" class="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-[18rem]"></div>
-        <form id="xc-chat-form" class="flex gap-2 p-3 border-t border-white/5">
+        <form id="xc-chat-form" class="flex gap-2 p-3 border-t border-cm-border">
           <input id="xc-chat-input" type="text" maxlength="500" placeholder="Nhắn gì đó..." autocomplete="off"
-            class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[#C44BED]/50" />
-          <button type="submit" class="px-4 py-2 rounded-xl glass-tile-active text-xs font-bold text-white">Gửi</button>
+            class="flex-1 min-w-0 h-10 px-3 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-body text-cm-text placeholder:text-cm-text-3 focus:outline-none focus:border-cm-accent/60 transition-colors duration-[var(--duration-cm)]" />
+          <button type="submit" class="h-10 px-4 rounded-[var(--radius-cm-btn)] text-cm-meta font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-all duration-[var(--duration-cm)]">Gửi</button>
         </form>
       </div>
     </div>
@@ -198,6 +198,11 @@ const isHost = !!user && user.sub === room.hostId
     function avatarUrl(id: string, avatar?: string | null): string {
       return avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=64` : '/logo.png'
     }
+
+    const ICON_MUTE =
+      '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5zM15.5 12a3.5 3.5 0 0 0-2-3.15v6.3a3.5 3.5 0 0 0 2-3.15zM13.5 2v2.06a7 7 0 0 1 4.5 6.44 7 7 0 0 1-4.5 6.44V19a9 9 0 0 0 6-8.5A9 9 0 0 0 13.5 2z"/></svg>'
+    const ICON_BAN =
+      '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 0 1 6.32 12.9L5.1 7.68A8 8 0 0 1 12 4zM4 12a8 8 0 0 1 1.68-4.9l12.22 12.22A8 8 0 0 1 4 12z"/></svg>'
 
     // ── Guest: danh tính xem ké được tạo 1 lần + cache localStorage ──
     const GUEST_KEY = 'nllp_guest'
@@ -257,7 +262,7 @@ const isHost = !!user && user.sub === room.hostId
         if (!room) return 'Đang tải...'
         const n = room.members.length
         if (room.status === 'ended') return 'Buổi công chiếu đã kết thúc'
-        if (room.status === 'playing') return `● Đang công chiếu • ${n} người`
+        if (room.status === 'playing') return `Đang công chiếu • ${n} người`
         if (room.status === 'scheduled' && room.movie) {
           const remain = Math.max(0, Math.round((room.startTime - nowMs()) / 1000))
           return `Công chiếu lúc ${new Date(room.startTime).toLocaleString('vi-VN', { weekday: 'short', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })} • còn ${remain}s • ${n} người`
@@ -352,7 +357,7 @@ const isHost = !!user && user.sub === room.hostId
           pickEpisodes = [{ name: preset.epName, slug: preset.episode, embed: preset.embed }]
           renderEpPicker({ slug: preset.slug, name: preset.movieName, thumb: preset.thumb })
           const first = epGrid?.querySelector<HTMLButtonElement>('.xc-ep-btn[data-index="0"]')
-          first?.classList.add('bg-white/10', 'text-white')
+          first?.classList.add('bg-cm-elevated', 'text-cm-text', 'border-cm-border-strong')
           $('xc-play-now')?.removeAttribute('disabled')
           $('xc-schedule')?.removeAttribute('disabled')
         }
@@ -369,14 +374,14 @@ const isHost = !!user && user.sub === room.hostId
             <img src="${avatarUrl(m.userId, m.avatar)}" alt="" class="w-6 h-6 rounded-full shrink-0" loading="lazy" />
             <div class="min-w-0">
               <div class="flex items-baseline gap-2">
-                <span class="text-[11px] font-bold ${m.userId === room?.hostId ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B9D] to-[#C44BED]' : 'text-text-secondary'}">${escapeHTML(m.username)}${m.userId === room?.hostId ? ' • host' : ''}</span>
-                <span class="text-[10px] text-text-muted">${new Date(m.ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span class="text-[11px] font-bold ${m.userId === room?.hostId ? 'text-cm-accent' : 'text-cm-text-2'}">${escapeHTML(m.username)}${m.userId === room?.hostId ? ' • host' : ''}</span>
+                <span class="text-[10px] text-cm-text-3">${new Date(m.ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                 ${isHost && m.userId !== room?.hostId ? `
-                  <button class="xc-mute text-[10px] px-1.5 py-0.5 rounded glass-tile text-text-muted hover:text-white" data-id="${m.userId}" title="Mute">🔇</button>
-                  <button class="xc-ban text-[10px] px-1.5 py-0.5 rounded glass-tile text-text-muted hover:text-red-400" data-id="${m.userId}" title="Cấm">🚫</button>
+                  <button class="xc-mute text-[10px] px-1.5 py-0.5 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-text-3 hover:text-cm-text hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]" data-id="${m.userId}" title="Tắt tiếng">${ICON_MUTE}</button>
+                  <button class="xc-ban text-[10px] px-1.5 py-0.5 rounded-[var(--radius-cm-btn)] border border-cm-border bg-cm-surface text-cm-text-3 hover:text-red-400 hover:border-cm-border-strong transition-colors duration-[var(--duration-cm)]" data-id="${m.userId}" title="Cấm">${ICON_BAN}</button>
                 ` : ''}
               </div>
-              <p class="text-sm text-text-primary break-words">${escapeHTML(m.text)}</p>
+              <p class="text-cm-body text-cm-text break-words">${escapeHTML(m.text)}</p>
             </div>
           </div>
         `).join('')
@@ -412,7 +417,8 @@ const isHost = !!user && user.sub === room.hostId
         const f = frameEl()
         const nowPlaying = $('xc-now-playing')
         const cd = $('xc-countdown')
-        if (!playingNow()) {
+        const upcoming = !!room?.movie && room.status === 'scheduled' && room.startTime > nowMs()
+        if (!playingNow() && !upcoming) {
           // Phim đã chọn nhưng chưa tới giờ (scheduled) — chỉ ẩn, GIỮ iframe src
           // để không phải load lại từ đầu (tránh lệch đồng hồ làm reset phim).
           const keepAlive = !!room?.movie && (room.status === 'scheduled' || room.status === 'playing')
@@ -426,8 +432,9 @@ const isHost = !!user && user.sub === room.hostId
           if (buf) { buf.classList.add('hidden'); buf.classList.remove('flex'); }
           return
         }
-        // countdown display (negative = playing)
-        if (room && room.startTime > nowMs() && room.status === 'scheduled') {
+        // countdown display (scheduled, chưa tới giờ)
+        if (upcoming) {
+          if (!room) return
           const remain = Math.max(0, Math.ceil((room.startTime - nowMs()) / 1000))
           const num = $('xc-countdown-num')
           if (num) num.textContent = String(remain)
@@ -443,6 +450,7 @@ const isHost = !!user && user.sub === room.hostId
           if (ringBar) ringBar.style.strokeDashoffset = String(Math.round(289 * (1 - frac)))
           if (cd) { cd.classList.remove('hidden'); cd.classList.add('flex'); cd.classList.add('flex-col'); }
           if (nowPlaying) nowPlaying.classList.add('hidden')
+          if (f) f.classList.add('hidden')
           return
         }
         if (cd) { cd.classList.add('hidden'); cd.classList.remove('flex'); }
@@ -492,17 +500,17 @@ const isHost = !!user && user.sub === room.hostId
             const res = (d.results || []).slice(0, 6)
             if (!lookupRes) return
             if (!res.length) {
-              lookupRes.innerHTML = '<p class="px-4 py-2 text-xs text-text-muted">Không tìm thấy phim.</p>'
+              lookupRes.innerHTML = '<p class="px-4 py-2 text-cm-meta text-cm-text-3">Không tìm thấy phim.</p>'
               lookupRes.classList.remove('hidden')
               return
             }
             lookupRes.innerHTML = res.map((mv: any) => `
-              <button type="button" class="xc-pick block w-full text-left px-3 py-2.5 hover:bg-white/5 transition-colors" data-slug="${escapeHTML(mv.slug)}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb || '')}">
+              <button type="button" class="xc-pick block w-full text-left px-3 py-2.5 hover:bg-cm-surface transition-colors duration-[var(--duration-cm)]" data-slug="${escapeHTML(mv.slug)}" data-name="${escapeHTML(mv.name)}" data-thumb="${escapeHTML(mv.thumb || '')}">
                 <span class="flex items-center gap-3">
-                  ${mv.thumb ? `<img src="${escapeHTML(mv.thumb)}" alt="" loading="lazy" decoding="async" class="w-9 h-13 rounded-md object-cover shrink-0 bg-bg-card glass-frame" />` : '<span class="w-9 shrink-0"></span>'}
+                  ${mv.thumb ? `<img src="${escapeHTML(mv.thumb)}" alt="" loading="lazy" decoding="async" class="w-9 h-13 rounded-[var(--radius-cm-btn)] object-cover shrink-0 bg-cm-bg-2 border border-cm-border" />` : '<span class="w-9 shrink-0"></span>'}
                   <span class="min-w-0">
-                    <span class="block text-sm text-text-primary truncate">${escapeHTML(mv.name)}</span>
-                    <span class="block text-[11px] text-text-muted">${mv.episodes.length} tập</span>
+                    <span class="block text-cm-body text-cm-text truncate">${escapeHTML(mv.name)}</span>
+                    <span class="block text-[11px] text-cm-text-3">${mv.episodes.length} tập</span>
                   </span>
                 </span>
               </button>
@@ -542,7 +550,7 @@ const isHost = !!user && user.sub === room.hostId
         if (nameEl) nameEl.textContent = mv.name
         if (metaEl) metaEl.textContent = `${pickEpisodes.length} nguồn/tập`
         epGrid.innerHTML = pickEpisodes.map((ep, i) => `
-          <button type="button" class="xc-ep-btn px-1.5 py-2 rounded-lg text-[11px] font-medium glass-tile text-text-secondary hover:text-white hover:bg-white/10 transition-colors truncate" data-index="${i}" title="${escapeHTML(ep.name)}">
+          <button type="button" class="xc-ep-btn px-1.5 py-2 rounded-[var(--radius-cm-btn)] text-[11px] font-medium border border-cm-border bg-cm-surface text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] truncate" data-index="${i}" title="${escapeHTML(ep.name)}">
             ${escapeHTML(ep.name)}
           </button>
         `).join('')
@@ -553,9 +561,9 @@ const isHost = !!user && user.sub === room.hostId
             if (!ep) return
             selectedMovie = { slug: mv.slug, movieName: mv.name, episode: ep.slug, epName: ep.name, thumb: mv.thumb, embed: ep.embed }
             epGrid.querySelectorAll('.xc-ep-btn').forEach((x) => {
-              x.classList.remove('bg-white/10', 'text-white')
+              x.classList.remove('bg-cm-elevated', 'text-cm-text', 'border-cm-border-strong')
             })
-            b.classList.add('bg-white/10', 'text-white')
+            b.classList.add('bg-cm-elevated', 'text-cm-text', 'border-cm-border-strong')
             $('xc-play-now')?.removeAttribute('disabled')
             $('xc-schedule')?.removeAttribute('disabled')
           })
@@ -634,7 +642,7 @@ const isHost = !!user && user.sub === room.hostId
       $('xc-share')?.addEventListener('click', () => {
         navigator.clipboard?.writeText(window.location.href).then(() => {
           const btn = $('xc-share')
-          if (btn) { const o = btn.textContent; btn.textContent = 'Đã chép ✓'; window.setTimeout(() => { btn.textContent = o }, 1600) }
+          if (btn) { const o = btn.textContent; btn.textContent = 'Đã chép'; window.setTimeout(() => { btn.textContent = o }, 1600) }
         }).catch(() => {})
       })
 
@@ -662,7 +670,7 @@ const isHost = !!user && user.sub === room.hostId
         .catch(() => {})
       window.setInterval(() => { void syncClock() }, 60_000)
 
-      window.setInterval(() => { drawFrame(); tickClock() }, 250)
+      timer = window.setInterval(() => { drawFrame(); tickClock() }, 250)
       window.setInterval(() => {
         void refresh().then((ok) => { if (ok) renderAll() })
       }, 3000)
