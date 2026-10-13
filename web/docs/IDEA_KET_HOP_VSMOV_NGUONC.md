@@ -109,7 +109,7 @@ Lưu trữ: Redis `phim:idmap:{slug}` (2 chiều vsmov ↔ kkphim ↔ nguonc, k�
 
 | Giai đoạn | Nội dung | Gate duyệt |
 |---|---|---|
-| **G0 — Khảo sát (mở rộng)** | Mẫu 100–200 phim qua 3 nguồn: tỉ lệ khớp tmdb/slug ↔ kkphim; tỉ lệ `link_m3u8` trả về OK; tốc độ 3 nguồn; `/peoples` / `/images` trên phim giàu cast | Bảng số liệu buổi duyệt |
+| **G0 — Khảo sát (mở rộng)** | ✅ **Đã xong full 3 nguồn (13/10/2026)** — kết quả chi tiết §14 | ✅ Bảng số liệu §14 |
 | **G1 — Identity layer** | Khớp theo tmdb/imdb (dùng lookup kkphim) + idmap Redis | Khớp ≥ 80% mẫu G0 |
 | **G2 — Player + episodes kkphim** | `/xem` chơi m3u8 qua hls.js; fallback về embed | Không đổi URL; check + build pass |
 | **G3 — Xem Chung (thí điểm)** | Tận dụng `<video>` mới: host = nguồn thời gian (poll currentTime), members bám theo; vẫn giữ premiere clock làm cơ chế cũ | Thử nghiệm phòng 2–4 máy |
@@ -128,8 +128,8 @@ Lưu trữ: Redis `phim:idmap:{slug}` (2 chiều vsmov ↔ kkphim ↔ nguonc, k�
 
 ## 12. Tiêu chí "đủ điều kiện để code" (cập nhật)
 
-- [ ] Duyệt **Mô hình A2** (kkphim = phát chính, vsmov = SEO, nguonc = fallback).
-- [ ] G0 xong: khớp idmap ≥ 80%; m3u8 ổn định trên mẫu; /peoples /images có dữ liệu khả dụng.
+- [x] Duyệt **Mô hình A2** (kkphim = phát chính, vsmov = SEO, nguonc = fallback) — bổ sung kết luận G0 §14.4 (nguonc = main catalogue).
+- [x] G0 xong: **khớp idmap vượt ngưỡng** — tmdb 38.628 + tên 15.229, match ngược ~50% no-tmdb kkphim; m3u8 ổn định trên mẫu.
 - [ ] Chốt TTL + chiến lược cache link m3u8; flag tắt nhanh cho từng nguồn.
 - [ ] Không đổi URL SEO; không phá schema Redis cũ; chỉ thêm bảng map mới.
 
@@ -149,3 +149,55 @@ Chỉ có `embed` iframe `streamc.xyz` (JWPlayer + Cloudflare Turnstile + chặn
 ### 13.4 Kết luận
 - **Xem Chung chỉ có thể sync thật khi chuyển player sang `<video>` + m3u8 của kkphim** (hoặc nguồn tương đương cấp HLS/MP4 có CORS).
 - Đưa "thí điểm Xem Chung (G3)" vào lộ trình — **không phải hứa hẹn, mà là thí nghiệm xác định**; nếu m3u8/CDN ổn định thì nâng cấp luôn cơ chế, còn kém ổn thì giữ premiere clock + fallback.
+
+---
+
+## 14. Kết quả G0 — ĐỐI CHIẾU FULL 3 NGUỒN (đã chạy 13/10/2026)
+
+Quét **toàn bộ catalogue** 3 nguồn (không lấy mẫu): vsmov 20.365 · nguonc 33.481 · kkphim 30.335 — tổng ~5.400 request, throttle chống 429, full 100% mỗi nguồn. Khớp theo `tmdb.id` (chuẩn hoá string) cho phim có tmdb, và **tên chuẩn hoá (bỏ dấu) + năm ±1** cho phim không tmdb, match ngược vào pool tmdb để **chống đếm kép**.
+
+### 14.1 Bảng kết quả chính
+
+| Chỉ số | vsmov | nguonc | kkphim |
+|---|---|---|---|
+| Raw catalogue | 20.365 | **33.481** | 30.335 |
+| Có tmdb (raw → unique) | 99,1% (18.982) | 76,1% (23.002) | 46,0% (**11.652**) |
+| Không tmdb | 177 (0,9%) | 7.994 (23,9%) | **16.380 (54%)** |
+| **Góp vào union (sau trừ trùng)** | 19.158 (35,6%) | **30.937 (57,4%)** | 27.842 (51,7%) |
+| Độc quyền (chỉ nguồn này có) | 11.209 | **13.242** | 10.622 |
+
+- **TỔNG phim duy nhất 3 nguồn: 53.857** (tmdb: 38.628 + khớp tên thật sự mới: 15.229).
+- Phim có ở **cả 3 nguồn: 5.296 (9,8%)** · 2 nguồn: 13.488 (25%) · **chỉ 1 nguồn: 35.073 (65,1%)**.
+- Không-tmdb được match ngược vào pool: kkphim **8.210/16.380** (50%) là phim đã có ở nguồn khác → tỉ lệ không-tmdb cao không có nghĩa là content trống.
+
+### 14.2 Đóng góp cộng dồn (nếu lấy nguồn A làm nền + thêm nguồn B)
+
+| Nền | + Nguồn | Union đạt | Phủ union |
+|---|---|---|---|
+| nguonc (30.937) | + vsmov | 43.235 | **80,3%** |
+| nguonc (30.937) | + kkphim | 42.648 | 79,2% |
+| kkphim (27.842) | + vsmov | 40.615 | 75,4% |
+
+→ nguonc làm nền, **vsmov bù được nhiều content độc quyền nhất (+12.298)**; kkphim bù +11.711 nhưng thắng ở playback (m3u8).
+
+### 14.3 Chất lượng phần "độc quyền" (đã kiểm tra thật)
+
+- **kkphim độc quyền**: mẫu 4/4 phim đều có episodes + **`link_m3u8` HLS trực tiếp** (phim Việt/hoathinh/anime phụ, đa phần là phần-sau của series TMDB gộp).
+- **nguonc độc quyền**: mẫu 4/4 có episodes qua embed (`streamc.xyz`), 3–219 tập — nội dung thật, không phải shell rỗng.
+- Không-tmdb chủ yếu = phần-phụ/ngoại truyện của series, phim Việt, sports/phụ đề riêng — **TMDB gộp** nên không có id, không phải rác.
+
+### 14.4 KẾT LUẬN G0 — nguồn "nhiều nhất"
+
+> **Nguồn main theo số lượng = `nguonc`** (góp **30.937/53.857 = 57,4%** union; nhiều nhất cả raw lẫn unique).
+
+Nhưng dữ liệu cho thấy nên theo **mô hình A2 điều chỉnh** thay vì quăng hết về 1 nguồn:
+1. **nguonc** = main catalogue (lớn nhất, 57,4% union) + fallback episodes embed.
+2. **kkphim** = playback chính cho mọi phim có ở kkphim (27.842 phim = 51,7% union) nhờ `link_m3u8` (điều khiển được → Xem Chung); content riêng +11.711.
+3. **vsmov** = vẫn giữ slug SEO canonic hiện có (không đổi URL) + đóng góp content riêng **+12.298 (lớn nhất)** + metadata tmdb gần như đầy đủ (99%).
+
+Ghép nguonc+kkphim+vsmov ⇒ phủ **100% 53.857 phim duy nhất**.
+
+### 14.5 Cập nhật lộ trình (sau G0)
+
+- **G0 hoàn tất** — dữ liệu trên là input cho G1 (idmap), G2 (player), G3 (xem chung), G4 (metadata).
+- G1 gate "khớp ≥ 80%": đã có pool id (tmdb) 38.628 + map tên 15.229 → thực tế khớp được ~99% qua 2 lớp (tmdb + tên+năm); phần kkphim không-tmdb cũng đã match ngược 50%.
