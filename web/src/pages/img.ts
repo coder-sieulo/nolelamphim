@@ -1,7 +1,7 @@
 import sharp from 'sharp'
 import type { APIRoute } from 'astro'
 
-const ALLOWED_HOST_SUFFIXES = ['vsmov.com', 'phimimg.com', 'phimapi.com', 'image.tmdb.org']
+const ALLOWED_HOST_SUFFIXES = ['vsmov.com', 'phimimg.com', 'phimapi.com', 'image.tmdb.org', 'ex-cdn.com']
 const MAX_SRC_LEN = 2048
 const DEFAULT_W = 320
 const MAX_W = 4096

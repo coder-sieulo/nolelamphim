@@ -136,7 +136,9 @@ function fullPosterUrl(src: unknown): string | undefined {
   if (path.startsWith('upload/') || path.startsWith('uploads/')) return `https://phimimg.com/${path}`
   // Một số bản ghi kkphim trả path TMDB thiếu host (vd `t/p/w780/xxx.jpg`) → khôi phục đúng CDN.
   if (path.startsWith('t/p/')) return `https://image.tmdb.org/${path}`
-  // Path rác (vd `danviet.vn/files/...`) → bỏ để client hiện placeholder thay vì ảnh vỡ.
+  // Poster lấy từ báo danviet (bản ghi cũ) nằm trên CDN ex-cdn.com — khôi phục host đúng.
+  if (path.startsWith('danviet.vn/')) return `https://i.ex-cdn.com/${path}`
+  // Path không rõ nguồn → bỏ để client hiện placeholder thay vì ảnh vỡ.
   return undefined
 }
 
