@@ -64,10 +64,10 @@ Nguồn mới được hỏi thêm, theo `API-phimV3.md` (nhiều chức năng h
 
 ## 5. Lớp khớp phim (Identity Layer) — giờ đơn giản đi nhiều
 
-Thứ tự khớp:
-1. **tmdb.id → kkphim `/tmdb/{type}/{id}`** (nguồn có lookup sẵn) — chính xác tuyệt đối.
-2. **imdb.id → `/imdb/title/{id}`** nếu tmdb trống.
-3. **Tên chuẩn hoá + năm** — cho phim không có id.
+Thứ tự khớp (**đã dựng ở G1 — xem §14.5**):
+1. **tmdb.id** — khoá chính, dùng **idmap offline prewarm** (KHÔNG dùng `/tmdb/{type}/{id}` của kkphim vì endpoint đã bị chặn `"hmmm!"`).
+2. **imdb.id** — bổ trợ khi tmdb trống (nguonc list có imdb).
+3. **Tên chuẩn hoá + năm** — cho phim không có id; match ngược vào pool tmdb để chống đếm kép.
 4. Không khớp → không block, phim chỉ hiện từ nguồn gốc.
 
 Lưu trữ: Redis `phim:idmap:{slug}` (2 chiều vsmov ↔ kkphim ↔ nguonc, kèm tmdbId), TTL 7 ngày, tạo lazy. **kkphim còn cho phép lật ngược**: biết tmdb → tìm slug kkphim ngay cả khi vsmov không có phim đó.
@@ -110,7 +110,7 @@ Lưu trữ: Redis `phim:idmap:{slug}` (2 chiều vsmov ↔ kkphim ↔ nguonc, k�
 | Giai đoạn | Nội dung | Gate duyệt |
 |---|---|---|
 | **G0 — Khảo sát (mở rộng)** | ✅ **Đã xong full 3 nguồn (13/10/2026)** — kết quả chi tiết §14 | ✅ Bảng số liệu §14 |
-| **G1 — Identity layer** | Khớp theo tmdb/imdb (dùng lookup kkphim) + idmap Redis | Khớp ≥ 80% mẫu G0 |
+| **G1 — Identity layer** | ✅ **Core đã xong** — `web/src/lib/identity.ts` + `/api/identity` + prewarm Redis 84.114 key (`web/tools/prewarm-idmap.mjs`) | ✅ Đã test 3 nhánh: cache / live / partial |
 | **G2 — Player + episodes kkphim** | `/xem` chơi m3u8 qua hls.js; fallback về embed | Không đổi URL; check + build pass |
 | **G3 — Xem Chung (thí điểm)** | Tận dụng `<video>` mới: host = nguồn thời gian (poll currentTime), members bám theo; vẫn giữ premiere clock làm cơ chế cũ | Thử nghiệm phòng 2–4 máy |
 | **G4 — Bổ trợ chi tiết + search + thành viên/phim** | images/peoples/keywords, search 3 nguồn, filter ngôn ngữ | Regression cũ + check/build |
@@ -200,4 +200,10 @@ Ghép nguonc+kkphim+vsmov ⇒ phủ **100% 53.857 phim duy nhất**.
 ### 14.5 Cập nhật lộ trình (sau G0)
 
 - **G0 hoàn tất** — dữ liệu trên là input cho G1 (idmap), G2 (player), G3 (xem chung), G4 (metadata).
-- G1 gate "khớp ≥ 80%": đã có pool id (tmdb) 38.628 + map tên 15.229 → thực tế khớp được ~99% qua 2 lớp (tmdb + tên+năm); phần kkphim không-tmdb cũng đã match ngược 50%.
+- **G1 (Identity layer) — core đã dựng:**
+  - `web/src/lib/identity.ts`: `normName()` + `resolveIdentity(slug, source)` + Redis `phim:idmap:{source}:{slug}` (TTL lazy 7 ngày).
+  - `web/src/pages/api/identity.ts`: `GET /api/identity?slug=&source=` (cache 300s).
+  - `web/tools/prewarm-idmap.mjs`: prewarm từ dữ liệu scan → **84.114 key** đã ghi Redis (59.577 qua tmdb + 24.537 qua tên).
+  - Thứ tự giải: **Redis → live-resolve** (vsmov detail → search kkphim + nguonc) **→ partial** (slug không tồn tại).
+  - ⚠️ **Phát hiện:** các endpoint tra-cứu `/tmdb/{type}/{id}`, `/imdb/title/{id}`, `/phim/id/{id}` của `phimapi.com` hiện trả `{"status":false,"msg":"hmmm!"}` → **không dùng được**; thay bằng **idmap offline + `tim-kiem`/`films/search`** (đã kiểm chứng chạy tốt).
+- G1 gate "khớp ≥ 80%": pool id tmdb 38.628 + map tên 15.229 → khớp ~99% qua 2 lớp; phần kkphim không-tmdb đã match ngược 50%.

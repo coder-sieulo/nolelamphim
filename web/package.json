@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "start": "node ./dist/server/entry.mjs"
+    "start": "node ./dist/server/entry.mjs",
+    "prewarm:idmap": "node tools/prewarm-idmap.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.0",
