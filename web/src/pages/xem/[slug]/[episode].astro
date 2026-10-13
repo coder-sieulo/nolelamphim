@@ -4,6 +4,8 @@ import ReportButton from '../../../components/ReportButton.astro'
 import ThemeBG from '../../../components/ThemeBG.astro'
 import HorrorGate from '../../../components/HorrorGate.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../../lib/api'
+import { resolveIdentity } from '../../../lib/identity'
+import { getKkphimDetail, buildM3u8Map } from '../../../lib/kkphim'
 import { imgUrl } from '../../../lib/img'
 import { SITE_URL } from '../../../lib/site'
 import { breadcrumbLd } from '../../../lib/seo'
@@ -24,15 +26,37 @@ if (!data.status || !data.movie) {
 const movie = data.movie
 const episodes = epRes.status ? epRes.episodes : []
 
-const serverData = episodes.map((s) => ({
+/*
+ * Ưu tiên phát m3u8 thật của kkphim (nguồn V3) cho tập đang xem.
+ * Ghép tập vsmov ↔ kkphim theo tên/thứ tự; chỉ áp cho server đầu (mặc định).
+ * Không có kkphim hoặc ghép thất bại → giữ embed như cũ.
+ */
+let m3u8Map: Record<string, string> = {}
+try {
+  const identity = await resolveIdentity(slug, 'vsmov')
+  if (identity.kkphim) {
+    const kk = await getKkphimDetail(identity.kkphim)
+    if (kk) m3u8Map = buildM3u8Map(episodes, kk)
+  }
+} catch {
+  m3u8Map = {}
+}
+
+const serverData = episodes.map((s, si) => ({
   name: s.server_name.replace(/\s+/g, ' ').trim(),
-  items: s.list.map((e) => ({ name: e.name, slug: e.slug, embed: e.embed })),
+  items: s.list.map((e) => ({
+    name: e.name,
+    slug: e.slug,
+    embed: e.embed,
+    ...(si === 0 && m3u8Map[e.slug] ? { m3u8: m3u8Map[e.slug] } : {}),
+  })),
 }))
 
 const currentServer = episodes[0]
 const currentList = currentServer?.list ?? []
 const currentEpIdx = currentList.findIndex((e) => e.slug === episode)
 const currentEp = currentList[currentEpIdx]
+const currentEpM3u8 = (currentEp && m3u8Map[currentEp.slug]) || ''
 const prevEp = currentEpIdx > 0 ? currentList[currentEpIdx - 1] : null
 const nextEp = currentEpIdx < currentList.length - 1 ? currentList[currentEpIdx + 1] : null
 
@@ -101,6 +125,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
               id="player-stage"
               class="aspect-video w-full relative"
               data-embed={currentEp.embed}
+              data-m3u8={currentEpM3u8}
               data-title={`${movie.name} - ${currentEp.name}`}
             >
               <button
@@ -326,7 +351,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       const movieVote = page.dataset.movieVote || ''
       const epName = page.dataset.epName || ''
 
-      let servers: { name: string; items: { name: string; slug: string; embed: string }[] }[] = []
+      let servers: { name: string; items: { name: string; slug: string; embed: string; m3u8?: string }[] }[] = []
       try {
         servers = JSON.parse(page.dataset.servers || '[]')
       } catch {
@@ -346,7 +371,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         const num = time.match(/(\d+)/)
         return num ? Math.max(30, Number(num[1])) * 60 : 42 * 60
       }
-      const duration = parseDurationSeconds(page.dataset.time)
+      let duration = parseDurationSeconds(page.dataset.time)
 
       let elapsed = 0
       let progressActive = false
@@ -384,7 +409,12 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         progressActive = true
         window.setInterval(() => {
           if (document.hidden) return
-          elapsed += 10
+          if (currentMode === 'video' && videoEl) {
+            if (Number.isFinite(videoEl.currentTime)) elapsed = videoEl.currentTime
+            if (Number.isFinite(videoEl.duration) && videoEl.duration > 0) duration = videoEl.duration
+          } else {
+            elapsed += 10
+          }
           progressTick += 1
           updateRecentProgress(slug, Math.min(elapsed, duration * 0.92), duration)
           if (progressTick % 3 === 0) flushProgress()
@@ -434,9 +464,21 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       const loaderEl = document.getElementById('player-loader')
       let frame: HTMLIFrameElement | null = null
       let pendingEmbed = stage?.dataset.embed || ''
+      let pendingM3u8 = stage?.dataset.m3u8 || ''
       let pendingTitle = stage?.dataset.title || ''
       let loaderMinTimer = 0
       let frameLoaded = false
+
+      /* Trạng thái player m3u8 (hls.js) */
+      type HlsInstance = {
+        destroy(): void
+        on(event: string, cb: (event: unknown, data: { fatal?: boolean }) => void): void
+        loadSource(url: string): void
+        attachMedia(el: HTMLMediaElement): void
+      }
+      let videoEl: HTMLVideoElement | null = null
+      let hls: HlsInstance | null = null
+      let currentMode: 'none' | 'iframe' | 'video' = 'none'
 
       function maybeHideLoader() {
         if (!loaderEl) return
@@ -460,7 +502,8 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       }
 
       function createFrame(embed: string, title: string) {
-        if (!stage || frame) return
+        if (!stage) return
+        clearStage()
         playBtn?.classList.add('hidden')
         frame = document.createElement('iframe')
         frame.id = 'watch-frame'
@@ -475,16 +518,109 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         })
         stage.innerHTML = ''
         stage.appendChild(frame)
+        currentMode = 'iframe'
         showLoader()
         startProgress()
       }
 
+      /* Dọn player hiện tại (hls / video / iframe) trước khi phát cái mới */
+      function clearStage() {
+        if (hls) {
+          try {
+            hls.destroy()
+          } catch {
+            /* ignore */
+          }
+          hls = null
+        }
+        if (videoEl) {
+          try {
+            videoEl.pause()
+            videoEl.removeAttribute('src')
+            videoEl.load()
+          } catch {
+            /* ignore */
+          }
+          videoEl = null
+        }
+        if (frame) {
+          frame.remove()
+          frame = null
+        }
+        currentMode = 'none'
+      }
+
+      function createVideo(title: string): HTMLVideoElement | null {
+        if (!stage) return null
+        clearStage()
+        playBtn?.classList.add('hidden')
+        const v = document.createElement('video')
+        v.id = 'watch-video'
+        v.className = 'w-full h-full bg-black'
+        v.controls = true
+        v.playsInline = true
+        v.autoplay = true
+        v.preload = 'auto'
+        v.title = title
+        stage.innerHTML = ''
+        stage.appendChild(v)
+        videoEl = v
+        currentMode = 'video'
+        return v
+      }
+
+      /* Phát HLS thật (kkphim link_m3u8) bằng <video> + hls.js.
+       * Lỗi fatal hoặc không hỗ trợ → tự rơi về embed iframe. */
+      async function playHls(m3u8: string, title: string, fallbackEmbed: string) {
+        const v = createVideo(title)
+        if (!v) return
+        startProgress()
+        // Ưu tiên hls.js (MSE — Chrome/Firefox/Edge). Lưu ý: Chrome trả về
+        // "maybe" cho canPlayType('application/vnd.apple.mpegurl') nên KHÔNG
+        // được dùng nó làm điều kiện chọn nhánh native trước.
+        try {
+          const mod = await import('hls.js')
+          const Hls = mod.default
+          if (Hls.isSupported()) {
+            const instance = new Hls({ enableWorker: true }) as unknown as HlsInstance
+            hls = instance
+            instance.loadSource(m3u8)
+            instance.attachMedia(v)
+            instance.on(Hls.Events.ERROR, (_evt, data) => {
+              if (data?.fatal) {
+                console.warn('[player] hls fatal error — chuyển sang embed')
+                createFrame(fallbackEmbed, title)
+              }
+            })
+            v.play().catch(() => {})
+            return
+          }
+        } catch (err) {
+          console.warn('[player] hls.js load failed — thử native HLS', err)
+        }
+        // Safari / iOS: HLS gốc.
+        if (v.canPlayType('application/vnd.apple.mpegurl')) {
+          v.addEventListener('error', () => {
+            if (videoEl === v) createFrame(fallbackEmbed, title)
+          })
+          v.src = m3u8
+          v.play().catch(() => {})
+          return
+        }
+        createFrame(fallbackEmbed, title)
+      }
+
+      function startPlayback(item: { embed: string; m3u8?: string }, title: string) {
+        if (item.m3u8) playHls(item.m3u8, title, item.embed)
+        else createFrame(item.embed, title)
+      }
+
       playBtn?.addEventListener('click', () => {
-        createFrame(pendingEmbed, pendingTitle)
+        startPlayback({ embed: pendingEmbed, m3u8: pendingM3u8 || undefined }, pendingTitle)
       })
 
       if (loaderEl && pendingEmbed) {
-        createFrame(pendingEmbed, pendingTitle)
+        startPlayback({ embed: pendingEmbed, m3u8: pendingM3u8 || undefined }, pendingTitle)
       }
 
       /* ── Nav prev/next + float ── */
@@ -589,15 +725,11 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
 
         if (ep) {
           pendingEmbed = ep.embed
+          pendingM3u8 = ep.m3u8 || ''
           pendingTitle = `${movieName} - ${ep.name}`
-          if (frame) {
-            showLoader()
-            frame.addEventListener('load', () => {
-              frameLoaded = true
-              maybeHideLoader()
-            })
-            frame.src = ep.embed
-            frame.title = pendingTitle
+          // Đang phát → đổi ngay; chưa phát → chỉ đổi nguồn chờ (người dùng bấm play).
+          if (frame || videoEl) {
+            startPlayback({ embed: ep.embed, m3u8: ep.m3u8 }, pendingTitle)
           }
         }
         renderNav(server.items, idx)
@@ -651,6 +783,9 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
           if (f && typeof f.requestFullscreen === 'function') {
             e.preventDefault()
             f.requestFullscreen().catch(() => {})
+          } else if (videoEl && typeof videoEl.requestFullscreen === 'function') {
+            e.preventDefault()
+            videoEl.requestFullscreen().catch(() => {})
           }
         }
       }

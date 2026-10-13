@@ -207,3 +207,22 @@ Ghép nguonc+kkphim+vsmov ⇒ phủ **100% 53.857 phim duy nhất**.
   - Thứ tự giải: **Redis → live-resolve** (vsmov detail → search kkphim + nguonc) **→ partial** (slug không tồn tại).
   - ⚠️ **Phát hiện:** các endpoint tra-cứu `/tmdb/{type}/{id}`, `/imdb/title/{id}`, `/phim/id/{id}` của `phimapi.com` hiện trả `{"status":false,"msg":"hmmm!"}` → **không dùng được**; thay bằng **idmap offline + `tim-kiem`/`films/search`** (đã kiểm chứng chạy tốt).
 - G1 gate "khớp ≥ 80%": pool id tmdb 38.628 + map tên 15.229 → khớp ~99% qua 2 lớp; phần kkphim không-tmdb đã match ngược 50%.
+
+### 14.6 G2 — Player + episodes kkphim (m3u8 qua hls.js) — hoàn tất
+
+**Mục tiêu:** phim đang xem tại `/xem/{slug}/{ep}` ưu tiên phát `link_m3u8` **thật** của kkphim bằng `<video>` + hls.js; không có → tự rơi về embed (vsmov) như cũ. Không đổi URL/SEO, không đổi schema Redis.
+
+**Thay đổi:**
+- `web/src/lib/kkphim.ts` (mới): `getKkphimDetail(slug)` (chuẩn hoá `data.item.episodes` → `EpisodeServer[]`, `embed=link_embed`, `m3u8=link_m3u8`), `episodeKey()` (tên tập → khoá: "Tập 01"→`n1`, "Full"→`full`), `buildM3u8Map()` (ghép tập vsmov ↔ kkphim theo khoá tên, dự phòng theo index; ưu tiên server cùng tên "Vietsub").
+- `web/src/pages/xem/[slug]/[episode].astro`: SSR resolve `identity.kkphim` (idmap G1) → `getKkphimDetail` → `buildM3u8Map` → gắn `m3u8` vào item **server đầu** của `serverData` + `data-m3u8` trên `#player-stage`. Client: dựng player mới `startPlayback({embed,m3u8})` → `playHls` (hls.js MSE; Safari native; lỗi fatal → tự fallback embed) / `createFrame` (iframe cũ). Server switch → `startPlayback` (tôn trọng m3u8). Deadline tiến trình giờ đọc `currentTime/duration` thật từ `<video>`.
+
+**Lưu ý kỹ thuật:**
+- `canPlayType('application/vnd.apple.mpegurl')` của Chrome trả `"maybe"` (truthy) → **không được** dùng làm điều kiện native trước; phải ưu tiên `Hls.isSupported()` (MSE).
+- `m3u8` của vsmov (field cùng tên) thực chất là **trang HTML player**, không phải playlist → luôn dùng m3u8 của kkphim.
+- hls.js import **động** → tách chunk riêng (`hls.*.js` ~185 kB gzip) chỉ tải khi bấm play.
+
+**Kiểm chứng thực tế (Chrome headless + CDP, dev server):**
+- `hope-vung-tu-dia/tap-full` (single): phát m3u8 — `videoWidth 1920`, `readyState 4`, `currentTime` 8.9s→12.9s, `duration` ~9070s, hết lỗi.
+- `trai-tim-cua-ke-ky-sinh/tap-3` (series 21 tập): ghép đúng — `tap-3` → kkphim Tập 03; phát 1920×1080.
+- `khong-ngu-o-seattle/tap-full` (vsmov-only): `data-m3u8` rỗng → phát embed iframe đúng.
+- `astro check` **0 errors**; `astro build` (Vercel adapter) hoàn tất, hls.js tách chunk riêng.
