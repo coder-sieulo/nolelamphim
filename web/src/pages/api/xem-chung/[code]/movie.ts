@@ -18,6 +18,7 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
     episode?: string
     epName?: string
     thumb?: string
+    m3u8?: string
     scheduleStart?: number | null
   }
   try {
@@ -41,6 +42,7 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
     epName: body.epName || '',
     thumb: body.thumb || '',
     embed: body.embed,
+    m3u8: body.m3u8 || undefined,
   }
   const scheduled = Number(body.scheduleStart) || 0
   const room = await setMovie(code, user.sub, movie, scheduled)

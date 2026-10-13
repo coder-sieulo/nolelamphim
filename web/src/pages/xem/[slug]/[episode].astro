@@ -48,8 +48,8 @@ const serverData = episodes.map((s, si) => ({
     name: e.name,
     slug: e.slug,
     embed: e.embed,
-    // Tập của kkphim đã có sẵn m3u8; tập của vsmov thì lấy từ bản đồ ghép.
-    ...(e.m3u8 || (si === 0 && m3u8Map[e.slug]) ? { m3u8: e.m3u8 || m3u8Map[e.slug] } : {}),
+    // m3u8 thật lấy từ kkphim (m3u8 của vsmov là link embed); map rỗng thì giữ e.m3u8.
+    ...(si === 0 && m3u8Map[e.slug] ? { m3u8: m3u8Map[e.slug] } : e.m3u8 ? { m3u8: e.m3u8 } : {}),
   })),
 }))
 

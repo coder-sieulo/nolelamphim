@@ -32,6 +32,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     epName?: string
     thumb?: string
     embed?: string
+    m3u8?: string
     startTime?: number
   }
   try {
@@ -63,6 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       epName: body.epName || '',
       thumb: body.thumb || '',
       embed: body.embed,
+      m3u8: body.m3u8 || undefined,
     },
     startTime: body.startTime,
   })

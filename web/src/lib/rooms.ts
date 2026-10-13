@@ -18,11 +18,29 @@ export interface RoomMovie {
   epName: string
   thumb: string
   embed: string
+  /** HLS (kkphim) — có thì phòng phát bằng <video> và sync thật được. */
+  m3u8?: string
   host?: string
   hash?: string
   frameDur?: number
   frameCount?: number
   frameUrl?: string
+}
+
+/**
+ * Trạng thái đồng bộ của buổi xem: host = nguồn thời gian.
+ * Member tính lại thời gian kỳ vọng từ `time`/`at`/`rate` rồi seek theo.
+ */
+export interface RoomSync {
+  playing: boolean
+  /** currentTime của host (giây) tại thời điểm `at`. */
+  time: number
+  /** Thời điểm server (ms) ghi sync. */
+  at: number
+  rate: number
+  /** +1 mỗi khi host play/pause/seek/đổi tập → member realign chắc chắn. */
+  seq: number
+  by: string
 }
 
 export interface RoomChat {
@@ -48,6 +66,7 @@ export interface Room {
   muted: Record<string, boolean>
   banned: Record<string, boolean>
   ready: Record<string, boolean>
+  sync?: RoomSync
   createdAt: number
 }
 
@@ -258,6 +277,33 @@ export async function endRoom(code: string, userId: string): Promise<Room | null
   room.status = 'ended'
   room.endedAt = Date.now()
   room.ready = {}
+  await saveRoom(room)
+  return room
+}
+
+/**
+ * Cập nhật mốc đồng bộ do host phát (play/pause/seek/tốc độ).
+ * Chỉ host ghi được; mọi người đọc qua room.sync.
+ */
+export async function setSync(
+  code: string,
+  userId: string,
+  data: { playing: boolean; time: number; rate?: number; seq?: number },
+): Promise<Room | null> {
+  const room = await getRoom(code)
+  if (!room) return null
+  if (room.hostId !== userId) return null
+  if (room.status === 'ended') return null
+  const time = Number.isFinite(data.time) ? Math.max(0, data.time) : 0
+  const rate = Number.isFinite(data.rate) && data.rate ? Math.min(4, Math.max(0.25, data.rate)) : 1
+  room.sync = {
+    playing: !!data.playing,
+    time,
+    at: Date.now(),
+    rate,
+    seq: Number.isFinite(data.seq) ? (data.seq as number) : room.sync?.seq ?? 0,
+    by: userId,
+  }
   await saveRoom(room)
   return room
 }

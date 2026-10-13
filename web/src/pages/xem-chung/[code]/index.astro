@@ -97,6 +97,7 @@ const isHost = !!user && user.sub === room.hostId
             <div id="xc-buffering" class="hidden absolute inset-0 z-30 items-center justify-center bg-black/60">
               <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-cm-accent animate-spin"></div>
             </div>
+            <div id="xc-sync-badge" class="hidden absolute top-3 left-3 z-40 px-2.5 py-1 rounded-full bg-black/65 border border-white/15 text-[11px] font-medium text-white"></div>
           </div>
         </div>
 
@@ -183,12 +184,13 @@ const isHost = !!user && user.sub === room.hostId
 
     interface Member { id: string; username: string; global_name?: string | null; avatar?: string | null }
     interface ChatMsg { id: string; userId: string; username: string; avatar?: string | null; text: string; ts: number }
-    interface Movie { slug: string; movieName: string; epName: string; episode: string; thumb: string; embed: string; hash?: string; host?: string; frameDur?: number; frameCount?: number; frameUrl?: string }
+    interface Movie { slug: string; movieName: string; epName: string; episode: string; thumb: string; embed: string; m3u8?: string; hash?: string; host?: string; frameDur?: number; frameCount?: number; frameUrl?: string }
+    interface RoomSync { playing: boolean; time: number; at: number; rate: number; seq: number; by: string }
     interface Room {
       code: string; status: string; hostId: string; members: Member[];
       movie: Movie | null; startTime: number; endedAt: number;
       chat: ChatMsg[]; muted: Record<string, boolean>; banned: Record<string, boolean>;
-      ready: Record<string, boolean>;
+      ready: Record<string, boolean>; sync?: RoomSync;
     }
 
     function escapeHTML(s: string): string {
@@ -234,7 +236,7 @@ const isHost = !!user && user.sub === room.hostId
       let room: Room | null = null
       let isHost = page.dataset.host === 'true'
       let _userId = ''
-      let selectedMovie: { slug: string; movieName: string; episode: string; epName: string; thumb: string; embed: string } | null = null
+      let selectedMovie: { slug: string; movieName: string; episode: string; epName: string; thumb: string; embed: string; m3u8?: string } | null = null
 
       const $ = (id: string) => document.getElementById(id)
 
@@ -345,16 +347,17 @@ const isHost = !!user && user.sub === room.hostId
         // Preset từ trang phim: phim đã chọn sẵn (chưa phát), host chỉ bấm Phát/Đặt giờ
         if (room && isHost && room.status === 'open' && room.movie && !selectedMovie) {
           const m = room.movie
-          const preset: { slug: string; movieName: string; episode: string; epName: string; thumb: string; embed: string } = {
+          const preset: { slug: string; movieName: string; episode: string; epName: string; thumb: string; embed: string; m3u8?: string } = {
             slug: m.slug,
             movieName: m.movieName,
             episode: m.episode,
             epName: m.epName,
             thumb: m.thumb,
             embed: m.embed,
+            m3u8: m.m3u8,
           }
           selectedMovie = preset
-          pickEpisodes = [{ name: preset.epName, slug: preset.episode, embed: preset.embed }]
+          pickEpisodes = [{ name: preset.epName, slug: preset.episode, embed: preset.embed, m3u8: preset.m3u8 }]
           renderEpPicker({ slug: preset.slug, name: preset.movieName, thumb: preset.thumb })
           const first = epGrid?.querySelector<HTMLButtonElement>('.xc-ep-btn[data-index="0"]')
           first?.classList.add('bg-cm-elevated', 'text-cm-text', 'border-cm-border-strong')
@@ -413,6 +416,135 @@ const isHost = !!user && user.sub === room.hostId
         return room.startTime <= nowMs()
       }
 
+      // ── Player m3u8 (<video> + hls.js) — điều kiện để sync thật ──
+      type HlsLike = {
+        destroy(): void
+        loadSource(url: string): void
+        attachMedia(el: HTMLMediaElement): void
+        on(event: string, cb: (evt: unknown, data: { fatal?: boolean }) => void): void
+      }
+      let videoEl: HTMLVideoElement | null = null
+      let hls: HlsLike | null = null
+      let playerMode: 'none' | 'iframe' | 'video' = 'none'
+      let m3u8Failed = ''
+      let hostSeq = 0
+
+      function destroyVideo(): void {
+        if (hls) { try { hls.destroy() } catch { /* ignore */ } hls = null }
+        if (videoEl) {
+          try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load() } catch { /* ignore */ }
+          videoEl.remove()
+          videoEl = null
+        }
+        playerMode = 'none'
+      }
+
+      function onVideoFatal(m3: string): void {
+        m3u8Failed = m3
+        destroyVideo()
+      }
+
+      async function ensureVideo(m3u8: string): Promise<void> {
+        if (playerMode === 'video' && videoEl && videoEl.dataset.src === m3u8) return
+        destroyVideo()
+        const stage = $('player-stage')
+        if (!stage) return
+        const v = document.createElement('video')
+        v.id = 'xc-video'
+        v.className = 'absolute inset-0 w-full h-full bg-black'
+        v.setAttribute('playsinline', '')
+        v.autoplay = true
+        v.preload = 'auto'
+        v.controls = isHost
+        v.dataset.src = m3u8
+        videoEl = v
+        playerMode = 'video'
+        stage.appendChild(v)
+        if (isHost) {
+          const bump = () => { hostSeq++; void pushSync() }
+          v.addEventListener('play', bump)
+          v.addEventListener('pause', bump)
+          v.addEventListener('seeked', bump)
+          v.addEventListener('ratechange', bump)
+        }
+        const buf = buffering()
+        if (buf) { buf.classList.remove('hidden'); buf.classList.add('flex') }
+        v.addEventListener('playing', () => { if (buf) { buf.classList.add('hidden'); buf.classList.remove('flex') } })
+        try {
+          const mod = await import('hls.js')
+          const Hls = mod.default
+          if (Hls.isSupported()) {
+            const inst = new Hls({ enableWorker: true }) as unknown as HlsLike
+            hls = inst
+            inst.loadSource(m3u8)
+            inst.attachMedia(v)
+            inst.on(Hls.Events.ERROR, (_e: unknown, data: { fatal?: boolean }) => {
+              if (data?.fatal && videoEl === v) { console.warn('[room] hls fatal → embed'); onVideoFatal(m3u8) }
+            })
+            void v.play().catch(() => {})
+            return
+          }
+        } catch (err) {
+          console.warn('[room] hls.js load failed', err)
+        }
+        if (v.canPlayType('application/vnd.apple.mpegurl')) {
+          v.addEventListener('error', () => { if (videoEl === v) onVideoFatal(m3u8) })
+          v.src = m3u8
+          void v.play().catch(() => {})
+          return
+        }
+        onVideoFatal(m3u8)
+      }
+
+      // ── Sync: host là nguồn thời gian, member bám theo ──
+      async function pushSync(): Promise<void> {
+        if (!isHost || !videoEl) return
+        try {
+          await fetch(`/api/xem-chung/${code}/sync`, {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              playing: !videoEl.paused && !videoEl.ended,
+              time: Number.isFinite(videoEl.currentTime) ? videoEl.currentTime : 0,
+              rate: videoEl.playbackRate || 1,
+              seq: hostSeq,
+            }),
+          })
+        } catch { /* ignore */ }
+      }
+
+      function renderSyncBadge(): void {
+        const el = $('xc-sync-badge')
+        if (!el) return
+        if (playerMode !== 'video') { el.classList.add('hidden'); return }
+        el.classList.remove('hidden')
+        el.textContent = isHost ? '● Phát cho phòng' : '◈ Bám host'
+      }
+
+      /** Member: kéo currentTime/play-pause về khớp host. */
+      function applyFollow(): void {
+        if (isHost || !videoEl || !room?.sync) return
+        const s = room.sync
+        const elapsed = s.playing ? (Date.now() - s.at) / 1000 * (s.rate || 1) : 0
+        let expected = Math.max(0, s.time + elapsed)
+        const dur = videoEl.duration
+        if (Number.isFinite(dur) && dur > 1) expected = Math.min(expected, dur - 1)
+        if (Math.abs(videoEl.currentTime - expected) > 0.6) {
+          try { videoEl.currentTime = expected } catch { /* ignore */ }
+        }
+        if (s.playing && videoEl.paused) void videoEl.play().catch(() => {})
+        if (!s.playing && !videoEl.paused) videoEl.pause()
+      }
+
+      async function pollSyncLoop(): Promise<void> {
+        if (isHost || playerMode !== 'video') return
+        try {
+          const r = await fetch(`/api/xem-chung/${code}/sync`, { credentials: 'same-origin' })
+          const d = await r.json()
+          if (d?.ok && room) { room.sync = d.sync ?? undefined; applyFollow() }
+        } catch { /* ignore */ }
+      }
+
       function drawFrame() {
         const f = frameEl()
         const nowPlaying = $('xc-now-playing')
@@ -455,6 +587,12 @@ const isHost = !!user && user.sub === room.hostId
         }
         if (cd) { cd.classList.add('hidden'); cd.classList.remove('flex'); }
         if (nowPlaying) nowPlaying.classList.add('hidden')
+        if (room && room.movie && room.movie.m3u8 && room.movie.m3u8 !== m3u8Failed) {
+          if (f) f.classList.add('hidden')
+          void ensureVideo(room.movie.m3u8)
+          return
+        }
+        if (videoEl) destroyVideo()
         if (!room || !room.movie || !f) return
         const emb = room.movie.embed
         if (!emb) return
@@ -485,7 +623,7 @@ const isHost = !!user && user.sub === room.hostId
       const lookup = $('xc-lookup') as HTMLInputElement | null
       const lookupRes = $('xc-lookup-res')
       let lookupTimer = 0
-      let pickEpisodes: { name: string; slug: string; embed: string }[] = []
+      let pickEpisodes: { name: string; slug: string; embed: string; m3u8?: string }[] = []
       const epPicker = $('xc-ep-picker')
       const epGrid = $('xc-ep-grid')
       if (lookup) {
@@ -526,7 +664,7 @@ const isHost = !!user && user.sub === room.hostId
                 const r = await fetch(`/api/episodes?slug=${encodeURIComponent(mv.slug)}`, { credentials: 'same-origin' }).catch(() => null)
                 if (!r) return
                 const d = await r.json()
-                const episodes = d.status ? (d.episodes || []).flatMap((s: any) => s.list.map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed }))) : []
+                const episodes = d.status ? (d.episodes || []).flatMap((s: any) => s.list.map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed, m3u8: e.m3u8 }))) : []
                 pickEpisodes = episodes
                 $('xc-host-error')?.classList.add('hidden')
                 if (!episodes.length) {
@@ -559,7 +697,7 @@ const isHost = !!user && user.sub === room.hostId
           b.addEventListener('click', () => {
             const ep = pickEpisodes[Number(b.dataset.index || 0)]
             if (!ep) return
-            selectedMovie = { slug: mv.slug, movieName: mv.name, episode: ep.slug, epName: ep.name, thumb: mv.thumb, embed: ep.embed }
+            selectedMovie = { slug: mv.slug, movieName: mv.name, episode: ep.slug, epName: ep.name, thumb: mv.thumb, embed: ep.embed, m3u8: ep.m3u8 }
             epGrid.querySelectorAll('.xc-ep-btn').forEach((x) => {
               x.classList.remove('bg-cm-elevated', 'text-cm-text', 'border-cm-border-strong')
             })
@@ -603,6 +741,11 @@ const isHost = !!user && user.sub === room.hostId
         startMovie(at)
       })
       $('xc-resync')?.addEventListener('click', () => {
+        if (playerMode === 'video') {
+          if (isHost) void pushSync()
+          else void pollSyncLoop()
+          return
+        }
         const f = frameEl()
         if (!f) return
         const emb = room?.movie?.embed
@@ -668,16 +811,29 @@ const isHost = !!user && user.sub === room.hostId
           }
         })
         .catch(() => {})
-      window.setInterval(() => { void syncClock() }, 60_000)
-
-      timer = window.setInterval(() => { drawFrame(); tickClock() }, 250)
-      window.setInterval(() => {
+      const clockTimer = window.setInterval(() => { void syncClock() }, 60_000)
+      const refreshTimer = window.setInterval(() => {
         void refresh().then((ok) => { if (ok) renderAll() })
       }, 3000)
+      // Host = nguồn thời gian (đẩy mốc mỗi 1s); member đọc + bám theo.
+      const pushTimer = window.setInterval(() => { if (isHost) void pushSync() }, 1000)
+      const pollTimer = window.setInterval(() => { void pollSyncLoop() }, 1000)
+
+      timer = window.setInterval(() => {
+        drawFrame()
+        tickClock()
+        renderSyncBadge()
+        if (!isHost) applyFollow()
+      }, 250)
 
       return () => {
         window.clearInterval(timer)
+        window.clearInterval(clockTimer)
+        window.clearInterval(refreshTimer)
+        window.clearInterval(pushTimer)
+        window.clearInterval(pollTimer)
         window.clearTimeout(lookupTimer)
+        destroyVideo()
       }
     })
   </script>

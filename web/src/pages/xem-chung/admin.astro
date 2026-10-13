@@ -97,7 +97,7 @@ if (!user || !isAdmin(user)) {
     import { registerPageInit } from '../../scripts/lifecycle'
 
     interface AdminMovie { slug: string; name: string; thumb: string }
-    interface AdminEp { name: string; slug: string; embed: string }
+    interface AdminEp { name: string; slug: string; embed: string; m3u8?: string }
     interface AdminRoom {
       code: string; status: string; hostId: string; members: { id: string; username: string; global_name?: string | null }[];
       movie: { slug: string; movieName: string; epName: string; episode: string; thumb: string; embed: string } | null;
@@ -260,7 +260,7 @@ if (!user || !isAdmin(user)) {
                 const r = await fetch(`/api/episodes?slug=${encodeURIComponent(mv.slug)}`, { credentials: 'same-origin' }).catch(() => null)
                 if (!r) return
                 const d = await r.json()
-                episodes = d.status ? (d.episodes || []).flatMap((s: any) => s.list.map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed }))) : []
+                episodes = d.status ? (d.episodes || []).flatMap((s: any) => s.list.map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed, m3u8: e.m3u8 }))) : []
                 showMsg('')
                 if (!episodes.length) {
                   $('xc-ep-picker')?.classList.add('hidden')
@@ -325,6 +325,7 @@ if (!user || !isAdmin(user)) {
             episode: selected.ep.slug,
             thumb: selected.movie.thumb,
             embed: selected.ep.embed,
+            m3u8: selected.ep.m3u8,
             startTime: at,
           }),
         }).catch(() => null)
