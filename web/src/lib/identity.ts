@@ -149,15 +149,17 @@ function parseRecord(raw: unknown): IdentityRecord | null {
   }
 }
 
-async function saveRecord(rec: IdentityRecord, ttl: number): Promise<void> {
+/**
+ * Lưu cache identity — CHỈ 1 key cho đúng nguồn cần (chống tốn phí Upstash).
+ * Trước đây ghi 3 chiều (3 SET); giờ mọi đường app đều đi từ slug vsmov
+ * (URL canonic), nên chỉ cần ghi `phim:idmap:vsmov:{slug}`.
+ */
+async function saveRecord(source: 'vsmov' | 'kkphim' | 'nguonc', rec: IdentityRecord, ttl: number): Promise<void> {
   const r = redis()
   if (!r) return
-  const payload = JSON.stringify(rec)
-  const jobs: Promise<unknown>[] = []
-  if (rec.vsmov) jobs.push(r.set(key('vsmov', rec.vsmov), payload, { ex: ttl }))
-  if (rec.kkphim) jobs.push(r.set(key('kkphim', rec.kkphim), payload, { ex: ttl }))
-  if (rec.nguonc) jobs.push(r.set(key('nguonc', rec.nguonc), payload, { ex: ttl }))
-  await Promise.allSettled(jobs)
+  const slug = rec[source]
+  if (!slug) return
+  await r.set(key(source, slug), JSON.stringify(rec), { ex: ttl })
 }
 
 export async function getCached(source: string, slug: string): Promise<IdentityRecord | null> {
@@ -212,7 +214,7 @@ export async function resolveIdentity(slug: string, source: 'vsmov' | 'kkphim' |
       year,
       via: tmdbId ? 'tmdb' : kkphim || nguonc ? 'name' : 'partial',
     }
-    await saveRecord(rec, CACHE_TTL_SEC)
+    await saveRecord('vsmov', rec, CACHE_TTL_SEC)
     return rec
   } catch (err) {
     console.error('[identity] resolveIdentity failed for', slug, err)

@@ -226,3 +226,13 @@ Ghép nguonc+kkphim+vsmov ⇒ phủ **100% 53.857 phim duy nhất**.
 - `trai-tim-cua-ke-ky-sinh/tap-3` (series 21 tập): ghép đúng — `tap-3` → kkphim Tập 03; phát 1920×1080.
 - `khong-ngu-o-seattle/tap-full` (vsmov-only): `data-m3u8` rỗng → phát embed iframe đúng.
 - `astro check` **0 errors**; `astro build` (Vercel adapter) hoàn tất, hls.js tách chunk riêng.
+
+### 14.7 Tối ưu chi phí Upstash Redis (idmap 1 chiều)
+
+**Vấn đề:** prewarm ban đầu ghi **3 chiều × nguồn = 84.114 key** (SET) vào Upstash — tính phí theo lệnh + lưu trữ. Trong khi **mọi đường app đều đi từ slug vsmov** (URL canonic), chiều `kkphim:*`/`nguonc:*` không ai đọc (UI chỉ gọi `resolveIdentity(slug, 'vsmov')`; `/api/identity` là endpoint debug).
+
+**Giải pháp (đã áp dụng):**
+- `web/tools/prewarm-idmap.mjs`: mặc định chỉ ghi **chiều vsmov** → **~20.365 key** (thay 84.114, **−76%**). Thêm cờ `--all` nếu sau này có đường truy cập bằng slug kkphim/nguonc. Record vẫn đủ `{vsmov, kkphim, nguonc, tmdb, name, year, via}` — chỉ giảm số key.
+- `web/src/lib/identity.ts`: lazy-save chuyển từ ghi **3 SET** → **1 SET** (đúng nguồn được query). Kiểm chứng: miss cache → live-resolve → chỉ thêm đúng 1 key.
+- Key `kkphim:*`/`nguonc:*` cũ còn trong Redis: **để tự hết hạn (TTL 30 ngày) là rẻ nhất** — expiry miễn phí, không tốn lệnh DEL; storage ~15MB không đáng kể. Xoá ngay bằng DEL phải trả ~63k lệnh → không khuyến nghị.
+- Chi phí hoạt động thường trực: mỗi view `/xem` = **1 GET** (tra Redis) + thi thoảng 1 SET khi hết hạn. Không đổi schema, không đổi URL.

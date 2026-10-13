@@ -2,11 +2,17 @@
 /**
  * Prewarm idmap Redis từ dữ liệu đối chiếu full (tools/scan-full.mjs đã chạy).
  *
+ * Tiết kiệm chi phí Upstash: mặc định chỉ ghi CHIỀU vsmov (mọi URL app đều từ
+ * slug vsmov canonic) → ~20.365 key thay vì ~84.114 (−76%). Dùng `--all` để
+ * ghi đủ 3 chiều như phiên bản cũ (chỉ cần nếu có đường truy cập bằng slug
+ * kkphim/nguonc trực tiếp).
+ *
  * Cách dùng:
- *   node tools/prewarm-idmap.mjs [đường dẫn thư mục scan] [--dry-run]
+ *   node tools/prewarm-idmap.mjs [đường dẫn thư mục scan] [--dry-run] [--all]
  *
  * - Đọc UPSTASH_REDIS_REST_URL/TOKEN từ web/.env.local
- * - Ghi 3 chiều (vsmov/kkphim/nguonc slug → IdentityRecord) qua pipeline
+ * - Ghi `phim:idmap:vsmov:{slug}` → IdentityRecord qua pipeline
+ * - Record vẫn chứa đủ {vsmov, kkphim, nguonc, tmdb, name, year, via}
  * - TTL 30 ngày (lazy-resolve sẽ ghi 7 ngày và refresh khi cần)
  */
 import { readFileSync, existsSync } from 'node:fs'
@@ -14,6 +20,7 @@ import { Redis } from '@upstash/redis'
 
 const args = process.argv.slice(2)
 const DRY = args.includes('--dry-run')
+const ALL = args.includes('--all')
 const SCAN_DIR = args.find((a) => !a.startsWith('--')) || '/tmp/opencode/scan'
 const TTL_SEC = 30 * 24 * 60 * 60
 
@@ -86,7 +93,7 @@ for (const s of SRC) for (const it of data[s]) {
   records.set(`${s}:${it.slug}`, JSON.stringify(rec))
 }
 
-console.log(`Records to write: ${records.size}`)
+console.log(`Records to write: ${records.size}${ALL ? ' (--all: cả 3 chiều)' : ' (chiều vsmov — dùng --all để ghi 3 chiều)'}`)
 const viaCount = { tmdb: 0, name: 0 }
 for (const r of records.values()) viaCount[JSON.parse(r).via]++
 console.log(`  via tmdb: ${viaCount.tmdb} | via name: ${viaCount.name}`)
@@ -107,7 +114,8 @@ const r = new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_
 
 const BATCH = 1000
 let done = 0
-const entries = [...records.entries()]
+const entries = [...records.entries()].filter(([k]) => ALL || k.startsWith('vsmov:'))
+console.log(`Writing ${entries.length}/${records.size} keys (TTL ${TTL_SEC}s)…`)
 for (let i = 0; i < entries.length; i += BATCH) {
   const pipe = r.pipeline()
   for (const [k, v] of entries.slice(i, i + BATCH)) {
@@ -120,11 +128,13 @@ for (let i = 0; i < entries.length; i += BATCH) {
 }
 
 // ——— verify ———
-const verifies = [
-  'vsmov:khong-ngu-o-seattle',
-  'kkphim:bay-tien',
-  'nguonc:hope-vung-tu-dia',
-]
+const verifies = ALL
+  ? [
+      'vsmov:khong-ngu-o-seattle',
+      'kkphim:bay-tien',
+      'nguonc:hope-vung-tu-dia',
+    ]
+  : ['vsmov:khong-ngu-o-seattle', 'vsmov:hope-vung-tu-dia', 'vsmov:trai-tim-cua-ke-ky-sinh']
 for (const v of verifies) {
   const [source, slug] = v.split(':')
   const raw = await r.get(`phim:idmap:${source}:${slug}`)
