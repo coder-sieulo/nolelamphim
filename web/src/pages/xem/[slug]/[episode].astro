@@ -78,7 +78,7 @@ const breadcrumb = [
 const isHorror = (movie.category ?? []).some((c) => c.slug === 'kinh-di')
 
 /* Ảnh poster cho overlay nút phát */
-const posterSrc = movie.thumb_url || movie.poster_url || ''
+const posterSrc = movie.poster_url || movie.thumb_url || ''
 
 /* Nav prev/next — button flat, chevron SVG (không glyph) */
 const navBtn =

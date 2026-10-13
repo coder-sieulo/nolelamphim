@@ -211,8 +211,12 @@ async function fetchKkphimList<T extends { items?: Movie[] }>(
       name: it?.name ? String(it.name) : '',
       origin_name: it?.origin_name ? String(it.origin_name) : undefined,
       slug,
-      poster_url: fullPosterUrl(it?.poster_url),
-      thumb_url: fullPosterUrl(it?.thumb_url) || fullPosterUrl(it?.poster_url),
+      // kkphim NGƯỢC quy ước với vsmov:
+      //   • kkphim.poster_url = poster DỌC (2:3)  → dùng cho card   (site.thumb_url)
+      //   • kkphim.thumb_url  = ảnh NGANG (16:9)  → dùng cho backdrop/hero (site.poster_url)
+      // Nếu map thẳng như vsmov thì card bị cắt từ ảnh ngang và hero bị phóng ảnh dọc → lệch.
+      poster_url: fullPosterUrl(it?.thumb_url) || fullPosterUrl(it?.poster_url),
+      thumb_url: fullPosterUrl(it?.poster_url) || fullPosterUrl(it?.thumb_url),
       year: typeof it?.year === 'number' ? it.year : it?.year ? Number(it.year) || undefined : undefined,
       quality: it?.quality ? String(it.quality) : undefined,
       lang: it?.lang ? String(it.lang) : undefined,
@@ -261,8 +265,9 @@ function mapKkphimDetailToMovieResponse(kk: Awaited<ReturnType<typeof getKkphimD
     name: String(r.name ?? kk.name ?? ''),
     origin_name: r.origin_name ? String(r.origin_name) : undefined,
     slug: String(r.slug ?? kk.slug),
-    poster_url: fullPosterUrl(r.poster_url ?? kk.poster),
-    thumb_url: fullPosterUrl(r.thumb_url ?? kk.thumb) || fullPosterUrl(r.poster_url ?? kk.poster),
+    // kkphim ngược quy ước vsmov — xem chú thích ở fetchKkphimList.
+    poster_url: fullPosterUrl(r.thumb_url ?? kk.thumb) || fullPosterUrl(r.poster_url ?? kk.poster),
+    thumb_url: fullPosterUrl(r.poster_url ?? kk.poster) || fullPosterUrl(r.thumb_url ?? kk.thumb),
     year: r.year != null ? Number(r.year) || undefined : kk.year ?? undefined,
     quality: r.quality ? String(r.quality) : undefined,
     lang: r.lang ? String(r.lang) : undefined,
