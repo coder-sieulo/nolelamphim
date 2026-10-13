@@ -1,7 +1,7 @@
 import sharp from 'sharp'
 import type { APIRoute } from 'astro'
 
-const ALLOWED_HOST_SUFFIXES = ['vsmov.com', 'phimimg.com', 'phimapi.com']
+const ALLOWED_HOST_SUFFIXES = ['vsmov.com', 'phimimg.com', 'phimapi.com', 'image.tmdb.org']
 const MAX_SRC_LEN = 2048
 const DEFAULT_W = 320
 const MAX_W = 4096
@@ -63,7 +63,7 @@ export const GET: APIRoute = async ({ url }) => {
       headers: {
         'Content-Type': 'image/webp',
         'Content-Length': String(output.length),
-        'Cache-Control': 'public, s-maxage=31536000, immutable',
+        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
       },
     })
   } catch {

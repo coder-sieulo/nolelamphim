@@ -126,11 +126,18 @@ function hashId(s: string | null | undefined): number {
 }
 
 function fullPosterUrl(src: unknown): string | undefined {
-  if (typeof src !== 'string' || !src) return undefined
-  if (/^https?:\/\//i.test(src)) return src
+  if (typeof src !== 'string') return undefined
+  const s = src.trim()
+  if (!s) return undefined
+  if (/^https?:\/\//i.test(s)) return s
+  const path = s.replace(/^\/+/, '')
   // Poster/thumb của kkphim: path tương đối, phục vụ từ CDN phimimg.com
-  // (cả `upload/vod/*` lẫn `uploads/movies/*` — phimapi.com chỉ có "uploads/").
-  return `https://phimimg.com/${src.replace(/^\/+/, '')}`
+  // (cả `upload/vod/*` lẫn `uploads/movies/*`; phimapi.com chỉ có "uploads/").
+  if (path.startsWith('upload/') || path.startsWith('uploads/')) return `https://phimimg.com/${path}`
+  // Một số bản ghi kkphim trả path TMDB thiếu host (vd `t/p/w780/xxx.jpg`) → khôi phục đúng CDN.
+  if (path.startsWith('t/p/')) return `https://image.tmdb.org/${path}`
+  // Path rác (vd `danviet.vn/files/...`) → bỏ để client hiện placeholder thay vì ảnh vỡ.
+  return undefined
 }
 
 /** Log fallback gọn: 404 (slug không có ở kkphim) là bình thường, không log ồn. */

@@ -66,14 +66,23 @@ registerPageInit(() => {
   document.addEventListener(
     'error',
     (e) => {
-      const target = e.target as HTMLElement | null
-      if (target && target.tagName === 'IMG') {
-        const shell = target.closest<HTMLElement>('.poster-shell')
-        if (shell) {
-          shell.classList.remove('shimmer')
-          shell.classList.add('poster-missing')
-          target.remove()
-        }
+      const target = e.target as HTMLImageElement | null
+      if (!target || target.tagName !== 'IMG') return
+      // Ảnh CDN trực tiếp lỗi → thử lại qua proxy trước khi bỏ cuộc.
+      const proxy = target.getAttribute('data-proxy')
+      if (proxy && target.getAttribute('src') !== proxy) {
+        target.removeAttribute('srcset')
+        target.setAttribute('src', proxy)
+        return
+      }
+      const shell = target.closest<HTMLElement>('.poster-shell')
+      if (shell) {
+        shell.classList.remove('shimmer')
+        shell.classList.add('poster-missing')
+        target.remove()
+      } else {
+        // Poster trang chi tiết/xem (không có poster-shell) — ẩn để không hiện icon vỡ.
+        target.style.visibility = 'hidden'
       }
     },
     { capture: true, signal: ac.signal },

@@ -1,5 +1,5 @@
 import type { Movie } from './types'
-import { imgUrl } from './img'
+import { imgUrl, imgProxyUrl, IMG_PROXY_PATH } from './img'
 
 export interface CardMovie {
   _id?: number
@@ -52,15 +52,26 @@ export function movieCardHTML(movie: CardMovie, dot?: 'new' | 'hot'): string {
   const episodeBadge = episode
     ? `<span class="absolute bottom-2 right-2 z-20 px-1.5 py-0.5 rounded-[4px] bg-black/60 text-[10px] font-medium text-white/90 pointer-events-none">${episode}</span>`
     : ''
+
+  // Ảnh: CDN tốt (phimimg/TMDB) nhúng trực tiếp + `data-proxy` để fallback; còn lại đi qua proxy
+  // nên giữ srcset responsive. Ảnh lỗi → app.ts đổi sang data-proxy rồi mới hiện placeholder.
+  let posterImg = ''
+  if (movie.thumb_url) {
+    const src = imgUrl(movie.thumb_url, 320)
+    const proxy = imgProxyUrl(movie.thumb_url, 320)
+    const direct = !src.startsWith(IMG_PROXY_PATH)
+    const srcset = direct
+      ? ''
+      : `srcset="${escapeHTML(imgUrl(movie.thumb_url, 160))} 160w, ${escapeHTML(imgUrl(movie.thumb_url, 320))} 320w, ${escapeHTML(imgUrl(movie.thumb_url, 640))} 640w" sizes="(max-width: 640px) 150px, 320px"`
+    const fallback = direct ? ` data-proxy="${escapeHTML(proxy)}"` : ''
+    posterImg = `<img src="${escapeHTML(src)}" ${srcset}${fallback} width="320" height="480" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
+  }
+
   return `
   <div class="group relative" data-slug="${slug}" data-id="${String(movie._id ?? '')}" data-name="${name}" data-thumb="${escapeHTML(imgUrl(movie.thumb_url, 320))}" data-year="${year}" data-episode="${episode}">
     <a href="/phim/${slug}" class="block focus:outline-none focus-visible:ring-2 focus-visible:ring-cm-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-cm-bg rounded-[var(--radius-cm-card)]" draggable="false">
       <div class="relative aspect-[2/3] overflow-hidden rounded-[var(--radius-cm-card)] bg-cm-surface poster-shell">
-        ${
-          movie.thumb_url
-            ? `<img src="${escapeHTML(imgUrl(movie.thumb_url, 320))}" srcset="${escapeHTML(imgUrl(movie.thumb_url, 160))} 160w, ${escapeHTML(imgUrl(movie.thumb_url, 320))} 320w, ${escapeHTML(imgUrl(movie.thumb_url, 640))} 640w" sizes="(max-width: 640px) 150px, 320px" width="320" height="480" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
-            : ''
-        }
+        ${posterImg}
         ${badge}
         ${episodeBadge}
       </div>
@@ -107,7 +118,7 @@ export function continueCardHTML(
   const episode = item.episode ? escapeHTML(item.episode) : ''
   const href = `/xem/${slug}/${escapeHTML(item.episodeSlug || '')}`
   const thumb = item.thumb
-    ? `<img src="${escapeHTML(imgUrl(item.thumb, 300))}" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
+    ? `<img src="${escapeHTML(imgUrl(item.thumb, 300))}" data-proxy="${escapeHTML(imgProxyUrl(item.thumb, 300))}" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
     : ''
   const vote = opts.vote ? formatVote(opts.vote) : ''
 

@@ -6,7 +6,7 @@ import HorrorGate from '../../../components/HorrorGate.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../../lib/api'
 import { resolveIdentity } from '../../../lib/identity'
 import { getKkphimDetail, buildM3u8Map } from '../../../lib/kkphim'
-import { imgUrl } from '../../../lib/img'
+import { imgUrl, imgProxyUrl } from '../../../lib/img'
 import { SITE_URL } from '../../../lib/site'
 import { breadcrumbLd } from '../../../lib/seo'
 import { FaCirclePlay, FaChevronLeft, FaChevronRight, FaListUl, FaXmark, FaChevronDown } from 'react-icons/fa6'
@@ -138,6 +138,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
                 {posterSrc && (
                   <img
                     src={imgUrl(posterSrc, 1600)}
+                    data-proxy={imgProxyUrl(posterSrc, 1600)}
                     alt=""
                     class="absolute inset-0 w-full h-full object-cover"
                     decoding="async"

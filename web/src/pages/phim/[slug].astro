@@ -17,7 +17,7 @@ import ReportButton from '../../components/ReportButton.astro'
 import ThemeBG from '../../components/ThemeBG.astro'
 import Breadcrumb from '../../components/ui/Breadcrumb.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../lib/api'
-import { imgUrl } from '../../lib/img'
+import { imgUrl, imgProxyUrl } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
 import { breadcrumbLd } from '../../lib/seo'
 import { getSessionUser, isAdmin } from '../../lib/auth'
@@ -175,6 +175,7 @@ const chipClass =
         image ? (
           <img
             src={imgUrl(image, 1600)}
+            data-proxy={imgProxyUrl(image, 1600)}
             alt={movie.name}
             class="absolute inset-0 w-full h-full object-cover"
             loading="eager"
