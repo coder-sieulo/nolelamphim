@@ -48,7 +48,8 @@ const serverData = episodes.map((s, si) => ({
     name: e.name,
     slug: e.slug,
     embed: e.embed,
-    ...(si === 0 && m3u8Map[e.slug] ? { m3u8: m3u8Map[e.slug] } : {}),
+    // Tập của kkphim đã có sẵn m3u8; tập của vsmov thì lấy từ bản đồ ghép.
+    ...(e.m3u8 || (si === 0 && m3u8Map[e.slug]) ? { m3u8: e.m3u8 || m3u8Map[e.slug] } : {}),
   })),
 }))
 
@@ -56,7 +57,7 @@ const currentServer = episodes[0]
 const currentList = currentServer?.list ?? []
 const currentEpIdx = currentList.findIndex((e) => e.slug === episode)
 const currentEp = currentList[currentEpIdx]
-const currentEpM3u8 = (currentEp && m3u8Map[currentEp.slug]) || ''
+const currentEpM3u8 = currentEp ? m3u8Map[currentEp.slug] || currentEp.m3u8 || '' : ''
 const prevEp = currentEpIdx > 0 ? currentList[currentEpIdx - 1] : null
 const nextEp = currentEpIdx < currentList.length - 1 ? currentList[currentEpIdx + 1] : null
 

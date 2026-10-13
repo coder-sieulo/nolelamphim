@@ -16,6 +16,8 @@ export interface KkphimDetail {
   /** URL ảnh (nếu cần cho G4) */
   poster?: string
   thumb?: string
+  /** Bản ghi thô đầy đủ từ phimapi (để map metadata ở lib/api). */
+  raw?: Record<string, unknown>
 }
 
 interface RawServerData {
@@ -74,6 +76,7 @@ export async function getKkphimDetail(slug: string, timeoutMs = 10_000): Promise
       episodes,
       poster: item.poster_url,
       thumb: item.thumb_url,
+      raw: item as unknown as Record<string, unknown>,
     }
   } catch (err) {
     console.error('[kkphim] getKkphimDetail failed for', slug, err)

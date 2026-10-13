@@ -128,8 +128,30 @@ function hashId(s: string | null | undefined): number {
 function fullPosterUrl(src: unknown): string | undefined {
   if (typeof src !== 'string' || !src) return undefined
   if (/^https?:\/\//i.test(src)) return src
-  if (src.startsWith('upload/vod') || src.startsWith('uploads/movies')) return `https://phimapi.com/${src}`
-  return src
+  // Poster/thumb của kkphim: path tương đối, phục vụ từ CDN phimimg.com
+  // (cả `upload/vod/*` lẫn `uploads/movies/*` — phimapi.com chỉ có "uploads/").
+  return `https://phimimg.com/${src.replace(/^\/+/, '')}`
+}
+
+/** Log fallback gọn: 404 (slug không có ở kkphim) là bình thường, không log ồn. */
+function logFallback(where: string, e: unknown): void {
+  const msg = e instanceof Error ? e.message : String(e)
+  if (msg.includes('404')) return
+  console.error(`[kkphim fallback] ${where}:`, e)
+}
+
+/**
+ * kkphim bỏ qua các filter `status` / `type` / `country` (chỉ tôn trọng `year`).
+ * Khi có filter đó → đi thẳng vsmov để bộ lọc vẫn hoạt động đúng.
+ * (Trang "Phim Đang Chiếu" dùng status=ongoing nên cũng rơi vào nhánh vsmov — đúng như thiết kế.)
+ */
+const KKPHIM_UNSUPPORTED_FILTERS = ['status', 'type', 'country'] as const
+function hasUnsupportedKkphimFilter(params?: Record<string, string | number>): boolean {
+  if (!params) return false
+  return KKPHIM_UNSUPPORTED_FILTERS.some((k) => {
+    const v = params[k]
+    return v !== undefined && v !== '' && String(v) !== 'undefined'
+  })
 }
 
 function normalizeMovie(movie: Movie): Movie {
@@ -207,17 +229,49 @@ async function fetchKkphimList<T extends { items?: Movie[] }>(
   return resp as T
 }
 
+function toCategoryList(v: unknown): Category[] | undefined {
+  if (!Array.isArray(v)) return undefined
+  const out = v
+    .map((c) => {
+      const o = (c ?? {}) as Record<string, unknown>
+      return {
+        _id: hashId(String(o.id ?? o.slug ?? o.name ?? '')),
+        name: String(o.name ?? ''),
+        slug: String(o.slug ?? ''),
+      }
+    })
+    .filter((c) => c.slug || c.name)
+  return out.length ? out : undefined
+}
+
 function mapKkphimDetailToMovieResponse(kk: Awaited<ReturnType<typeof getKkphimDetail>>): MovieDetailResponse {
   if (!kk) return { status: false, movie: null }
+  const r = (kk.raw ?? {}) as Record<string, any>
   const movie: MovieDetail = {
     _id: hashId(kk.slug),
-    name: kk.name,
-    origin_name: undefined,
-    slug: kk.slug,
-    poster_url: fullPosterUrl(kk.poster),
-    thumb_url: fullPosterUrl(kk.thumb) || fullPosterUrl(kk.poster),
-    year: kk.year ?? undefined,
-    type: kk.type,
+    name: String(r.name ?? kk.name ?? ''),
+    origin_name: r.origin_name ? String(r.origin_name) : undefined,
+    slug: String(r.slug ?? kk.slug),
+    poster_url: fullPosterUrl(r.poster_url ?? kk.poster),
+    thumb_url: fullPosterUrl(r.thumb_url ?? kk.thumb) || fullPosterUrl(r.poster_url ?? kk.poster),
+    year: r.year != null ? Number(r.year) || undefined : kk.year ?? undefined,
+    quality: r.quality ? String(r.quality) : undefined,
+    lang: r.lang ? String(r.lang) : undefined,
+    time: r.time ? String(r.time) : undefined,
+    type: r.type ? String(r.type) : kk.type,
+    status: r.status ? String(r.status) : undefined,
+    episode_current: r.episode_current ? String(r.episode_current) : undefined,
+    episode_total: r.episode_total != null ? String(r.episode_total) : undefined,
+    tmdb: r.tmdb ?? undefined,
+    imdb: r.imdb ?? undefined,
+    content: typeof r.content === 'string' ? r.content : undefined,
+    actor: Array.isArray(r.actor) ? r.actor.map(String) : undefined,
+    director: Array.isArray(r.director) ? r.director.map(String) : undefined,
+    category: toCategoryList(r.category),
+    country: toCategoryList(r.country),
+    trailer_url: typeof r.trailer_url === 'string' && r.trailer_url ? r.trailer_url : undefined,
+    sub_docquyen: r.sub_docquyen === true,
+    view: typeof r.view === 'number' ? r.view : undefined,
     episodes: kk.episodes,
   }
   return { status: true, movie }
@@ -267,19 +321,14 @@ export async function getNewMovies(page = 1): Promise<MovieList> {
     const d = await fetchKkphimList<MovieList>('/danh-sach', { page })
     return normalizeMovieList(d)
   } catch (e) {
-    console.error('[kkphim fallback] getNewMovies:', e)
+    logFallback('getNewMovies', e)
     return fetchAPI<MovieList>('/danh-sach/phim-moi-cap-nhat', { page }).then(normalizeMovieList)
   }
 }
 
+/** "Subteam" là danh sách đặc thù của vsmov — giữ nguyên vsmov, không thay bằng kkphim. */
 export async function getSubteam(limit = 20): Promise<MovieList> {
-  try {
-    const d = await fetchKkphimList<MovieList>('/danh-sach', { page: 1, limit })
-    return normalizeMovieList(d)
-  } catch (e) {
-    console.error('[kkphim fallback] getSubteam:', e)
-    return fetchAPI<MovieList>('/danh-sach/subteam', { limit }, { status: false, items: [] }).then(normalizeMovieList)
-  }
+  return fetchAPI<MovieList>('/danh-sach/subteam', { limit }, { status: false, items: [] }).then(normalizeMovieList)
 }
 
 export async function getMoviesByListPath(
@@ -288,6 +337,11 @@ export async function getMoviesByListPath(
   limit = 24,
   params?: Record<string, string | number>,
 ): Promise<MovieList> {
+  const viaVsmov = () =>
+    fetchAPI<MovieList>(`/danh-sach/${path}`, { page, limit, ...(params || {}) }, { status: false, items: [] }).then(
+      normalizeMovieList,
+    )
+  if (hasUnsupportedKkphimFilter(params)) return viaVsmov()
   try {
     let kkpath = ''
     if (path === 'phim-bo') kkpath = '/danh-sach/phim-bo'
@@ -296,17 +350,20 @@ export async function getMoviesByListPath(
     const d = await fetchKkphimList<MovieList>(kkpath, { page, limit, ...(params || {}) })
     return normalizeMovieList(d)
   } catch (e) {
-    console.error('[kkphim fallback] getMoviesByListPath:', e)
-    return fetchAPI<MovieList>(`/danh-sach/${path}`, { page, limit, ...(params || {}) }, { status: false, items: [] }).then(normalizeMovieList)
+    logFallback('getMoviesByListPath', e)
+    return viaVsmov()
   }
 }
 
 export async function getMoviesByPath(path: string, params?: Record<string, string | number>): Promise<MovieList> {
+  const viaVsmov = () =>
+    fetchAPI<MovieList>(path, params, { status: false, items: [] }).then(normalizeMovieList)
+  if (hasUnsupportedKkphimFilter(params)) return viaVsmov()
   try {
     return await fetchKkphimList<MovieList>(path, params).then(normalizeMovieList)
   } catch (e) {
-    console.error('[kkphim fallback] getMoviesByPath:', e)
-    return fetchAPI<MovieList>(path, params, { status: false, items: [] }).then(normalizeMovieList)
+    logFallback('getMoviesByPath', e)
+    return viaVsmov()
   }
 }
 
@@ -315,7 +372,7 @@ export async function searchMovies(keyword: string, page = 1, limit = 20, signal
     const d = await fetchKkphimList<MovieList>('/tim-kiem', { keyword, page, limit })
     return normalizeMovieList(d)
   } catch (e) {
-    console.error('[kkphim fallback] searchMovies:', e)
+    logFallback('searchMovies', e)
     return fetchAPI<MovieList>('/tim-kiem', { keyword, page, limit }, undefined, 1, { timeoutMs: 6000, signal }).then(normalizeMovieList)
   }
 }
@@ -336,12 +393,14 @@ export async function getMoviesByCategory(
   slug: string,
   params?: { limit?: number; page?: number; year?: string; country?: string; type?: string; status?: string },
 ): Promise<MovieList> {
+  const viaVsmov = () => fetchAPI<MovieList>(`/the-loai/${slug}`, params).then(normalizeMovieList)
+  if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
     const d = await fetchKkphimList<MovieList>(`/the-loai/${slug}`, params)
     return normalizeMovieList(d)
   } catch (e) {
-    console.error('[kkphim fallback] getMoviesByCategory:', e)
-    return fetchAPI<MovieList>(`/the-loai/${slug}`, params).then(normalizeMovieList)
+    logFallback('getMoviesByCategory', e)
+    return viaVsmov()
   }
 }
 
@@ -349,12 +408,14 @@ export async function getMoviesByCountry(
   slug: string,
   params?: { limit?: number; page?: number; year?: string; type?: string; status?: string },
 ): Promise<MovieList> {
+  const viaVsmov = () => fetchAPI<MovieList>(`/quoc-gia/${slug}`, params).then(normalizeMovieList)
+  if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
     const d = await fetchKkphimList<MovieList>(`/quoc-gia/${slug}`, params)
     return normalizeMovieList(d)
   } catch (e) {
-    console.error('[kkphim fallback] getMoviesByCountry:', e)
-    return fetchAPI<MovieList>(`/quoc-gia/${slug}`, params).then(normalizeMovieList)
+    logFallback('getMoviesByCountry', e)
+    return viaVsmov()
   }
 }
 
@@ -362,12 +423,14 @@ export async function getMoviesByYear(
   year: string,
   params?: { limit?: number; page?: number; type?: string; status?: string },
 ): Promise<MovieList> {
+  const viaVsmov = () => fetchAPI<MovieList>(`/nam/${year}`, params).then(normalizeMovieList)
+  if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
     const d = await fetchKkphimList<MovieList>(`/nam/${year}`, params)
     return normalizeMovieList(d)
   } catch (e) {
-    console.error('[kkphim fallback] getMoviesByYear:', e)
-    return fetchAPI<MovieList>(`/nam/${year}`, params).then(normalizeMovieList)
+    logFallback('getMoviesByYear', e)
+    return viaVsmov()
   }
 }
 
