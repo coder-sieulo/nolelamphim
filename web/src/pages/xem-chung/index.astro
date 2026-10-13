@@ -152,7 +152,7 @@ import { FaFilm, FaLink, FaGaugeHigh } from 'react-icons/fa6'
           loginNote.classList.toggle('hidden', canCreate)
           const guestOrUser = authed ? escapeName(user?.global_name || user?.username || '') : escapeName(guest.name)
           loginNote.innerHTML = `<p class="text-cm-body text-cm-text-2 mb-3">Vào với tư cách <b class="text-cm-text">${guestOrUser}</b> (xem + chat được). Chỉ admin mới được tạo phòng / làm host.</p>
-            ${authed ? '' : '<a href="/api/auth/discord" class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition-colors duration-[var(--duration-cm)]">Đăng nhập bằng Discord</a>'}`
+            ${authed ? '' : '<a href="/api/auth/discord" class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">Đăng nhập bằng Discord</a>'}`
         }
         if (!profileBox) return
         profileBox.classList.toggle('hidden', !authed)

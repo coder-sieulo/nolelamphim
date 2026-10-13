@@ -12,7 +12,7 @@ body {
   position: relative;
 }
 
-/* Nền phẳng #0B0B0C + vignette rất nhẹ (CINEMA MINIMAL §03).
+/* Nền phẳng xám đậm + vignette rất nhẹ (CINEMA MINIMAL §03).
    dùng pseudo-element fixed thay vì background-attachment: fixed.
    z-index -11: nằm dưới nền BaseLayout (-z-10). Theme theo phim override ở themes/. */
 body::before {
@@ -22,8 +22,8 @@ body::before {
   z-index: -11;
   pointer-events: none;
   background:
-    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.035) 0%, transparent 55%),
-    #0b0b0c;
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.03) 0%, transparent 55%),
+    #1b1b1f;
 }
 
 /* Phase 7 — baseline keyboard focus (a11y): mọi phần tử tương tác hiện

@@ -35,7 +35,7 @@
 /* Compact header khi scroll xuống (brief §05) */
 .site-header.scrolled .site-bar {
   height: 48px;
-  background: rgba(17, 17, 19, 0.92);
+  background: rgba(27, 27, 31, 0.92);
   box-shadow: var(--shadow-cm-up);
 }
 @media (min-width: 768px) {
@@ -149,6 +149,10 @@
   box-shadow: var(--shadow-cm-up);
   padding: 6px;
   display: none;
+  /* Danh sách thể loại dài — giới hạn chiều cao + cuộn trong panel */
+  max-height: min(420px, calc(100dvh - 140px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .genre-wrap.open .menu-panel,
 .menu-wrap.open .menu-panel {
@@ -234,7 +238,7 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Nút Discord khi chưa đăng nhập */
+/* Nút Discord khi chưa đăng nhập — màu đồng bộ accent cam */
 .site-login {
   height: 36px;
   padding: 0 12px;
@@ -242,14 +246,14 @@
   align-items: center;
   gap: 8px;
   border-radius: var(--radius-cm-btn);
-  background: #5865f2;
+  background: var(--color-cm-accent);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
-  transition: filter var(--duration-cm) var(--ease-cm);
+  transition: background-color var(--duration-cm) var(--ease-cm);
 }
 .site-login:hover {
-  filter: brightness(1.1);
+  background: var(--color-cm-accent-hover);
 }
 
 /* ---------- Search overlay (brief §09) ---------- */

@@ -33,11 +33,11 @@
    Bảng màu brief §03, radius §23, motion §23.
    ══════════════════════════════════════════════════════════════ */
 @theme inline {
-  /* Background — brief §03 */
-  --color-cm-bg: #0b0b0c;
-  --color-cm-bg-2: #111113;
-  --color-cm-surface: #18181b;
-  --color-cm-elevated: #202024;
+  /* Background — brief §03 (xám đậm, không còn đen bí) */
+  --color-cm-bg: #1b1b1f;
+  --color-cm-bg-2: #202024;
+  --color-cm-surface: #26262b;
+  --color-cm-elevated: #2e2e34;
 
   /* Text — brief §03 */
   --color-cm-text: #f5f5f5;
@@ -45,12 +45,12 @@
   --color-cm-text-3: #71717a;
 
   /* Accent DUY NHẤT — brief §03 (CTA / progress / selected / active nav) */
-  --color-cm-accent: #e50914;
-  --color-cm-accent-hover: #f6121d;
+  --color-cm-accent: #f97316;
+  --color-cm-accent-hover: #fb923c;
 
   /* Border — chỉ dùng khi cần phân vùng (brief §23) */
-  --color-cm-border: rgba(255, 255, 255, 0.08);
-  --color-cm-border-strong: rgba(255, 255, 255, 0.14);
+  --color-cm-border: rgba(255, 255, 255, 0.1);
+  --color-cm-border-strong: rgba(255, 255, 255, 0.16);
 
   /* Radius — brief §23: không bo quá tròn */
   --radius-cm-card: 8px;

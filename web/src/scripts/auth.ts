@@ -34,7 +34,7 @@ function userMenu(user: MeUser) {
       ${
         img
           ? `<img src="${img}" alt="" width="36" height="36" class="w-full h-full object-cover" />`
-          : `<span class="w-6 h-6 rounded-full bg-gradient-to-br from-[#5865F2] to-[#FF6B9D]"></span>`
+          : `<span class="w-6 h-6 rounded-full bg-cm-accent"></span>`
       }
     </button>
     <div id="auth-menu" class="menu-panel" role="menu">

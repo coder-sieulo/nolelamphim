@@ -26,7 +26,7 @@ const isHost = !!user && user.sub === room.hostId
         <h2 class="text-lg font-bold text-cm-text">Đăng nhập để xem cùng nhau</h2>
         <p class="text-cm-body text-cm-text-2 mt-2 mb-5">Bạn cần đăng nhập Discord để tham gia phòng, chat và đồng bộ phim.</p>
         <a href="/api/auth/discord"
-          class="inline-flex items-center gap-2 h-12 px-6 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition-colors duration-[var(--duration-cm)]">
+          class="inline-flex items-center gap-2 h-12 px-6 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">
           <FaDiscord className="w-5 h-5" />
           Đăng nhập bằng Discord
         </a>
@@ -85,9 +85,9 @@ const isHost = !!user && user.sub === room.hostId
             <iframe id="xc-frame" title="Phát phim" class="hidden absolute inset-0 w-full h-full border-0" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
             <div id="xc-countdown" class="hidden absolute inset-0 z-20 flex-col items-center justify-center bg-[#08081a]/90">
               <div class="relative flex items-center justify-center w-40 h-40 md:w-48 md:h-48">
-                <svg class="xc-countdown-ring absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <svg class="xc-countdown-ring absolute inset-0 w-full h-full -rotate-90 text-cm-accent" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4" />
-                  <circle id="xc-countdown-ring-bar" cx="50" cy="50" r="46" fill="none" stroke="#e50914" stroke-width="4" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="0" />
+                  <circle id="xc-countdown-ring-bar" cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="0" />
                 </svg>
                 <span id="xc-countdown-num" class="text-6xl md:text-7xl font-black text-white tracking-tight leading-none">10</span>
               </div>
@@ -95,7 +95,7 @@ const isHost = !!user && user.sub === room.hostId
               <p class="text-[11px] text-cm-text-3 mt-1">Phim sẽ tự động phát đồng bộ khi tới giờ</p>
             </div>
             <div id="xc-buffering" class="hidden absolute inset-0 z-30 items-center justify-center bg-black/60">
-              <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-[#e50914] animate-spin"></div>
+              <div class="w-8 h-8 rounded-full border-2 border-white/20 border-t-cm-accent animate-spin"></div>
             </div>
           </div>
         </div>
@@ -163,7 +163,7 @@ const isHost = !!user && user.sub === room.hostId
         <div id="xc-login-gate" class="hidden flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
           <p class="text-cm-body text-cm-text-2">Đăng nhập Discord để tham gia chat và xem.</p>
           <a href="/api/auth/discord"
-            class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-[#5865F2] text-white hover:bg-[#4752c4] transition-colors duration-[var(--duration-cm)]">
+            class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">
             <FaDiscord className="w-5 h-5" />
             Đăng nhập bằng Discord
           </a>
