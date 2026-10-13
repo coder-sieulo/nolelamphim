@@ -22,7 +22,10 @@ const meta = [voteNum ? ` · ${voteNum}` : '', movie.year ?? '', movie.time ?? '
 --- 
 
 <section class="relative overflow-hidden bg-cm-bg" id="home-hero" aria-label={`Phim nổi bật ${movie.name}`}>
-  <div class="relative flex items-end min-h-[420px] sm:min-h-[480px] lg:min-h-[70vh] max-h-[85vh] aspect-[3/2] sm:aspect-[16/9] lg:aspect-[21/9]">
+  {/* `w-full` BẮT BUỘC: nếu chỉ có aspect-ratio + min-h/max-h thì trình duyệt suy
+      ngược chiều RỘNG từ chiều cao (vd mobile: 420 × 3/2 = 630px > viewport 390px),
+      khiến hero tràn phải và ảnh bị cắt lệch. */}
+  <div class="relative w-full flex items-end min-h-[420px] sm:min-h-[480px] lg:min-h-[70vh] max-h-[85vh] aspect-[3/2] sm:aspect-[16/9] lg:aspect-[21/9]">
     {image && (
       <img
         src={imgUrl(image, 1600)}
