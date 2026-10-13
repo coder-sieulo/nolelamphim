@@ -6,22 +6,24 @@ import type {
   DataListResponse,
   MovieDetailResponse,
   ListResponse,
+  MovieDetail,
 } from './types'
 import { BASE_URL } from './constants'
+import { getKkphimDetail } from './kkphim'
 
 const FETCH_RETRIES = 2
+const KKPHIM_BASE = 'https://phimapi.com'
 
-const API_CACHE_TTL = 60_000
+const EPISODES_CACHE_TTL = 10 * 60 * 1000
+const episodesCache = new Map<string, { expires: number; data: { status: boolean; episodes: EpisodeServer[] } }>()
+
 const apiCache = new Map<string, { expires: number; value: unknown }>()
+const API_CACHE_TTL = 60_000
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/**
- * fetch có timeout + signal ngoài (chống treo vô hạn khi API upstream chậm/hết hạn).
- * Lý do: `fetchAPI` trước đây không timeout — 1 request treo = hàng chục giây x retry.
- */
 function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(new DOMException('Timeout', 'TimeoutError')), timeoutMs)
@@ -38,9 +40,7 @@ function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Pr
 }
 
 interface FetchAPIOptions {
-  /** Vượt quá ms này → abort (không retry). Mặc định 10s. */
   timeoutMs?: number
-  /** Hủy request từ caller (dùng cho search khi gõ tiếp). */
   signal?: AbortSignal
 }
 
@@ -92,7 +92,6 @@ async function fetchAPI<T>(
         throw new Error(`Invalid JSON from ${url.toString()}`)
       }
     } catch (err) {
-      // Timeout/abort (người dùng gõ tiếp hoặc quá chậm) → KHÔNG retry, fail nhanh
       const aborted = err instanceof DOMException && (err.name === 'AbortError' || err.name === 'TimeoutError')
       if (aborted) throw err
       lastError = err
@@ -119,6 +118,20 @@ const STRING_FIELDS = [
   'episode_total',
 ] as const
 
+function hashId(s: string | null | undefined): number {
+  if (!s) return 0
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+function fullPosterUrl(src: unknown): string | undefined {
+  if (typeof src !== 'string' || !src) return undefined
+  if (/^https?:\/\//i.test(src)) return src
+  if (src.startsWith('upload/vod') || src.startsWith('uploads/movies')) return `https://phimapi.com/${src}`
+  return src
+}
+
 function normalizeMovie(movie: Movie): Movie {
   const record: Record<string, unknown> = { ...movie }
   for (const key of STRING_FIELDS) {
@@ -137,92 +150,77 @@ export function normalizeMovieList(list: MovieList): MovieList {
   }
 }
 
-export function getNewMovies(page = 1) {
-  return fetchAPI<MovieList>('/danh-sach/phim-moi-cap-nhat', { page }).then(normalizeMovieList)
-}
-
-export function getSubteam(limit = 20) {
-  return fetchAPI<MovieList>('/danh-sach/subteam', { limit }, { status: false, items: [] }).then(normalizeMovieList)
-}
-
-export function getMoviesByListPath(
+async function fetchKkphimList<T extends { items?: Movie[] }>(
   path: string,
-  page = 1,
-  limit = 24,
   params?: Record<string, string | number>,
-) {
-  return fetchAPI<MovieList>(`/danh-sach/${path}`, { page, limit, ...params }, { status: false, items: [] }).then(
-    normalizeMovieList,
-  )
+): Promise<T> {
+  const url = new URL(`${KKPHIM_BASE}/v1/api${path}`)
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      const sv = String(v)
+      if (sv !== '' && sv !== 'undefined') url.searchParams.set(k, sv)
+    })
+  }
+  const timeoutMs = 10_000
+  const res = await fetchWithTimeout(url.toString(), { headers: { Accept: 'application/json' } }, timeoutMs)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const text = await res.text()
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new Error(`Invalid JSON`)
+  }
+  const kk = data as { data?: { items?: unknown[]; pagination?: unknown; params?: unknown } }
+  const items = Array.isArray(kk?.data?.items) ? kk.data.items : []
+  const mapped = items.map((it: any): Movie => {
+    const slug = it?.slug ? String(it.slug) : ''
+    return {
+      _id: it?._id ? hashId(String(it._id)) : hashId(slug),
+      name: it?.name ? String(it.name) : '',
+      origin_name: it?.origin_name ? String(it.origin_name) : undefined,
+      slug,
+      poster_url: fullPosterUrl(it?.poster_url),
+      thumb_url: fullPosterUrl(it?.thumb_url) || fullPosterUrl(it?.poster_url),
+      year: typeof it?.year === 'number' ? it.year : it?.year ? Number(it.year) || undefined : undefined,
+      quality: it?.quality ? String(it.quality) : undefined,
+      lang: it?.lang ? String(it.lang) : undefined,
+      time: it?.time ? String(it.time) : undefined,
+      type: it?.type ? String(it.type) : undefined,
+      status: it?.status ? String(it.status) : undefined,
+      episode_current: it?.episode_current ? String(it.episode_current) : undefined,
+      episode_total: it?.episode_total ? String(it.episode_total) : undefined,
+      keywords: it?.keyword ? String(it.keyword) : undefined,
+      tmdb: it?.tmdb ?? undefined,
+    }
+  })
+  const resp: any = { status: true, items: mapped }
+  const pg = kk?.data?.pagination || (kk as any)?.data?.params?.pagination || (kk as any)?.pagination
+  if (pg) {
+    resp.pagination = {
+      totalItems: Number(pg.totalItems ?? pg.totalCount ?? 0),
+      totalItemsPerPage: Number(pg.totalItemsPerPage ?? pg.perPage ?? 24),
+      currentPage: Number(pg.currentPage ?? 1),
+      totalPages: Number(pg.totalPages ?? pg.lastPage ?? 0),
+    }
+  }
+  return resp as T
 }
 
-export function getMoviesByPath(path: string, params?: Record<string, string | number>) {
-  return fetchAPI<MovieList>(path, params, { status: false, items: [] }).then(normalizeMovieList)
-}
-
-export function searchMovies(keyword: string, page = 1, limit = 20, signal?: AbortSignal) {
-  return fetchAPI<MovieList>(
-    '/tim-kiem',
-    { keyword, page, limit },
-    undefined,
-    1,
-    { timeoutMs: 6000, signal },
-  ).then(normalizeMovieList)
-}
-
-export function getCategories() {
-  return fetchAPI<DataListResponse<Category>>('/the-loai')
-}
-
-export function getMoviesByCategory(
-  slug: string,
-  params?: {
-    limit?: number
-    page?: number
-    year?: string
-    country?: string
-    type?: string
-    status?: string
-  },
-) {
-  return fetchAPI<MovieList>(`/the-loai/${slug}`, params).then(normalizeMovieList)
-}
-
-export function getCountries() {
-  return fetchAPI<DataListResponse<Country>>('/quoc-gia')
-}
-
-export function getMoviesByCountry(
-  slug: string,
-  params?: {
-    limit?: number
-    page?: number
-    year?: string
-    type?: string
-    status?: string
-  },
-) {
-  return fetchAPI<MovieList>(`/quoc-gia/${slug}`, params).then(normalizeMovieList)
-}
-
-export function getYears() {
-  return fetchAPI<DataListResponse<Category>>('/nam')
-}
-
-export function getMoviesByYear(
-  year: string,
-  params?: {
-    limit?: number
-    page?: number
-    type?: string
-    status?: string
-  },
-) {
-  return fetchAPI<MovieList>(`/nam/${year}`, params).then(normalizeMovieList)
-}
-
-export function getMovieDetail(slug: string) {
-  return fetchAPI<MovieDetailResponse>(`/phim/${slug}`, undefined, { status: false, movie: null })
+function mapKkphimDetailToMovieResponse(kk: Awaited<ReturnType<typeof getKkphimDetail>>): MovieDetailResponse {
+  if (!kk) return { status: false, movie: null }
+  const movie: MovieDetail = {
+    _id: hashId(kk.slug),
+    name: kk.name,
+    origin_name: undefined,
+    slug: kk.slug,
+    poster_url: fullPosterUrl(kk.poster),
+    thumb_url: fullPosterUrl(kk.thumb) || fullPosterUrl(kk.poster),
+    year: kk.year ?? undefined,
+    type: kk.type,
+    episodes: kk.episodes,
+  }
+  return { status: true, movie }
 }
 
 function findBalancedEnd(html: string, start: number): number {
@@ -264,12 +262,132 @@ function extractEpisodes(html: string): EpisodeServer[] {
   }
 }
 
-const EPISODES_CACHE_TTL = 10 * 60 * 1000
-const episodesCache = new Map<string, { expires: number; data: { status: boolean; episodes: EpisodeServer[] } }>()
+export async function getNewMovies(page = 1): Promise<MovieList> {
+  try {
+    const d = await fetchKkphimList<MovieList>('/danh-sach', { page })
+    return normalizeMovieList(d)
+  } catch (e) {
+    console.error('[kkphim fallback] getNewMovies:', e)
+    return fetchAPI<MovieList>('/danh-sach/phim-moi-cap-nhat', { page }).then(normalizeMovieList)
+  }
+}
 
-export async function getMovieEpisodes(
+export async function getSubteam(limit = 20): Promise<MovieList> {
+  try {
+    const d = await fetchKkphimList<MovieList>('/danh-sach', { page: 1, limit })
+    return normalizeMovieList(d)
+  } catch (e) {
+    console.error('[kkphim fallback] getSubteam:', e)
+    return fetchAPI<MovieList>('/danh-sach/subteam', { limit }, { status: false, items: [] }).then(normalizeMovieList)
+  }
+}
+
+export async function getMoviesByListPath(
+  path: string,
+  page = 1,
+  limit = 24,
+  params?: Record<string, string | number>,
+): Promise<MovieList> {
+  try {
+    let kkpath = ''
+    if (path === 'phim-bo') kkpath = '/danh-sach/phim-bo'
+    else if (path === 'phim-le') kkpath = '/danh-sach/phim-le'
+    else kkpath = `/danh-sach/${path}`
+    const d = await fetchKkphimList<MovieList>(kkpath, { page, limit, ...(params || {}) })
+    return normalizeMovieList(d)
+  } catch (e) {
+    console.error('[kkphim fallback] getMoviesByListPath:', e)
+    return fetchAPI<MovieList>(`/danh-sach/${path}`, { page, limit, ...(params || {}) }, { status: false, items: [] }).then(normalizeMovieList)
+  }
+}
+
+export async function getMoviesByPath(path: string, params?: Record<string, string | number>): Promise<MovieList> {
+  try {
+    return await fetchKkphimList<MovieList>(path, params).then(normalizeMovieList)
+  } catch (e) {
+    console.error('[kkphim fallback] getMoviesByPath:', e)
+    return fetchAPI<MovieList>(path, params, { status: false, items: [] }).then(normalizeMovieList)
+  }
+}
+
+export async function searchMovies(keyword: string, page = 1, limit = 20, signal?: AbortSignal): Promise<MovieList> {
+  try {
+    const d = await fetchKkphimList<MovieList>('/tim-kiem', { keyword, page, limit })
+    return normalizeMovieList(d)
+  } catch (e) {
+    console.error('[kkphim fallback] searchMovies:', e)
+    return fetchAPI<MovieList>('/tim-kiem', { keyword, page, limit }, undefined, 1, { timeoutMs: 6000, signal }).then(normalizeMovieList)
+  }
+}
+
+export async function getCategories() {
+  return fetchAPI<DataListResponse<Category>>('/the-loai')
+}
+
+export async function getCountries() {
+  return fetchAPI<DataListResponse<Country>>('/quoc-gia')
+}
+
+export async function getYears() {
+  return fetchAPI<DataListResponse<Category>>('/nam')
+}
+
+export async function getMoviesByCategory(
   slug: string,
-): Promise<{ status: boolean; episodes: EpisodeServer[] }> {
+  params?: { limit?: number; page?: number; year?: string; country?: string; type?: string; status?: string },
+): Promise<MovieList> {
+  try {
+    const d = await fetchKkphimList<MovieList>(`/the-loai/${slug}`, params)
+    return normalizeMovieList(d)
+  } catch (e) {
+    console.error('[kkphim fallback] getMoviesByCategory:', e)
+    return fetchAPI<MovieList>(`/the-loai/${slug}`, params).then(normalizeMovieList)
+  }
+}
+
+export async function getMoviesByCountry(
+  slug: string,
+  params?: { limit?: number; page?: number; year?: string; type?: string; status?: string },
+): Promise<MovieList> {
+  try {
+    const d = await fetchKkphimList<MovieList>(`/quoc-gia/${slug}`, params)
+    return normalizeMovieList(d)
+  } catch (e) {
+    console.error('[kkphim fallback] getMoviesByCountry:', e)
+    return fetchAPI<MovieList>(`/quoc-gia/${slug}`, params).then(normalizeMovieList)
+  }
+}
+
+export async function getMoviesByYear(
+  year: string,
+  params?: { limit?: number; page?: number; type?: string; status?: string },
+): Promise<MovieList> {
+  try {
+    const d = await fetchKkphimList<MovieList>(`/nam/${year}`, params)
+    return normalizeMovieList(d)
+  } catch (e) {
+    console.error('[kkphim fallback] getMoviesByYear:', e)
+    return fetchAPI<MovieList>(`/nam/${year}`, params).then(normalizeMovieList)
+  }
+}
+
+export async function getMovieDetail(slug: string): Promise<MovieDetailResponse> {
+  try {
+    const d = await fetchAPI<MovieDetailResponse>(`/phim/${slug}`, undefined, { status: false, movie: null })
+    if (d.status && d.movie) return d
+  } catch {
+    /* ignore */
+  }
+  try {
+    const kk = await getKkphimDetail(slug)
+    return mapKkphimDetailToMovieResponse(kk)
+  } catch (e) {
+    console.error('[detail union] kkphim fallback failed:', e)
+    return { status: false, movie: null }
+  }
+}
+
+export async function getMovieEpisodes(slug: string): Promise<{ status: boolean; episodes: EpisodeServer[] }> {
   const cached = episodesCache.get(slug)
   if (cached && cached.expires > Date.now()) {
     return cached.data
@@ -281,11 +399,23 @@ export async function getMovieEpisodes(
     })
     const html = await res.text()
     const episodes = extractEpisodes(html)
-    const data = { status: episodes.length > 0, episodes }
-    episodesCache.set(slug, { expires: Date.now() + EPISODES_CACHE_TTL, data })
-    return data
+    if (episodes.length > 0) {
+      const data = { status: true, episodes }
+      episodesCache.set(slug, { expires: Date.now() + EPISODES_CACHE_TTL, data })
+      return data
+    }
   } catch (err) {
-    console.error('[api] getMovieEpisodes failed for', slug, err)
-    return { status: false, episodes: [] }
+    console.error('[api] getMovieEpisodes(vsmov) failed for', slug, err)
   }
+  try {
+    const kk = await getKkphimDetail(slug)
+    if (kk?.episodes?.length) {
+      const data = { status: true, episodes: kk.episodes }
+      episodesCache.set(slug, { expires: Date.now() + EPISODES_CACHE_TTL, data })
+      return data
+    }
+  } catch (e) {
+    console.error('[api] getMovieEpisodes(kkphim) failed for', slug, e)
+  }
+  return { status: false, episodes: [] }
 }
