@@ -228,6 +228,7 @@ const chipClass =
           <FavoriteButton id={movie._id} name={movie.name} slug={slug} thumb={movie.thumb_url || ''} vote={movie.tmdb?.vote_average} variant="action" />
           <FavoriteButton id={movie._id} name={movie.name} slug={slug} thumb={movie.thumb_url || ''} vote={movie.tmdb?.vote_average} variant="icon" />
           {canHost && <XemChungButton slug={slug} name={movie.name} thumb={image || ''} servers={episodes} />}
+          <div id="phim-resume" class="hidden"></div>
           <ShareButton slug={slug} name={movie.name} />
         </div>
 
@@ -440,19 +441,54 @@ const chipClass =
 
 <script>
   import { registerPageInit } from '../../scripts/lifecycle'
+  import { getRecent } from '../../scripts/store'
+  import { escapeHTML } from '../../scripts/cards'
+  import { imgUrl } from '../../lib/img'
 
   registerPageInit(() => {
     const desc = document.getElementById('movie-desc')
     const toggle = document.getElementById('desc-toggle')
-    if (!desc || !toggle) return () => {}
-    toggle.addEventListener('click', () => {
-      const expanded = desc.classList.toggle('expanded')
-      toggle.setAttribute('aria-expanded', String(expanded))
-      const label = toggle.querySelector('.desc-toggle-label')
-      if (label) label.textContent = expanded ? 'Thu gọn' : 'Xem thêm'
-      const icon = toggle.querySelector('.desc-toggle-icon')
-      if (icon) icon.classList.toggle('rotate-180', expanded)
-    })
+    if (desc && toggle) {
+      toggle.addEventListener('click', () => {
+        const expanded = desc.classList.toggle('expanded')
+        toggle.setAttribute('aria-expanded', String(expanded))
+        const label = toggle.querySelector('.desc-toggle-label')
+        if (label) label.textContent = expanded ? 'Thu gọn' : 'Xem thêm'
+        const icon = toggle.querySelector('.desc-toggle-icon')
+        if (icon) icon.classList.toggle('rotate-180', expanded)
+      })
+    }
+    try {
+      const slug = (document.querySelector('meta[property="og:url"]') as HTMLMetaElement | null)?.content
+        ?.split('/')
+        ?.filter(Boolean)
+        ?.pop() || window.location.pathname.split('/').filter(Boolean).pop() || ''
+      const hist = getRecent()
+      const item = hist.find((r) => r.slug === slug)
+      const box = document.getElementById('phim-resume')
+      if (box && item && item.episodeSlug) {
+        const epName = item.episode || ''
+        const pos = typeof item.position === 'number' && typeof item.duration === 'number' && item.duration > 0
+          ? Math.round((item.position / item.duration) * 100)
+          : 0
+        const href = `/xem/${escapeHTML(item.slug)}/${escapeHTML(item.episodeSlug)}`
+        box.className = 'mt-3'
+        box.innerHTML = `
+          <a href="${href}" class="group inline-flex w-full items-center gap-3 rounded-[var(--radius-cm-card)] border border-cm-border bg-cm-surface/80 px-3.5 py-2.5 text-sm text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">
+            <div class="relative w-12 h-16 shrink-0 overflow-hidden rounded-[var(--radius-cm-card)]">
+              ${item.thumb ? `<img src="${escapeHTML(imgUrl(item.thumb, 200))}" alt="" class="w-full h-full object-cover" />` : '<div class="w-full h-full bg-cm-surface"></div>'}
+              ${pos > 5 ? `<span class="absolute inset-x-0 bottom-0 h-[2px]" style="background:var(--color-cm-accent);width:${pos}%"></span>` : ''}
+            </div>
+            <div class="min-w-0">
+              <p class="font-medium truncate">Tiếp tục xem • ${escapeHTML(epName)}</p>
+              ${pos > 5 ? `<p class="text-cm-meta text-cm-text-3">${pos}% đã xem</p>` : `<p class="text-cm-meta text-cm-text-3">Tiếp tục ngay</p>`}
+            </div>
+            <span class="ml-auto text-cm-meta text-cm-text-3 group-hover:text-cm-text">Xem tiếp</span>
+          </a>
+        `
+        box.classList.remove('hidden')
+      }
+    } catch {}
     return () => {}
   })
 </script>

@@ -337,7 +337,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
   }
 
   <script>
-    import { addRecent, updateRecentProgress } from '../../../scripts/store'
+    import { addRecent, updateRecentProgress, getRecent } from '../../../scripts/store'
     import { escapeHTML } from '../../../scripts/cards'
     import { registerPageInit } from '../../../scripts/lifecycle'
 
@@ -409,18 +409,41 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       function startProgress() {
         if (progressActive) return
         progressActive = true
-        window.setInterval(() => {
+        const tick = () => {
           if (document.hidden) return
           if (currentMode === 'video' && videoEl) {
             if (Number.isFinite(videoEl.currentTime)) elapsed = videoEl.currentTime
             if (Number.isFinite(videoEl.duration) && videoEl.duration > 0) duration = videoEl.duration
           } else {
-            elapsed += 10
+            elapsed += 1
           }
           progressTick += 1
-          updateRecentProgress(slug, Math.min(elapsed, duration * 0.92), duration)
+          const pos = Math.min(elapsed, duration * 0.92)
+          updateRecentProgress(slug, pos, duration)
           if (progressTick % 3 === 0) flushProgress()
-        }, 10000)
+        }
+        window.setInterval(tick, 10000)
+        if (videoEl) {
+          const seekToResume = () => {
+            try {
+              const hist = getRecent()
+              const item = hist.find((r) => r.slug === slug && r.episodeSlug === episode)
+              if (item && typeof item.position === 'number' && item.position > 20) {
+                if (Math.abs(videoEl.currentTime - item.position) > 30) {
+                  videoEl.currentTime = Math.min(item.position, videoEl.duration || item.duration || item.position)
+                }
+              }
+            } catch {}
+          }
+          videoEl.addEventListener('timeupdate', () => {
+            if (Number.isFinite(videoEl.currentTime)) elapsed = videoEl.currentTime
+            if (Number.isFinite(videoEl.duration) && videoEl.duration > 0) duration = videoEl.duration
+          }, { passive: true })
+          videoEl.addEventListener('pause', flushProgress, { passive: true })
+          videoEl.addEventListener('ended', flushProgress, { passive: true })
+          videoEl.addEventListener('loadeddata', seekToResume, { once: true })
+          videoEl.addEventListener('playing', seekToResume, { once: true })
+        }
       }
 
       const onVisibility = () => {
