@@ -508,6 +508,41 @@ const isHost = !!user && user.sub === room.hostId
         }
       }
 
+      async function playNextEpisode(): Promise<void> {
+        if (!isHost || !room?.movie) return
+        const slug = room.movie.slug
+        let episodes: Array<{ name: string; slug: string; embed: string; m3u8?: string }> = []
+        try {
+          const r = await fetch(`/api/episodes?slug=${encodeURIComponent(slug)}`, { credentials: 'same-origin' })
+          if (r.ok) {
+            const d = await r.json()
+            episodes = (d.episodes || []).flatMap((s: any) => (s.list || []).map((e: any) => ({ name: e.name, slug: e.slug, embed: e.embed, m3u8: e.m3u8 })))
+          }
+        } catch {}
+        if (!episodes.length) return
+        const cur = room.movie.episode
+        const idx = episodes.findIndex((e) => e.slug === cur)
+        const next = idx >= 0 && idx < episodes.length - 1 ? episodes[idx + 1] : null
+        if (!next) return
+        try {
+          await fetch(`/api/xem-chung/${code}/movie`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              slug: room.movie.slug,
+              movieName: room.movie.movieName,
+              episode: next.slug,
+              epName: next.name,
+              thumb: room.movie.thumb,
+              embed: next.embed,
+              m3u8: next.m3u8,
+              scheduleStart: Date.now() + 2000,
+            }),
+          })
+        } catch {}
+      }
+
       function onVideoFatal(m3: string): void {
         m3u8Failed = m3
         destroyVideo()
@@ -535,6 +570,9 @@ const isHost = !!user && user.sub === room.hostId
           v.addEventListener('pause', bump)
           v.addEventListener('seeked', bump)
           v.addEventListener('ratechange', bump)
+          v.addEventListener('ended', () => {
+            void playNextEpisode()
+          }, { once: true })
         }
         const buf = buffering()
         if (buf) { buf.classList.remove('hidden'); buf.classList.add('flex') }
