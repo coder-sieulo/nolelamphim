@@ -424,25 +424,26 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         }
         window.setInterval(tick, 10000)
         if (videoEl) {
+          const v = videoEl
           const seekToResume = () => {
             try {
               const hist = getRecent()
               const item = hist.find((r) => r.slug === slug && r.episodeSlug === episode)
               if (item && typeof item.position === 'number' && item.position > 20) {
-                if (Math.abs(videoEl.currentTime - item.position) > 30) {
-                  videoEl.currentTime = Math.min(item.position, videoEl.duration || item.duration || item.position)
+                if (Math.abs(v.currentTime - item.position) > 30) {
+                  v.currentTime = Math.min(item.position, v.duration || item.duration || item.position)
                 }
               }
             } catch {}
           }
-          videoEl.addEventListener('timeupdate', () => {
-            if (Number.isFinite(videoEl.currentTime)) elapsed = videoEl.currentTime
-            if (Number.isFinite(videoEl.duration) && videoEl.duration > 0) duration = videoEl.duration
+          v.addEventListener('timeupdate', () => {
+            if (Number.isFinite(v.currentTime)) elapsed = v.currentTime
+            if (Number.isFinite(v.duration) && v.duration > 0) duration = v.duration
           }, { passive: true })
-          videoEl.addEventListener('pause', flushProgress, { passive: true })
-          videoEl.addEventListener('ended', flushProgress, { passive: true })
-          videoEl.addEventListener('loadeddata', seekToResume, { once: true })
-          videoEl.addEventListener('playing', seekToResume, { once: true })
+          v.addEventListener('pause', flushProgress, { passive: true })
+          v.addEventListener('ended', flushProgress, { passive: true })
+          v.addEventListener('loadeddata', seekToResume, { once: true })
+          v.addEventListener('playing', seekToResume, { once: true })
         }
       }
 

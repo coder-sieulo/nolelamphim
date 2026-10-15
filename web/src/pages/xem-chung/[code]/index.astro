@@ -421,6 +421,8 @@ const isHost = !!user && user.sub === room.hostId
         destroy(): void
         loadSource(url: string): void
         attachMedia(el: HTMLMediaElement): void
+        /** -1 = Auto; >=0 = ép cứng level tương ứng. */
+        currentLevel: number
         on(event: string, cb: (evt: unknown, data: { fatal?: boolean }) => void): void
       }
       let videoEl: HTMLVideoElement | null = null
