@@ -68,6 +68,21 @@ const toYear = (v: unknown): number | null => {
   return Number.isFinite(n) && n >= 1900 && n <= 2030 ? n : null
 }
 
+/**
+ * Số phần/season trong tên hoặc slug ("Phần 5", "Season 5", "Part 5", "SS5").
+ *
+ * Dùng để chặn gán nhầm GIỮA CÁC PHẦN của cùng một bộ: phim bộ thường mang
+ * CÙNG một `tmdb.id` cho mọi phần (id cấp franchise), nên không thể tin mỗi
+ * `tmdb.id`. Trả `null` khi không xác định được phần.
+ */
+function partNum(...sources: (string | null | undefined)[]): number | null {
+  for (const s of sources) {
+    const m = normName(s).match(/\b(?:phan|season|ss|part) (\d+)/)
+    if (m) return parseInt(m[1], 10)
+  }
+  return null
+}
+
 export function nameKey(name: string, year: number | null): string {
   const n = normName(name)
   return n ? (year ? `${n}|${year}` : `n|${n}`) : ''
@@ -90,12 +105,35 @@ interface SearchHit {
   tmdb?: { id?: unknown } | null
 }
 
-/** Chọn hit khớp nhất: ưu tiên tmdb.id, sau đó tên chuẩn hoá + năm (±1), cuối tên-only */
-function pickHit(hits: SearchHit[], tmdbId: string | null, name: string, year: number | null): SearchHit | null {
+/**
+ * Chọn hit khớp nhất: tmdb.id **cùng số phần** → tên chuẩn hoá + năm (±1) → tên-only.
+ *
+ * `tmdb.id` một mình không đủ tin: phim bộ dùng chung id cấp franchise cho mọi
+ * phần (vd Demon Slayer mọi phần = 85937, Squid Game = 93405), nên nếu truy vấn
+ * có số phần mà ứng viên tmdb lại lệch phần thì KHÔNG nhận (đi tiếp theo tên).
+ */
+function pickHit(
+  hits: SearchHit[],
+  tmdbId: string | null,
+  name: string,
+  year: number | null,
+  partHint?: string | null,
+): SearchHit | null {
   if (!hits?.length) return null
   if (tmdbId) {
-    const byTmdb = hits.find((h) => h.tmdb?.id != null && String(h.tmdb.id) === tmdbId)
-    if (byTmdb) return byTmdb
+    const byTmdb = hits.filter((h) => h.tmdb?.id != null && String(h.tmdb.id) === tmdbId)
+    if (byTmdb.length) {
+      const qPart = partNum(partHint, name)
+      if (qPart == null) return byTmdb[0]
+      const samePart = byTmdb.find((h) => partNum(h.slug, h.name) === qPart)
+      if (samePart) return samePart
+      // Không có ứng viên đúng phần: nếu có ứng viên lệch phần rõ ràng thì bỏ tmdb.
+      const hasWrongPart = byTmdb.some((h) => {
+        const p = partNum(h.slug, h.name)
+        return p != null && p !== qPart
+      })
+      if (!hasWrongPart) return byTmdb[0]
+    }
   }
   const n = normName(name)
   const exact = hits.find((h) => {
@@ -110,12 +148,12 @@ function pickHit(hits: SearchHit[], tmdbId: string | null, name: string, year: n
   return hits.find((h) => normName(h.name) === n) ?? null
 }
 
-async function searchKkphim(name: string, tmdbId: string | null, year: number | null): Promise<string | null> {
+async function searchKkphim(name: string, tmdbId: string | null, year: number | null, partHint?: string | null): Promise<string | null> {
   try {
     const d = (await getJSON(
       `https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(name)}&limit=8`,
     )) as { data?: { items?: SearchHit[] } }
-    const hit = pickHit(d.data?.items ?? [], tmdbId, name, year)
+    const hit = pickHit(d.data?.items ?? [], tmdbId, name, year, partHint)
     return hit?.slug ?? null
   } catch (err) {
     console.error('[identity] searchKkphim failed:', err)
@@ -123,12 +161,12 @@ async function searchKkphim(name: string, tmdbId: string | null, year: number | 
   }
 }
 
-async function searchNguonc(name: string, tmdbId: string | null, year: number | null): Promise<string | null> {
+async function searchNguonc(name: string, tmdbId: string | null, year: number | null, partHint?: string | null): Promise<string | null> {
   try {
     const d = (await getJSON(
       `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(name)}`,
     )) as { items?: SearchHit[] }
-    const hit = pickHit(d.items ?? [], tmdbId, name, year)
+    const hit = pickHit(d.items ?? [], tmdbId, name, year, partHint)
     return hit?.slug ?? null
   } catch (err) {
     console.error('[identity] searchNguonc failed:', err)
@@ -201,8 +239,8 @@ export async function resolveIdentity(slug: string, source: 'vsmov' | 'kkphim' |
     const keyword = movie.origin_name || movie.name || ''
 
     const [kkphim, nguonc] = await Promise.all([
-      searchKkphim(keyword, tmdbId, year),
-      searchNguonc(keyword, tmdbId, year),
+      searchKkphim(keyword, tmdbId, year, name),
+      searchNguonc(keyword, tmdbId, year, name),
     ])
 
     const rec: IdentityRecord = {
