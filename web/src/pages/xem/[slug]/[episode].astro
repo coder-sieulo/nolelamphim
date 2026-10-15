@@ -504,6 +504,8 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       let videoEl: HTMLVideoElement | null = null
       let hls: HlsInstance | null = null
       let currentMode: 'none' | 'iframe' | 'video' = 'none'
+      let hlsLevels: Array<{ index: number; height?: number; name?: string }> = []
+      let currentLevel = -1 // -1 = Auto
 
       function maybeHideLoader() {
         if (!loaderEl) return

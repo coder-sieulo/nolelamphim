@@ -428,6 +428,9 @@ const isHost = !!user && user.sub === room.hostId
       let playerMode: 'none' | 'iframe' | 'video' = 'none'
       let m3u8Failed = ''
       let hostSeq = 0
+      let hlsLevels: Array<{ index: number; height?: number; name: string }> = []
+      let currentLevel = -1
+      let qualityWrap: HTMLDivElement | null = null
 
       function destroyVideo(): void {
         if (hls) { try { hls.destroy() } catch { /* ignore */ } hls = null }
@@ -436,7 +439,73 @@ const isHost = !!user && user.sub === room.hostId
           videoEl.remove()
           videoEl = null
         }
+        if (qualityWrap) {
+          qualityWrap.remove()
+          qualityWrap = null
+        }
+        hlsLevels = []
+        currentLevel = -1
         playerMode = 'none'
+      }
+
+      function renderQualityUI(): void {
+        if (!isHost || !hls || !videoEl) return
+        if (qualityWrap) {
+          qualityWrap.remove()
+          qualityWrap = null
+        }
+        if (hlsLevels.length === 0) return
+        const stageEl = $('player-stage')
+        if (!stageEl) return
+        const wrap = document.createElement('div')
+        wrap.className = 'absolute top-12 right-3 z-40 hidden sm:block'
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'px-2.5 py-1 rounded-full bg-black/60 border border-white/15 text-[11px] font-medium text-white hover:bg-black/70 transition-colors'
+        const update = () => {
+          const cur = hlsLevels.find((l) => l.index === currentLevel)
+          btn.textContent = cur ? `Chất lượng: ${cur.name}` : 'Chất lượng: Tự động'
+        }
+        update()
+        const menu = document.createElement('div')
+        menu.className = 'absolute right-0 mt-1 min-w-[140px] rounded-[var(--radius-cm-card)] bg-cm-surface/95 border border-cm-border shadow-xl hidden flex-col overflow-hidden'
+        const add = (label: string, level: number) => {
+          const it = document.createElement('button')
+          it.type = 'button'
+          it.className = 'px-2.5 py-1.5 text-left text-[11px] hover:bg-cm-elevated text-cm-text'
+          it.textContent = label
+          it.addEventListener('click', () => {
+            currentLevel = level
+            ;(hls as any).currentLevel = level
+            menu.classList.add('hidden')
+            update()
+          })
+          menu.appendChild(it)
+        }
+        add('Tự động', -1)
+        for (const l of [...hlsLevels].sort((a,b)=>(b.height||0)-(a.height||0))) {
+          add(l.name, l.index)
+        }
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          menu.classList.toggle('hidden')
+        })
+        document.addEventListener('click', (e) => {
+          if (!wrap.contains(e.target as Node)) menu.classList.add('hidden')
+        }, { once: true })
+        wrap.appendChild(btn)
+        wrap.appendChild(menu)
+        qualityWrap = wrap
+        stageEl.appendChild(wrap)
+      }
+
+      function updateQualityUI(): void {
+        if (!qualityWrap) return
+        const btn = qualityWrap.querySelector('button') as HTMLButtonElement | null
+        if (btn) {
+          const cur = hlsLevels.find((l) => l.index === currentLevel)
+          btn.textContent = cur ? `Chất lượng: ${cur.name}` : 'Chất lượng: Tự động'
+        }
       }
 
       function onVideoFatal(m3: string): void {
@@ -480,6 +549,15 @@ const isHost = !!user && user.sub === room.hostId
             inst.attachMedia(v)
             inst.on(Hls.Events.ERROR, (_e: unknown, data: { fatal?: boolean }) => {
               if (data?.fatal && videoEl === v) { console.warn('[room] hls fatal → embed'); onVideoFatal(m3u8) }
+            })
+            inst.on(Hls.Events.LEVELS_UPDATED, (_evt: unknown, data: any) => {
+              const levels = (data.levels || []) as any[]
+              hlsLevels = levels.map((l, idx) => ({ index: idx, height: l.height, name: l.height ? `${l.height}p` : `Level ${idx + 1}` }))
+              renderQualityUI()
+            })
+            inst.on(Hls.Events.LEVEL_SWITCHED, (_evt: unknown, data: any) => {
+              currentLevel = (data as any).level ?? inst.currentLevel ?? -1
+              updateQualityUI()
             })
             void v.play().catch(() => {})
             return
