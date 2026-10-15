@@ -1,9 +1,29 @@
 # PLAN — Catalogue phim trong **Supabase Postgres** (cache read-through)
 
-> Trạng thái: **DRAFT — CHỜ DUYỆT** (chưa code).
+> Trạng thái: **ĐÃ TRIỂN KHAI (bước 1–7)** — xem mục 0 để biết phạm vi & điểm khác plan gốc.
 > Bối cảnh: `supabase-function.md` bạn gửi **bị cắt** ở dòng `dựa trên bảng db :` — chưa có mô tả bảng. Bản dưới đây là **đề xuất của mình**, nhờ bạn xác nhận/chỉnh.
 > Mục tiêu: web đọc **Postgres (Supabase)** thay vì crawl vsmov/kkphim/nguonc mỗi lần người dùng vào → nhanh, ổn định trên serverless.
 > Nguyên tắc: không đổi URL SEO, không đổi shape `Movie`/`MovieDetail` (UI không phải sửa), `astro check` 0 lỗi.
+
+---
+
+## 0. Triển khai thực tế (tóm tắt)
+
+**Đã làm:**
+- Bảng `movies` + `movie_episodes` (migration `drizzle/0001_tiresome_bullseye.sql`) + `pg_trgm`, GIN jsonb, index, FK cascade — đã apply lên Supabase.
+- `src/lib/catalogue.ts` — map row ⇆ `Movie`/`MovieDetail`, `upsertMovies`, `persistEpisodes`, `persistDetail`, `readMovieDetail`, `readEpisodes`, `pickSlugsForDetail`, `countMovies`.
+- `src/lib/api.server.ts` — **lớp server-only** bọc `lib/api.ts` bằng read-through (chi tiết + tập). Các trang/route SSR (`phim/[slug]`, `xem/[slug]/[episode]`, `/api/episodes`, `/api/xem-chung/lookup`, `og/[slug].png`, `lib/identity.ts`) import từ đây.
+- `src/lib/sync.ts` + `tools/sync-catalogue.mjs` (chạy `npx tsx`) — crawl list (+ enrich chi tiết) → upsert.
+- `POST /api/admin/sync-catalogue` bảo vệ bằng **header `x-sync-secret`** khớp env `SYNC_SECRET` (timing-safe) — theo quyết định "không cần auth".
+- `.github/workflows/sync-catalogue.yml` — cron hằng ngày + `workflow_dispatch`.
+- `src/lib/hls.ts` — `isRealHls()`: phân biệt HLS thật (`.m3u8`) với "m3u8" giả của vsmov (link embed) → `/api/episodes` chỉ resolve khi còn tập chưa có HLS thật.
+
+**Khác plan gốc (quan trọng):**
+1. **Không đụng `lib/api.ts`** — nó bị **bundle vào client** (MovieGrid/SearchClient/ForYou). Nếu import `src/db` vào sẽ vỡ build + rò secret. Vì vậy read-through nằm ở `lib/api.server.ts` (server-only).
+2. **Danh sách (list) đã chuyển sang Postgres ở phần C** (xem mục 10): client không còn crawl trực tiếp mà gọi `POST /api/list` / `POST /api/detail`; server read-through qua bảng `catalogue_lists` (cache nguyên phản hồi, giữ **đúng thứ tự** nguồn — không cần bảng "feed + rank").
+3. Cột thêm `detail_synced_at` (ngoài `synced_at`): phân biệt "đã sync ở mức list" vs "đã sync chi tiết đầy đủ". List-upsert không ghi đè dữ liệu chi tiết (dùng `coalesce(excluded, movies)`).
+4. TTL: chi tiết & tập = 24h.
+5. Endpoint dùng `SYNC_SECRET` thay vì `isAdmin`.
 
 ---
 
@@ -160,3 +180,36 @@ web/
 - Upload ảnh vào Supabase Storage (bạn chọn chỉ lưu link).
 - Realtime/thông báo tập mới.
 - Chuyển phòng xem chung sang Postgres.
+
+---
+
+## 10. Phần C — DB hoá **danh sách / tìm kiếm / chi tiết client** (đã làm)
+
+**Mục tiêu:** trình duyệt **không tự crawl** nguồn nữa. Mọi lời gọi list/search/meta ở client đi qua server (read-through → Postgres).
+
+**Quyết định thiết kế:** thay vì bảng "feed + rank" (phải crawl mọi tổ hợp lọc, dễ lệch thứ tự), lưu **nguyên phản hồi** vào `catalogue_lists`:
+- Giữ **đúng thứ tự** nguồn cho **mọi** tổ hợp (lọc năm/quốc gia/loại/trạng thái, tìm kiếm, phân trang).
+- Không cần bảng rank, không cần suy luận `ORDER BY` theo cột phim.
+- Vẫn nạp `movies` (upsert) → catalogue lớn dần.
+
+**Thành phần:**
+- Bảng `catalogue_lists(query_key text PK, payload jsonb, synced_at timestamptz)` — migration `drizzle/0002_tense_shriek.sql`, index `synced_at`.
+- `src/lib/feed.ts` (**client-safe**): `FeedFn`, `FeedRequest`, `feedCacheKey()` (chuẩn hoá khoá), `isMetaFn()`.
+- `src/lib/catalogue.ts`: `readListCache` (TTL), `writeListCache`, `pruneListCache`. TTL: list/search 1h, meta (thể loại/quốc gia/năm) 24h.
+- `src/lib/api.server.ts`: `getFeedCached(req)` — đọc cache → miss thì `crawlFeed` (gọi lại `lib/api` phía server) → ghi cache + `upsertMovies`.
+- `POST /api/list` — validate `fn` + slug/path/year (regex), clamp `page/limit`, lọc params; không hợp lệ → `400` (client tự fallback như cũ).
+- `POST /api/detail` — read-through chi tiết (dùng cho `ForYou` ở client).
+- `src/lib/api.ts`: thêm nhánh **chỉ ở browser** (`typeof window !== 'undefined'`) gọi `/api/list` & `/api/detail`; ở server/build giữ nguyên hành vi crawl cũ → **không đổi trang tĩnh**.
+- `tools/sync-catalogue.mjs`: `--prune-days N` (default 7) dọn cache cũ sau mỗi lần sync.
+
+**Kiểm soát rủi ro:**
+- Lỗi/`!res.ok` ở client → `feedViaServer` trả `null` → tự rơi về crawl cũ (không bao giờ "mất" dữ liệu).
+- Path/slug lạ bị `400` → cũng rơi về crawl cũ.
+- **Deadline 7s** (`withDeadline`) cho crawl server: quá hạn trả fallback để client tự đọc nguồn, không để Vercel cắt function (504) rồi mới fallback.
+- DB không cấu hình (`hasDb()` false) → `getFeedCached` chỉ crawl, không cache.
+
+**Bug đã bắt & sửa (quan trọng):** ban đầu `getFeedCached` gọi `upsertMovies` với **mọi** payload → thể loại/quốc gia cũng có `slug` nên bị ghi vào bảng `movies` (232 row rác). Đã: (a) bỏ upsert với meta (`isMetaFn`), (b) dọn sạch 232 row đó trong Supabase, (c) verify `count(*) movies` không đổi khi gọi lại meta.
+
+**Lưu ý còn lại:** cache list được nạp **on-demand** theo lượt truy cập (chưa prewarm từ sync tool). Lần đầu mỗi `(feed, trang)` vẫn crawl 1 lần ở server rồi cache 1h.
+
+**Đã test thật:** `byPath`/`byListPath`/`byCategory`/`byCountry`/`byYear`/`search`/`categories`/`countries`/`years` đều 200; cache hit nhanh (~0,2s vs ~4s khi crawl); traversal/uppercase/slug bẩn/year bẩn/`fn` lạ/param lạ → 400 (kể cả `..`, `//evil.com`, `$where`); `pruneListCache` xoá đúng row quá hạn; `astro check` 0 errors; không có `DATABASE_URL`/`drizzle`/secrets trong 43 file JS client.

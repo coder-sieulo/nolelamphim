@@ -1,9 +1,12 @@
 import { sql } from 'drizzle-orm'
 import {
+  bigint,
   bigserial,
   check,
   doublePrecision,
   index,
+  integer,
+  jsonb,
   pgTable,
   primaryKey,
   smallint,
@@ -113,10 +116,121 @@ export const comments = pgTable(
   ],
 )
 
-export const schema = { users, favorites, ratings, history, comments }
+/**
+ * Catalogue phim (read model) — dữ liệu công khai, KHÔNG cần auth.
+ *
+ * Là **cache read-through**: web đọc bảng này trước; thiếu/quá cũ mới crawl
+ * nguồn (vsmov/kkphim/nguonc) rồi upsert lại. Chỉ lưu **link ảnh** (text),
+ * không lưu binary — vẫn phục vụ qua proxy `/img`.
+ */
+export const movies = pgTable(
+  'movies',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    /** `Movie._id` gốc từ nguồn (giữ ổn định cho DOM data-id / FavoriteButton). */
+    extId: bigint('ext_id', { mode: 'number' }),
+    /** Slug SEO canonic (vsmov). */
+    slug: text('slug').notNull(),
+    name: text('name').notNull().default(''),
+    originName: text('origin_name'),
+    /** Ảnh dọc (card). */
+    posterUrl: text('poster_url'),
+    /** Ảnh ngang (hero/backdrop). */
+    thumbUrl: text('thumb_url'),
+    year: integer('year'),
+    quality: text('quality'),
+    lang: text('lang'),
+    time: text('time'),
+    type: text('type'),
+    status: text('status'),
+    episodeCurrent: text('episode_current'),
+    episodeTotal: text('episode_total'),
+    episodeCount: integer('episode_count'),
+    tmdbId: text('tmdb_id'),
+    tmdbType: text('tmdb_type'),
+    tmdbSeason: text('tmdb_season'),
+    tmdbVoteAvg: text('tmdb_vote_avg'),
+    tmdbVoteCount: integer('tmdb_vote_count'),
+    imdbId: text('imdb_id'),
+    keywords: text('keywords'),
+    content: text('content'),
+    actor: text('actor').array(),
+    director: text('director').array(),
+    /** [{ id, name, slug }] — map sang Category/_id khi đọc. */
+    categories: jsonb('categories').$type<{ id: number; name: string; slug: string }[]>(),
+    countries: jsonb('countries').$type<{ id: number; name: string; slug: string }[]>(),
+    /** { vsmov:{slug}, kkphim:{slug}, nguonc:{slug} } */
+    sources: jsonb('sources').$type<Record<string, { slug?: string; id?: string | number }>>(),
+    /** Nguồn ảnh đang dùng (phimimg / ex-cdn / tmdb...). */
+    posterSource: text('poster_source'),
+    view: integer('view'),
+    /** Lần đồng bộ gần nhất ở BẤT KỲ mức nào (list hoặc detail). */
+    syncedAt: timestamp('synced_at', { withTimezone: true }),
+    /** Lần đồng bộ ĐẦY ĐỦ chi tiết (actor/director/content/episodes...). */
+    detailSyncedAt: timestamp('detail_synced_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('movies_slug_uq').on(t.slug),
+    index('movies_updated_idx').on(t.updatedAt),
+    index('movies_year_idx').on(t.year),
+    index('movies_type_idx').on(t.type),
+    index('movies_synced_idx').on(t.syncedAt),
+    index('movies_name_trgm_idx').using('gin', sql`${t.name} gin_trgm_ops`),
+    index('movies_categories_gin').using('gin', t.categories),
+    index('movies_countries_gin').using('gin', t.countries),
+  ],
+)
+
+/** Tập phim theo server (gom `server_name` → EpisodeServer[] khi đọc). */
+export const movieEpisodes = pgTable(
+  'movie_episodes',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    movieSlug: text('movie_slug')
+      .notNull()
+      .references(() => movies.slug, { onDelete: 'cascade' }),
+    serverName: text('server_name').notNull().default(''),
+    episodeName: text('episode_name').notNull().default(''),
+    episodeSlug: text('episode_slug').notNull(),
+    embed: text('embed').notNull().default(''),
+    m3u8: text('m3u8'),
+    sort: integer('sort').notNull().default(0),
+    syncedAt: timestamp('synced_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('movie_episodes_uq').on(t.movieSlug, t.serverName, t.episodeSlug),
+    index('movie_episodes_movie_idx').on(t.movieSlug, t.serverName, t.sort),
+  ],
+)
+
+/**
+ * Cache phản hồi **danh sách** (trang chủ, thể loại, quốc gia, năm, tìm kiếm…).
+ *
+ * Vì sao lưu JSON thay vì bảng "feed + rank": giữ **đúng nguyên thứ tự** nguồn
+ * trả về (mọi tổ hợp lọc/tìm kiếm), không cần bảng rank riêng, không lệch UI.
+ * Đây là cache read-through cho list — web đọc bảng này trước, hết hạn mới crawl.
+ */
+export const catalogueLists = pgTable(
+  'catalogue_lists',
+  {
+    /** Khoá chuẩn hoá: path + params đã sắp xếp (vd `/the-loai/hanh-dong?page=2`). */
+    queryKey: text('query_key').primaryKey(),
+    /** `{ items: Movie[], pagination?: Pagination }` đúng như trả cho client. */
+    payload: jsonb('payload').$type<{ items: unknown[]; pagination?: unknown }>().notNull(),
+    syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('catalogue_lists_synced_idx').on(t.syncedAt)],
+)
+
+export const schema = { users, favorites, ratings, history, comments, movies, movieEpisodes, catalogueLists }
 
 export type UserRow = typeof users.$inferSelect
 export type FavoriteRow = typeof favorites.$inferSelect
 export type RatingRow = typeof ratings.$inferSelect
 export type HistoryRow = typeof history.$inferSelect
 export type CommentRow = typeof comments.$inferSelect
+export type MovieRow = typeof movies.$inferSelect
+export type MovieEpisodeRow = typeof movieEpisodes.$inferSelect
+export type CatalogueListRow = typeof catalogueLists.$inferSelect

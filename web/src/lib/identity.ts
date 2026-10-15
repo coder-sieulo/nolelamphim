@@ -1,5 +1,5 @@
 import { redis } from './rooms'
-import { getMovieDetail } from './api'
+import { getMovieDetail } from './api.server'
 
 /**
  * Lớp khớp phim (Identity Layer) — G1.

@@ -1,0 +1,58 @@
+name: Sync catalogue phim
+
+# Đồng bộ catalogue (poster/link/tập) từ nguồn → Supabase Postgres.
+# Bảng `movies` + `movie_episodes` là cache read-through cho web serverless.
+on:
+  schedule:
+    # 02:00 giờ VN (UTC+7) hằng ngày
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+    inputs:
+      pages:
+        description: 'Số trang mỗi feed (1..10)'
+        default: '3'
+      detail_limit:
+        description: 'Số phim enrich chi tiết (1..200)'
+        default: '60'
+      full:
+        description: 'Dùng toàn bộ feed (mọi thể loại + quốc gia)? (chậm)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-catalogue
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Đồng bộ catalogue → Supabase
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run sync
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "✘ Thiếu secret DATABASE_URL (Settings → Secrets → Actions)."
+            exit 1
+          fi
+          npx tsx tools/sync-catalogue.mjs \
+            --pages "${{ github.event.inputs.pages || '3' }}" \
+            --detail-limit "${{ github.event.inputs.detail_limit || '60' }}" \
+            ${{ github.event.inputs.full == 'true' && '--full' || '' }}

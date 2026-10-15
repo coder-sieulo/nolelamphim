@@ -9,6 +9,7 @@
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
     "prewarm:idmap": "node tools/prewarm-idmap.mjs",
+    "sync:catalogue": "tsx tools/sync-catalogue.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -37,6 +38,7 @@
     "@tailwindcss/vite": "^4.0.0",
     "drizzle-kit": "^0.31.11",
     "tailwindcss": "^4.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   },
   "overrides": {

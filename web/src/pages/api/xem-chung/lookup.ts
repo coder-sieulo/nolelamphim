@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro'
-import { searchMovies, getMovieEpisodes } from '../../../lib/api'
+import { searchMovies, getMovieEpisodes } from '../../../lib/api.server'
 import { getSessionUser, isAdmin } from '../../../lib/auth'
 
 export const GET: APIRoute = async ({ url, cookies }) => {

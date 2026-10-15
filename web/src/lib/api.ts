@@ -10,6 +10,7 @@ import type {
 } from './types'
 import { BASE_URL } from './constants'
 import { getKkphimDetail } from './kkphim'
+import type { FeedRequest } from './feed'
 
 const FETCH_RETRIES = 2
 const KKPHIM_BASE = 'https://phimapi.com'
@@ -330,7 +331,73 @@ function extractEpisodes(html: string): EpisodeServer[] {
   }
 }
 
+/* ───── Đọc qua server (chỉ ở browser) để KHÔNG crawl nguồn từ trình duyệt ───── */
+
+/**
+ * Ở browser: gọi `/api/list` (server read-through → Postgres).
+ * Ở server/build: trả `null` để giữ nguyên hành vi crawl trực tiếp.
+ */
+async function feedViaServer(req: FeedRequest, signal?: AbortSignal): Promise<unknown | null> {
+  if (typeof window === 'undefined') return null
+  try {
+    const res = await fetch('/api/list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(req),
+      signal,
+      credentials: 'same-origin',
+    })
+    if (!res.ok) return null
+    return (await res.json()) as unknown
+  } catch {
+    return null
+  }
+}
+
+/** Tương tự nhưng cho chi tiết phim (qua `/api/detail`). */
+async function detailViaServer(slug: string): Promise<MovieDetailResponse | null> {
+  if (typeof window === 'undefined') return null
+  try {
+    const res = await fetch('/api/detail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ slug }),
+      credentials: 'same-origin',
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as MovieDetailResponse
+    return data?.status && data.movie ? data : null
+  } catch {
+    return null
+  }
+}
+
+function asMovieList(v: unknown): MovieList | null {
+  if (!v || typeof v !== 'object') return null
+  const list = v as MovieList
+  return Array.isArray(list.items) ? list : null
+}
+
+function asDataList<T>(v: unknown): DataListResponse<T> | null {
+  if (!v || typeof v !== 'object') return null
+  const d = v as DataListResponse<T>
+  return d.data && Array.isArray(d.data.items) ? d : null
+}
+
+/** Chuẩn hoá params lọc tuỳ chọn sang dạng gửi được qua JSON. */
+function toFeedParams(params?: Record<string, unknown>): Record<string, string | number> | undefined {
+  if (!params) return undefined
+  const out: Record<string, string | number> = {}
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null) continue
+    out[k] = typeof v === 'number' ? v : String(v)
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
 export async function getNewMovies(page = 1): Promise<MovieList> {
+  const server = asMovieList(await feedViaServer({ fn: 'new', page }))
+  if (server) return normalizeMovieList(server)
   try {
     const d = await fetchKkphimList<MovieList>('/danh-sach', { page })
     return normalizeMovieList(d)
@@ -351,6 +418,8 @@ export async function getMoviesByListPath(
   limit = 24,
   params?: Record<string, string | number>,
 ): Promise<MovieList> {
+  const server = asMovieList(await feedViaServer({ fn: 'byListPath', path, page, limit, params }))
+  if (server) return normalizeMovieList(server)
   const viaVsmov = () =>
     fetchAPI<MovieList>(`/danh-sach/${path}`, { page, limit, ...(params || {}) }, { status: false, items: [] }).then(
       normalizeMovieList,
@@ -370,6 +439,8 @@ export async function getMoviesByListPath(
 }
 
 export async function getMoviesByPath(path: string, params?: Record<string, string | number>): Promise<MovieList> {
+  const server = asMovieList(await feedViaServer({ fn: 'byPath', path, params }))
+  if (server) return normalizeMovieList(server)
   const viaVsmov = () =>
     fetchAPI<MovieList>(path, params, { status: false, items: [] }).then(normalizeMovieList)
   if (hasUnsupportedKkphimFilter(params)) return viaVsmov()
@@ -382,6 +453,8 @@ export async function getMoviesByPath(path: string, params?: Record<string, stri
 }
 
 export async function searchMovies(keyword: string, page = 1, limit = 20, signal?: AbortSignal): Promise<MovieList> {
+  const server = asMovieList(await feedViaServer({ fn: 'search', keyword, page, limit }, signal))
+  if (server) return normalizeMovieList(server)
   try {
     const d = await fetchKkphimList<MovieList>('/tim-kiem', { keyword, page, limit })
     return normalizeMovieList(d)
@@ -392,14 +465,20 @@ export async function searchMovies(keyword: string, page = 1, limit = 20, signal
 }
 
 export async function getCategories() {
+  const server = asDataList<Category>(await feedViaServer({ fn: 'categories' }))
+  if (server) return server
   return fetchAPI<DataListResponse<Category>>('/the-loai')
 }
 
 export async function getCountries() {
+  const server = asDataList<Country>(await feedViaServer({ fn: 'countries' }))
+  if (server) return server
   return fetchAPI<DataListResponse<Country>>('/quoc-gia')
 }
 
 export async function getYears() {
+  const server = asDataList<Category>(await feedViaServer({ fn: 'years' }))
+  if (server) return server
   return fetchAPI<DataListResponse<Category>>('/nam')
 }
 
@@ -407,6 +486,8 @@ export async function getMoviesByCategory(
   slug: string,
   params?: { limit?: number; page?: number; year?: string; country?: string; type?: string; status?: string },
 ): Promise<MovieList> {
+  const server = asMovieList(await feedViaServer({ fn: 'byCategory', slug, params: toFeedParams(params) }))
+  if (server) return normalizeMovieList(server)
   const viaVsmov = () => fetchAPI<MovieList>(`/the-loai/${slug}`, params).then(normalizeMovieList)
   if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
@@ -422,6 +503,8 @@ export async function getMoviesByCountry(
   slug: string,
   params?: { limit?: number; page?: number; year?: string; type?: string; status?: string },
 ): Promise<MovieList> {
+  const server = asMovieList(await feedViaServer({ fn: 'byCountry', slug, params: toFeedParams(params) }))
+  if (server) return normalizeMovieList(server)
   const viaVsmov = () => fetchAPI<MovieList>(`/quoc-gia/${slug}`, params).then(normalizeMovieList)
   if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
@@ -437,6 +520,8 @@ export async function getMoviesByYear(
   year: string,
   params?: { limit?: number; page?: number; type?: string; status?: string },
 ): Promise<MovieList> {
+  const server = asMovieList(await feedViaServer({ fn: 'byYear', slug: year, params: toFeedParams(params) }))
+  if (server) return normalizeMovieList(server)
   const viaVsmov = () => fetchAPI<MovieList>(`/nam/${year}`, params).then(normalizeMovieList)
   if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
@@ -449,6 +534,8 @@ export async function getMoviesByYear(
 }
 
 export async function getMovieDetail(slug: string): Promise<MovieDetailResponse> {
+  const server = await detailViaServer(slug)
+  if (server) return server
   try {
     const d = await fetchAPI<MovieDetailResponse>(`/phim/${slug}`, undefined, { status: false, movie: null })
     if (d.status && d.movie) return d

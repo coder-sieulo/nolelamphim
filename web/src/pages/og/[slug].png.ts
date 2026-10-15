@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro'
-import { getMovieDetail } from '../../lib/api'
+import { getMovieDetail } from '../../lib/api.server'
 import { renderOGImage } from '../../lib/og'
 
 export const prerender = false
