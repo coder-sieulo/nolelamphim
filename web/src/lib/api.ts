@@ -54,9 +54,15 @@ async function fetchAPI<T>(
 ): Promise<T> {
   const url = new URL(`${BASE_URL}${path}`)
   if (params) {
-    Object.entries(params).forEach(([k, v]) =>
-      url.searchParams.set(k, String(v)),
-    )
+    // Bỏ qua giá trị rỗng: nếu không, `String(undefined)` sẽ thành chuỗi
+    // "undefined" trong query (vd `year=undefined&status=undefined`) và nguồn
+    // trả 422 → feed rỗng vĩnh viễn.
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null) continue
+      const s = String(v).trim()
+      if (s === '' || s === 'undefined' || s === 'null') continue
+      url.searchParams.set(k, s)
+    }
   }
   const cacheKey = url.toString()
   const cached = apiCache.get(cacheKey)

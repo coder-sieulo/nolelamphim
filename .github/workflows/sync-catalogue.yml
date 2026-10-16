@@ -13,7 +13,7 @@ on:
         default: '3'
       detail_limit:
         description: 'Số phim enrich chi tiết (1..200)'
-        default: '60'
+        default: '150'
       full:
         description: 'Dùng toàn bộ feed (mọi thể loại + quốc gia)? (chậm)'
         type: boolean
@@ -54,5 +54,5 @@ jobs:
           fi
           npx tsx tools/sync-catalogue.mjs \
             --pages "${{ github.event.inputs.pages || '3' }}" \
-            --detail-limit "${{ github.event.inputs.detail_limit || '60' }}" \
+            --detail-limit "${{ github.event.inputs.detail_limit || '150' }}" \
             ${{ github.event.inputs.full == 'true' && '--full' || '' }}

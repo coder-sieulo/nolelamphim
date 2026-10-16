@@ -269,3 +269,59 @@ sau khi dọn còn **644/644 dòng m3u8 hợp lệ**.
 
 **Test thật (dev server Astro):** backfill `source_key` / nguồn bị ghi sai / record chuyển pin
 vsmov (xoá HLS) / tự dựng lại sau restore record = **PASS**; `astro check` 0 errors, `astro build` OK.
+
+## 12. Prewarm cache danh sách + vá `fetchAPI` nhét `undefined` vào query
+
+**Bối cảnh:** các trang danh sách (`/`, `/the-loai`, `/quoc-gia`, `/nam`, `/danh-sach`) là
+**prerender/ISR** (`revalidate = 60`) → dựng lúc build, KHÔNG đọc `catalogue_lists`. Cache này chỉ
+phục vụ lời gọi phía **trình duyệt**: load-more, tìm kiếm, lọc (năm/quốc gia/thể loại), "Phim tương
+tự", "Dành cho bạn", meta navbar. TTL: list **1 giờ**, meta **24 giờ**.
+
+### 12.1 Bug thật: `fetchAPI` biến `undefined` thành chuỗi `"undefined"`
+
+`crawlFeed` (đường server) luôn truyền đủ khoá `{page, limit, year, type, status}` — kể cả khi giá
+trị là `undefined`. `fetchAPI` (vsmov) cũ làm `url.searchParams.set(k, String(v))` cho **mọi** khoá →
+URL thành `…/quoc-gia/china?page=1&limit=24&year=undefined&type=undefined&status=undefined` → vsmov
+trả **422** → feed rỗng và **không bao giờ được cache**.
+
+- `fetchKkphimList` (kkphim) **đã** có guard `sv !== 'undefined'`; `fetchAPI` thì chưa → lệch nhau.
+- Vá: `fetchAPI` bỏ qua giá trị `undefined` / `null` / `''` / `'undefined'` / `'null'` khi dựng query
+  (đúng quy ước sẵn có của `fetchKkphimList`).
+- Hệ quả trước khi vá: mọi thể loại/quốc gia mà **kkphim không có slug** (rơi xuống nhánh vsmov) đều
+  bị 422 → rỗng vĩnh viễn. Vì `crawlFeed` coi `ok=false` nên cũng **không ghi cache** → trình duyệt
+  lần nào cũng gọi `/api/list` (vô ích) rồi mới tự crawl nguồn.
+
+### 12.2 Tool prewarm: `web/tools/prewarm-lists.ts`
+
+Chạy **trực tiếp server-side** (`getFeedCached`), **không** qua `/api/list`:
+
+```bash
+cd web && set -a && . ./.env.local && set +a && npx tsx tools/prewarm-lists.ts
+#   --only meta,new,lists,categories,countries,years   --concurrency 3   --dry
+```
+
+⚠️ Không prewarm qua endpoint `/api/list` được: endpoint bọc `withDeadline(…, 7s)`; feed nào crawl
+>7s sẽ trả fallback rỗng và **không ghi cache** (serverless không chạy nền tiếp). Prewarm qua
+endpoint chỉ đạt **66/146**; qua tool (không deadline) đạt **138/146** (sau khi vá 12.1) —
+5 feed rỗng còn lại là **nguồn thật sự không có dữ liệu** (xem 12.3).
+
+**Kết quả:** `catalogue_lists` 41 → **183 dòng** (147 còn hạn, 173 có dữ liệu); thể loại
+**80/80** có dữ liệu (trước vá: 24/80).
+
+### 12.3 Khe hở dữ liệu nguồn (CHƯA sửa — cần quyết định)
+
+Meta navbar lấy từ **vsmov** (`fetchAPI('/the-loai')`, `/quoc-gia`), nhưng nội dung list crawl từ
+**kkphim** → slug lệch nhau:
+
+| vsmov (navbar) | kkphim | Ghi chú |
+| --- | --- | --- |
+| `hai` (Hài) | `hai-huoc` | kkphim 404 vsmov-slug → fallback vsmov |
+| `drama`, `action-adventure`, `giat-gan`, `hu-cau`, `hon-nhan`… | (không có) | ~20 thể loại chỉ có trên vsmov |
+| `china` (Quốc gia) | `trung-quoc` | vsmov `/quoc-gia/china` trả **200 nhưng 0 item** |
+| `campuchia` | (không có) | vsmov trả 0 item |
+
+Hiện các trang này vẫn chạy được (fallback vsmov, hoặc rỗng với `china`/`campuchia`), nhưng:
+(a) luôn chậm >7s và **không cache** ở đường server; (b) `china`/`campuchia` ra trang **trống**.
+Hướng xử lý đề xuất: **bảng alias slug vsmov → kkphim** (chỉ vài mục chắc chắn: `hai→hai-huoc`,
+`china→trung-quoc`, `vo-hiep→vo-thuat`, `toi-pham→hinh-su`, `thieu-nhi→tre-em`, `phim-nhac→am-nhac`…)
+— nhưng đây là thay đổi nội dung/SEO nên **cần duyệt trước khi làm**.
