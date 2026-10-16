@@ -11,6 +11,8 @@ import {
   writeListCache,
 } from './catalogue'
 import { feedCacheKey, isMetaFn, type FeedRequest } from './feed'
+import { knownSourceKey, resolveM3u8Map } from './m3u8'
+import { readSourceKey } from './catalogue'
 import type { EpisodeServer, Movie, MovieDetailResponse } from './types'
 
 /**
@@ -43,13 +45,56 @@ export async function getMovieEpisodes(
   slug: string,
 ): Promise<{ status: boolean; episodes: EpisodeServer[] }> {
   const cached = await readEpisodes(slug)
-  if (cached) return { status: true, episodes: cached }
+  if (cached) {
+    await reconcileHlsSource(slug, cached)
+    return { status: true, episodes: cached }
+  }
 
   const fresh = await api.getMovieEpisodes(slug)
   if (fresh.status && fresh.episodes.length > 0) {
+    // Chỉ crawl vsmov → `m3u8` của nó là HTML nên bị lọc hết; source_key = null
+    // (chưa ghi nguồn kkphim nào) để lượt đọc sau tự resolve.
     await persistEpisodes(slug, fresh.episodes)
   }
   return fresh
+}
+
+/**
+ * Soi nguồn của `m3u8` đã lưu trong DB với record identity **hiện tại**.
+ *
+ * `movie_episodes.m3u8` được build từ nguồn kkphim tại thời điểm ghi. Nếu record
+ * đổi nguồn sau đó (sửa tay / prewarm / TTL hết hạn → resolve lại), HLS cũ có thể
+ * thuộc **phim/phần khác** nhưng vẫn là `.m3u8` hợp lệ → `needsM3u8` của
+ * `/api/episodes` thấy "đủ" và bỏ qua resolve → âm thầm phát sai (họ lỗi
+ * "sai vị trí tập"). Cột `source_key` bắt đúng ca này.
+ *
+ * Mọi nhánh đều nuốt lỗi — không bao giờ chặn/ làm hỏng trang.
+ */
+async function reconcileHlsSource(slug: string, episodes: EpisodeServer[]): Promise<void> {
+  try {
+    const current = await knownSourceKey(slug)
+    // Không xác định được nguồn (chưa có record / Redis lỗi) → giữ nguyên, lượt sau thử lại.
+    if (current === null) return
+    const stored = await readSourceKey(slug)
+    if (stored === current) return
+
+    if (current === '') {
+      // Nguồn đã biến mất (vd pin vsmov) → xoá HLS cũ để fallback embed đúng.
+      for (const server of episodes) for (const e of server.list) e.m3u8 = undefined
+      await persistEpisodes(slug, episodes, null)
+      return
+    }
+
+    const { map, sourceKey } = await resolveM3u8Map(slug, episodes)
+    // Có nguồn nhưng chưa build được (kkphim lỗi tạm thời) → giữ HLS cũ, thử lại sau.
+    if (Object.keys(map).length === 0) return
+    // Nguồn mới: chỉ giữ HLS build từ map mới — tập map không phủ phải bị bỏ,
+    // tuyệt đối không để lại link của nguồn cũ.
+    for (const server of episodes) for (const e of server.list) e.m3u8 = map[e.slug]
+    await persistEpisodes(slug, episodes, sourceKey)
+  } catch (e) {
+    console.error('[api.server] reconcileHlsSource failed:', e)
+  }
 }
 
 /* ─────────────────── Feed list / meta (read-through) ─────────────────── */

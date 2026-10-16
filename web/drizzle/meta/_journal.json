@@ -29,6 +29,13 @@
       "when": 1792148349093,
       "tag": "0003_rainy_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792151457719,
+      "tag": "0004_cool_molly_hayes",
+      "breakpoints": true
     }
   ]
 }

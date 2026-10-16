@@ -14,16 +14,18 @@ export const GET: APIRoute = async ({ url }) => {
   }
   const data = await getMovieEpisodes(slug)
   // Kèm m3u8 (nếu resolve được) để phòng Xem Chung phát bằng <video> và sync thật.
+  // Nguồn đã được `getMovieEpisodes` soi lại rồi; ở đây chỉ còn lo **thiếu** HLS.
   // Nếu MỌI tập đã có HLS thật trong cache → bỏ luôn bước resolve (không crawl lại).
   if (data.status && data.episodes.length) {
     const needsM3u8 = data.episodes.some((s) => s.list.some((e) => !isRealHls(e.m3u8)))
     if (needsM3u8) {
       try {
-        const map = await resolveM3u8Map(slug, data.episodes)
+        const { map, sourceKey } = await resolveM3u8Map(slug, data.episodes)
         if (Object.keys(map).length > 0) {
           attachM3u8(data.episodes, map)
-          // Lưu kèm m3u8 để các lượt sau phục vụ thẳng từ Postgres.
-          await persistEpisodes(slug, data.episodes)
+          // Lưu kèm m3u8 + nguồn để các lượt sau phục vụ thẳng từ Postgres
+          // và lần đọc sau soi được nguồn có còn đúng không.
+          await persistEpisodes(slug, data.episodes, sourceKey)
         }
       } catch {
         /* không có m3u8 → giữ nguyên embed */

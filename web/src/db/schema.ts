@@ -198,6 +198,14 @@ export const movieEpisodes = pgTable(
     episodeSlug: text('episode_slug').notNull(),
     embed: text('embed').notNull().default(''),
     m3u8: text('m3u8'),
+    /**
+     * Nguồn kkphim đã dùng để build `m3u8` của dòng này (null = chưa/ không có HLS).
+     *
+     * So với `identity.kkphim` **hiện tại** lúc đọc: nếu lệch nghĩa là record
+     * identity đã đổi nguồn (sửa tay / prewarm / TTL hết hạn → resolve lại) và
+     * `m3u8` cũ thuộc nguồn — có thể là **phần/phim khác** → ép build lại.
+     */
+    sourceKey: text('source_key'),
     sort: integer('sort').notNull().default(0),
     syncedAt: timestamp('synced_at', { withTimezone: true }),
   },

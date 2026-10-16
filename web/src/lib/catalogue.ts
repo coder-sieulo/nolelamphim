@@ -1,6 +1,7 @@
 import { eq, lt, sql } from 'drizzle-orm'
 import { getDb, hasDb } from '../db'
 import { catalogueLists, movieEpisodes, movies, type MovieEpisodeRow, type MovieRow } from '../db/schema'
+import { isRealHls } from './hls'
 import type { Category, Country, EpisodeItem, EpisodeServer, Movie, MovieDetail } from './types'
 
 /**
@@ -205,9 +206,18 @@ export async function upsertMovies(
   }
 }
 
-/** Thay toàn bộ tập của 1 phim (xóa cũ → ghi mới, giữ thứ tự server/tập). */
-export async function persistEpisodes(slug: string, servers: EpisodeServer[]): Promise<void> {
+/** Thay toàn bộ tập của 1 phim (xóa cũ → ghi mới, giữ thứ tự server/tập).
+ *
+ * `sourceKey` = slug kkphim đã dùng để build `m3u8` của các dòng này (null khi
+ * chỉ crawl vsmov / chưa resolve). Ghi kèm để lần đọc sau soi lại nguồn — xem
+ * `readSourceKey`. */
+export async function persistEpisodes(
+  slug: string,
+  servers: EpisodeServer[],
+  sourceKey?: string | null,
+): Promise<void> {
   if (!hasDb() || !slug) return
+  const key = sourceKey || null
   const rows = servers
     .flatMap((s) =>
       (s.list ?? []).map((e, idx) => ({
@@ -216,7 +226,11 @@ export async function persistEpisodes(slug: string, servers: EpisodeServer[]): P
         episodeName: e.name ?? '',
         episodeSlug: e.slug ?? '',
         embed: e.embed ?? '',
-        m3u8: e.m3u8 ?? null,
+        // Chỉ giữ HLS thật (`.m3u8`). Trường `m3u8` của vsmov thực chất là link
+        // embed/HTML (vd `…streamvsmov.com/video/<uuid>`) — không phát được và làm
+        // player thử hls.js rồi mới fallback embed (trễ + thừa request).
+        m3u8: isRealHls(e.m3u8) ? e.m3u8 : null,
+        sourceKey: key,
         sort: idx,
         syncedAt: new Date(),
       })),
@@ -290,6 +304,30 @@ export async function readEpisodes(slug: string, ttl = EPISODES_TTL_MS): Promise
   } catch (e) {
     console.error('[catalogue] readEpisodes failed:', e)
     return null
+  }
+}
+
+/**
+ * Nguồn kkphim đã ghi cho tập của phim — so với `identity.kkphim` hiện tại.
+ *
+ * Trả `''` khi chưa ghi nguồn (dòng cũ trước migration, hoặc chỉ crawl vsmov),
+ * `"MIXED"` khi các dòng lẫn lộn nhiều nguồn (ép build lại cho đồng nhất).
+ * Lỗi DB → `''` (an toàn: coi như lệch để tự vá, không bao giờ chặn trang).
+ */
+export async function readSourceKey(slug: string): Promise<string> {
+  if (!hasDb() || !slug) return ''
+  try {
+    const db = getDb()
+    const rows = await db
+      .selectDistinct({ key: movieEpisodes.sourceKey })
+      .from(movieEpisodes)
+      .where(eq(movieEpisodes.movieSlug, slug))
+    if (rows.length === 0) return ''
+    const keys = rows.map((r) => r.key || '')
+    return keys.length === 1 ? keys[0] : 'MIXED'
+  } catch (e) {
+    console.error('[catalogue] readSourceKey failed:', e)
+    return ''
   }
 }
 

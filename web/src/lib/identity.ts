@@ -148,29 +148,38 @@ function pickHit(
   return hits.find((h) => normName(h.name) === n) ?? null
 }
 
-async function searchKkphim(name: string, tmdbId: string | null, year: number | null, partHint?: string | null): Promise<string | null> {
+/** Kết quả một lượt tìm nguồn: `failed` = lỗi mạng/parse → không biết được gì. */
+interface SearchOutcome {
+  slug: string | null
+  failed: boolean
+}
+
+async function searchKkphim(name: string, tmdbId: string | null, year: number | null, partHint?: string | null): Promise<SearchOutcome> {
   try {
     const d = (await getJSON(
       `https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(name)}&limit=8`,
     )) as { data?: { items?: SearchHit[] } }
     const hit = pickHit(d.data?.items ?? [], tmdbId, name, year, partHint)
-    return hit?.slug ?? null
+    return { slug: hit?.slug ?? null, failed: false }
   } catch (err) {
+    // KHÔNG được trả `null` (nghĩa là "tra đúng nhưng không khớp"): nếu không phân
+    // biệt được lỗi mạng với "không có phim" thì record kkphim=null sẽ bị lưu 7 ngày
+    // và làm `movie_episodes.m3u8` bị xoá nhầm (xem `peekKkphimKey`).
     console.error('[identity] searchKkphim failed:', err)
-    return null
+    return { slug: null, failed: true }
   }
 }
 
-async function searchNguonc(name: string, tmdbId: string | null, year: number | null, partHint?: string | null): Promise<string | null> {
+async function searchNguonc(name: string, tmdbId: string | null, year: number | null, partHint?: string | null): Promise<SearchOutcome> {
   try {
     const d = (await getJSON(
       `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(name)}`,
     )) as { items?: SearchHit[] }
     const hit = pickHit(d.items ?? [], tmdbId, name, year, partHint)
-    return hit?.slug ?? null
+    return { slug: hit?.slug ?? null, failed: false }
   } catch (err) {
     console.error('[identity] searchNguonc failed:', err)
-    return null
+    return { slug: null, failed: true }
   }
 }
 
@@ -214,6 +223,27 @@ export async function getCached(source: string, slug: string): Promise<IdentityR
 }
 
 /**
+ * Soi nguồn kkphim của slug **chỉ từ record trong Redis** (không live-resolve).
+ *
+ * Dùng để đối chiếu với `movie_episodes.source_key` khi đọc tập phim, nên phải
+ * phân biệt rõ 3 trạng thái:
+ * - `''` — có record và record nói **không còn nguồn kkphim** (pin vsmov / không
+ *   khớp đích danh) → an toàn để xoá `m3u8` cũ (đang phát nguồn đã đổi/biến mất);
+ * - `null` — **không xác định**: không có record hoặc Redis lỗi → không được sửa
+ *   gì cả (không tự live-resolve để tránh tốn HTTP và xoá nhầm khi tạm lỗi).
+ */
+export async function peekKkphimKey(slug: string): Promise<string | null> {
+  if (!slug) return null
+  try {
+    const rec = await getCached('vsmov', slug)
+    if (!rec) return null
+    return rec.kkphim || ''
+  } catch {
+    return null
+  }
+}
+
+/**
  * Giải identity cho một slug (nếu không chỉ định source, mặc định tra theo vsmov).
  * Thứ tự: Redis → live-resolve (vsmov detail → kkphim + nguonc) → lưu cache.
  */
@@ -238,19 +268,28 @@ export async function resolveIdentity(slug: string, source: 'vsmov' | 'kkphim' |
     const year = toYear(movie.year)
     const keyword = movie.origin_name || movie.name || ''
 
-    const [kkphim, nguonc] = await Promise.all([
+    const [kk, ng] = await Promise.all([
       searchKkphim(keyword, tmdbId, year, name),
       searchNguonc(keyword, tmdbId, year, name),
     ])
 
+    // Lượt tìm nguồn HLS (kkphim) lỗi → KHÔNG lưu record: không phân biệt được
+    // "không có phim này" với "mạng lỗi", mà `kkphim=null` là tín hiệu để
+    // `movie_episodes.m3u8` bị xoá (xem `peekKkphimKey`). Trả tạm bản partial
+    // cho caller, lượt sau tự thử lại.
+    if (kk.failed) {
+      console.warn('[identity] bỏ qua lưu cache (searchKkphim lỗi) cho', slug)
+      return { vsmov: slug, kkphim: null, nguonc: ng.slug, tmdb: tmdbId, name: name || null, year, via: 'partial' }
+    }
+
     const rec: IdentityRecord = {
       vsmov: slug,
-      kkphim,
-      nguonc,
+      kkphim: kk.slug,
+      nguonc: ng.failed ? null : ng.slug,
       tmdb: tmdbId,
       name: name || null,
       year,
-      via: tmdbId ? 'tmdb' : kkphim || nguonc ? 'name' : 'partial',
+      via: tmdbId ? 'tmdb' : kk.slug || ng.slug ? 'name' : 'partial',
     }
     await saveRecord('vsmov', rec, CACHE_TTL_SEC)
     return rec
