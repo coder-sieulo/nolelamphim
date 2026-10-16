@@ -71,6 +71,14 @@
   color: var(--color-cm-text);
 }
 
+/* ---------- Quality switch (dropdown chất lượng, góc trái player) ---------- */
+.watch-quality-dd {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 30;
+}
+
 /* ---------- Thanh tiến trình của nút phát (giữ cho UI mở rộng sau) ---------- */
 .watch-progress-bar {
   position: absolute;

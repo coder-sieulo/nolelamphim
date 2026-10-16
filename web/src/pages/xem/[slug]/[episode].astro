@@ -207,6 +207,26 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
                 </div>
               </div>
             )}
+
+            {/* Chọn chất lượng HLS — chỉ hiện khi luồng có ≥2 mức (gắn ở JS) */}
+            <div id="watch-quality-dd" class="watch-quality-dd hidden">
+              <button
+                id="watch-quality-trigger"
+                type="button"
+                class="watch-server-trigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+              >
+                <span id="watch-quality-label">Tự động</span>
+                <FaChevronDown className="w-3 h-3" />
+              </button>
+              <div
+                id="watch-quality-menu"
+                class="dropdown absolute left-0 top-11 z-40 w-36 rounded-[var(--radius-cm-modal)] border border-cm-border bg-cm-elevated p-1.5 flex flex-col gap-0.5 shadow-[var(--shadow-cm-up)]"
+                role="listbox"
+                aria-label="Chọn chất lượng"
+              ></div>
+            </div>
           </div>
 
           {/* ── Title block ── */}
@@ -496,17 +516,73 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       let frameLoaded = false
 
       /* Trạng thái player m3u8 (hls.js) */
+      type HlsLevel = { height?: number; name?: string }
+      type HlsEventData = { fatal?: boolean; levels?: HlsLevel[]; level?: number }
       type HlsInstance = {
         destroy(): void
-        on(event: string, cb: (event: unknown, data: { fatal?: boolean }) => void): void
+        on(event: string, cb: (event: unknown, data: HlsEventData) => void): void
         loadSource(url: string): void
         attachMedia(el: HTMLMediaElement): void
+        currentLevel: number
       }
       let videoEl: HTMLVideoElement | null = null
       let hls: HlsInstance | null = null
       let currentMode: 'none' | 'iframe' | 'video' = 'none'
-      let hlsLevels: Array<{ index: number; height?: number; name?: string }> = []
+      let hlsLevels: HlsLevel[] = []
       let currentLevel = -1 // -1 = Auto
+
+      /* ── Chọn chất lượng (mức HLS của hls.js) ── */
+      const qdd = document.getElementById('watch-quality-dd')
+      const qTrigger = document.getElementById('watch-quality-trigger')
+      const qMenu = document.getElementById('watch-quality-menu')
+      const qLabel = document.getElementById('watch-quality-label')
+
+      function qualityLabel(l: HlsLevel, i: number): string {
+        return l.height ? `${l.height}p` : l.name || `Mức ${i + 1}`
+      }
+      function closeQualityMenu() {
+        qMenu?.classList.remove('open')
+        qTrigger?.setAttribute('aria-expanded', 'false')
+      }
+      function hideQuality() {
+        closeQualityMenu()
+        qdd?.classList.add('hidden')
+      }
+      function markQuality(active: number) {
+        qMenu?.querySelectorAll<HTMLButtonElement>('button[data-level]').forEach((b) => {
+          b.classList.toggle('sort-active', Number(b.dataset.level) === active)
+        })
+      }
+      function selectLevel(level: number) {
+        if (!hls) return
+        hls.currentLevel = level
+        currentLevel = level
+        if (qLabel) qLabel.textContent = level === -1 ? 'Tự động' : qualityLabel(hlsLevels[level], level)
+        markQuality(level)
+        closeQualityMenu()
+      }
+      /* Dựng menu từ danh sách mức vừa parse; ẩn nếu luồng chỉ có 1 mức. */
+      function renderQuality() {
+        if (!qdd || !qMenu) return
+        if (hlsLevels.length < 2) {
+          hideQuality()
+          return
+        }
+        const itemCls =
+          'watch-quality-item w-full text-left px-3 py-2 rounded-[var(--radius-cm-btn)] text-cm-meta text-cm-text-2 hover:bg-cm-surface hover:text-cm-text transition-colors'
+        const rows = [`<button type="button" class="${itemCls}" data-level="-1" role="option">Tự động</button>`]
+        hlsLevels.forEach((l, i) => {
+          rows.push(`<button type="button" class="${itemCls}" data-level="${i}" role="option">${escapeHTML(qualityLabel(l, i))}</button>`)
+        })
+        qMenu.innerHTML = rows.join('')
+        qMenu.querySelectorAll<HTMLButtonElement>('button[data-level]').forEach((b) => {
+          b.addEventListener('click', () => selectLevel(Number(b.dataset.level)))
+        })
+        currentLevel = -1
+        if (qLabel) qLabel.textContent = 'Tự động'
+        markQuality(-1)
+        qdd.classList.remove('hidden')
+      }
 
       function maybeHideLoader() {
         if (!loaderEl) return
@@ -576,6 +652,10 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
           frame = null
         }
         currentMode = 'none'
+        // Đổi nguồn/tập → bỏ trạng thái chất lượng cũ (sẽ dựng lại khi parse manifest mới).
+        hideQuality()
+        hlsLevels = []
+        currentLevel = -1
       }
 
       function createVideo(title: string): HTMLVideoElement | null {
@@ -612,14 +692,25 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
           if (Hls.isSupported()) {
             const instance = new Hls({ enableWorker: true }) as unknown as HlsInstance
             hls = instance
-            instance.loadSource(m3u8)
-            instance.attachMedia(v)
             instance.on(Hls.Events.ERROR, (_evt, data) => {
               if (data?.fatal) {
                 console.warn('[player] hls fatal error — chuyển sang embed')
                 createFrame(fallbackEmbed, title)
               }
             })
+            instance.on(Hls.Events.MANIFEST_PARSED, (_evt, data) => {
+              hlsLevels = Array.isArray(data?.levels) ? data.levels : []
+              renderQuality()
+            })
+            instance.on(Hls.Events.LEVEL_SWITCHED, (_evt, data) => {
+              // Chế độ Tự động: hiện mức đang phát thực tế cho người dùng biết.
+              if (currentLevel === -1 && qLabel) {
+                const l = hlsLevels[data?.level ?? -1]
+                qLabel.textContent = l ? `Tự động (${qualityLabel(l, data?.level ?? 0)})` : 'Tự động'
+              }
+            })
+            instance.loadSource(m3u8)
+            instance.attachMedia(v)
             v.play().catch(() => {})
             return
           }
@@ -772,11 +863,19 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         const isOpen = ddMenu.classList.toggle('open')
         ddTrigger.setAttribute('aria-expanded', String(isOpen))
       })
+      qTrigger?.addEventListener('click', () => {
+        if (!qMenu) return
+        const isOpen = qMenu.classList.toggle('open')
+        qTrigger.setAttribute('aria-expanded', String(isOpen))
+      })
       document.addEventListener('click', (e) => {
         const target = e.target as Node
         if (ddMenu && !ddMenu.contains(target) && ddTrigger && !ddTrigger.contains(target)) {
           ddMenu.classList.remove('open')
           ddTrigger.setAttribute('aria-expanded', 'false')
+        }
+        if (qMenu && !qMenu.contains(target) && qTrigger && !qTrigger.contains(target)) {
+          closeQualityMenu()
         }
       })
 
@@ -792,6 +891,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         if (isTyping()) return
         if (e.key === 'Escape') {
           if (drawer?.classList.contains('open')) closeDrawer()
+          closeQualityMenu()
           return
         }
         if (e.key === 'ArrowRight') {
