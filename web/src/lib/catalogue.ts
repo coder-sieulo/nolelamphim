@@ -89,7 +89,10 @@ export function rowsToServers(rows: MovieEpisodeRow[]): EpisodeServer[] {
       name: r.episodeName || '',
       slug: r.episodeSlug,
       embed: r.embed || '',
-      m3u8: r.m3u8 ?? undefined,
+      // Lưới an toàn phía ĐỌC: dòng cũ (trước migration/guard) có thể đang giữ
+      // link embed/HTML của vsmov trong cột `m3u8` — chỉ trả HLS thật để player
+      // không thử hls.js rồi mới fallback embed (trễ + thừa request).
+      m3u8: isRealHls(r.m3u8) ? r.m3u8 : undefined,
     })
   }
   return order.map((name) => ({ server_name: name, list: map.get(name)! }))

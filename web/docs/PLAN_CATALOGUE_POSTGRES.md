@@ -231,7 +231,7 @@ resolve** → âm thầm phát sai (họ lỗi "sai vị trí tập", đã xảy
   - record **hết nguồn kkphim** (pin vsmov) → xoá m3u8 để fallback embed đúng;
   - nguồn chưa xác định (không có record / Redis lỗi) hoặc kkphim lỗi tạm → **giữ nguyên**, lượt sau thử lại.
 - `persistEpisodes` chỉ lưu `m3u8` qua `isRealHls` (`.m3u8` thật). Trường `m3u8` của vsmov thực chất
-  là link embed/HTML (`…streamvsmov.com/video/<uuid>`) — **đã dọn 192 dòng nhiễm thật trong DB**
+  là link embed/HTML (`…streamvsmov.com/video/<uuid>`) — **đã dọn 193 dòng nhiễm thật trong DB**
   (36 phim); giờ 100% dòng m3u8 là `.m3u8`.
 - `identity.searchKkphim/searchNguonc` trả `SearchOutcome{slug,failed}` thay vì nuốt lỗi thành `null`:
   kkphim lỗi thì **không lưu record** (chặn "đầu độc" `kkphim=null` 7 ngày làm xoá nhầm HLS);
@@ -247,10 +247,20 @@ resolve** → âm thầm phát sai (họ lỗi "sai vị trí tập", đã xảy
 SELECT m.slug FROM movies m JOIN movie_episodes me ON me.movie_slug = m.slug
 WHERE m.sources IS NOT NULL AND m.sources->'kkphim'->>'slug' IS NULL AND me.m3u8 IS NOT NULL;
 
+-- NHIỄM: cột m3u8 phải là HLS thật (.m3u8), không được là link embed/HTML (phải = 0)
+SELECT movie_slug, episode_slug, m3u8 FROM movie_episodes
+WHERE m3u8 IS NOT NULL AND (m3u8 !~* '\.m3u8([?#]|$)' OR m3u8 ILIKE '%streamvsmov%');
+
 -- dòng legacy chưa reconcile (source_key NULL vs nguồn kkphim) — tự sửa khi đọc
 SELECT count(*) FROM movies m JOIN movie_episodes me ON me.movie_slug = m.slug
 WHERE me.m3u8 IS NOT NULL AND me.source_key IS DISTINCT FROM m.sources->'kkphim'->>'slug';
 ```
+
+**Lưới an toàn 2 lớp cho lớp lỗi "m3u8 là link HTML":** chặn ở lúc **ghi** (`persistEpisodes`
+chỉ lưu `isRealHls`) **và** lúc **đọc** (`rowsToServers` chỉ trả về khi `isRealHls`) — nên dù còn
+sót dòng cũ nào thì player cũng không bao giờ thử phát link embed như HLS. Câu SQL "NHIỄM" ở trên
+đã bắt được dòng sót cuối (`hanh-trinh-tinh-ban`/`full`, do production bản cũ ghi trước khi vá);
+sau khi dọn còn **644/644 dòng m3u8 hợp lệ**.
 
 **Kết quả thật:** 419 phim / 163 có record (144 kkphim, **19 pin vsmov** — P5 =
 `thanh-guom-diet-quy-phan-5-dai-tru-dac-huan`); phim pin còn HLS = **0** (P5 = 0/8 tập, phát embed);
