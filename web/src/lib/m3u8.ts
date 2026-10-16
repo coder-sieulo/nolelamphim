@@ -1,5 +1,5 @@
 import type { EpisodeServer } from './types'
-import { peekKkphimKey, resolveIdentity } from './identity'
+import { getCached, peekKkphimKey, resolveIdentity, type IdentityRecord } from './identity'
 import { getKkphimDetail, buildM3u8Map } from './kkphim'
 
 /**
@@ -29,6 +29,19 @@ export async function resolveM3u8Map(
     return { map: buildM3u8Map(episodes, kk), sourceKey: identity.kkphim }
   } catch {
     return { map: {}, sourceKey: '' }
+  }
+}
+
+/**
+ * Record identity **trong Redis** (không live-resolve) — `null` nếu chưa có hoặc
+ * Redis lỗi. Dùng chung cho soi nguồn HLS và ghi `movies.sources` (mirror bền).
+ */
+export async function peekIdentityRecord(slug: string): Promise<IdentityRecord | null> {
+  if (!slug) return null
+  try {
+    return await getCached('vsmov', slug)
+  } catch {
+    return null
   }
 }
 

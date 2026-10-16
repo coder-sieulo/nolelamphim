@@ -213,3 +213,49 @@ web/
 **Lưu ý còn lại:** cache list được nạp **on-demand** theo lượt truy cập (chưa prewarm từ sync tool). Lần đầu mỗi `(feed, trang)` vẫn crawl 1 lần ở server rồi cache 1h.
 
 **Đã test thật:** `byPath`/`byListPath`/`byCategory`/`byCountry`/`byYear`/`search`/`categories`/`countries`/`years` đều 200; cache hit nhanh (~0,2s vs ~4s khi crawl); traversal/uppercase/slug bẩn/year bẩn/`fn` lạ/param lạ → 400 (kể cả `..`, `//evil.com`, `$where`); `pruneListCache` xoá đúng row quá hạn; `astro check` 0 errors; không có `DATABASE_URL`/`drizzle`/secrets trong 43 file JS client.
+
+---
+
+## 11. Tính toàn vẹn nguồn HLS (`source_key`) + mirror `movies.sources` (đã làm)
+
+**Bối cảnh:** `movie_episodes.m3u8` build từ nguồn kkphim **tại thời điểm ghi**. Khi record
+identity đổi nguồn (sửa tay / prewarm / TTL hết hạn → resolve lại), m3u8 cũ có thể thuộc
+**phim/phần khác** nhưng vẫn là `.m3u8` hợp lệ → `/api/episodes` thấy "đủ HLS" và **bỏ qua
+resolve** → âm thầm phát sai (họ lỗi "sai vị trí tập", đã xảy ra 2 lần).
+
+**Xử lý — migration `drizzle/0004_cool_molly_hayes.sql` thêm `movie_episodes.source_key`** (slug kkphim dùng để build m3u8 của dòng đó):
+
+- `api.server.getMovieEpisodes` → `reconcileHlsSource`: so `source_key` với nguồn **hiện tại**
+  (`knownSourceKey` — chỉ đọc record trong Redis, **không** live-resolve, không tốn HTTP):
+  - lệch nguồn → build lại map mới và **bỏ hẳn** link nguồn cũ (tập map không phủ → `null`);
+  - record **hết nguồn kkphim** (pin vsmov) → xoá m3u8 để fallback embed đúng;
+  - nguồn chưa xác định (không có record / Redis lỗi) hoặc kkphim lỗi tạm → **giữ nguyên**, lượt sau thử lại.
+- `persistEpisodes` chỉ lưu `m3u8` qua `isRealHls` (`.m3u8` thật). Trường `m3u8` của vsmov thực chất
+  là link embed/HTML (`…streamvsmov.com/video/<uuid>`) — **đã dọn 192 dòng nhiễm thật trong DB**
+  (36 phim); giờ 100% dòng m3u8 là `.m3u8`.
+- `identity.searchKkphim/searchNguonc` trả `SearchOutcome{slug,failed}` thay vì nuốt lỗi thành `null`:
+  kkphim lỗi thì **không lưu record** (chặn "đầu độc" `kkphim=null` 7 ngày làm xoá nhầm HLS);
+  hai nguồn tìm kiếm chạy độc lập.
+- `movies.sources` (đã khai báo ở §4, trước đây **chưa từng được ghi**) giờ là **mirror bền** của
+  mapping nguồn: ghi ở đường crawl chi tiết (`mirrorSources`, chỉ đọc Redis) + backfill một lần
+  từ 163 record sẵn có. Redis identity chỉ giữ 7 ngày → đây là bản để audit bằng SQL.
+
+**Audit bằng SQL (thay cho quét Redis):**
+
+```sql
+-- phim pin vsmov nhưng còn HLS (phải = 0)
+SELECT m.slug FROM movies m JOIN movie_episodes me ON me.movie_slug = m.slug
+WHERE m.sources IS NOT NULL AND m.sources->'kkphim'->>'slug' IS NULL AND me.m3u8 IS NOT NULL;
+
+-- dòng legacy chưa reconcile (source_key NULL vs nguồn kkphim) — tự sửa khi đọc
+SELECT count(*) FROM movies m JOIN movie_episodes me ON me.movie_slug = m.slug
+WHERE me.m3u8 IS NOT NULL AND me.source_key IS DISTINCT FROM m.sources->'kkphim'->>'slug';
+```
+
+**Kết quả thật:** 419 phim / 163 có record (144 kkphim, **19 pin vsmov** — P5 =
+`thanh-guom-diet-quy-phan-5-dai-tru-dac-huan`); phim pin còn HLS = **0** (P5 = 0/8 tập, phát embed);
+6 phim có tập nhưng thiếu chi tiết → đã sync xong (0 còn lại); backlog 292 phim chưa chi tiết sẽ
+điền dần theo lượt xem + cron daily 02:00 VN (`detail_limit=60`).
+
+**Test thật (dev server Astro):** backfill `source_key` / nguồn bị ghi sai / record chuyển pin
+vsmov (xoá HLS) / tự dựng lại sau restore record = **PASS**; `astro check` 0 errors, `astro build` OK.

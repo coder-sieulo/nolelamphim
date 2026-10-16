@@ -11,8 +11,8 @@ import {
   writeListCache,
 } from './catalogue'
 import { feedCacheKey, isMetaFn, type FeedRequest } from './feed'
-import { knownSourceKey, resolveM3u8Map } from './m3u8'
-import { readSourceKey } from './catalogue'
+import { knownSourceKey, peekIdentityRecord, resolveM3u8Map } from './m3u8'
+import { readSourceKey, saveMovieSources } from './catalogue'
 import type { EpisodeServer, Movie, MovieDetailResponse } from './types'
 
 /**
@@ -37,8 +37,30 @@ export async function getMovieDetail(slug: string): Promise<MovieDetailResponse>
   if (fresh.status && fresh.movie) {
     // await để chắc ghi xong trước khi lambda "ngủ" (serverless).
     await persistDetail(fresh.movie)
+    // Mirror mapping nguồn (chỉ Redis 7 ngày) vào Postgres cho bền + audit bằng SQL.
+    await mirrorSources(slug)
   }
   return fresh
+}
+
+/**
+ * Ghi `movies.sources` từ record identity đã có (Redis, không live-resolve).
+ *
+ * Chạy ở đường **crawl chi tiết** (tối đa 1 lần/ngày/phim) nên không đáng kể chi
+ * phí; record chưa có thì bỏ qua (lượt xem ở `/xem` sẽ tạo record, lần crawl sau ghi).
+ */
+async function mirrorSources(slug: string): Promise<void> {
+  try {
+    const rec = await peekIdentityRecord(slug)
+    if (!rec) return
+    const sources: Record<string, { slug: string }> = {}
+    if (rec.vsmov) sources.vsmov = { slug: rec.vsmov }
+    if (rec.kkphim) sources.kkphim = { slug: rec.kkphim }
+    if (rec.nguonc) sources.nguonc = { slug: rec.nguonc }
+    if (Object.keys(sources).length) await saveMovieSources(slug, sources)
+  } catch (e) {
+    console.error('[api.server] mirrorSources failed:', e)
+  }
 }
 
 export async function getMovieEpisodes(

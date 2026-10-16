@@ -263,6 +263,31 @@ export async function persistDetail(movie: MovieDetail): Promise<void> {
 
 /* ─────────────────────── Đọc (read-through) ─────────────────────── */
 
+/**
+ * Ghi `movies.sources` = slug từng nguồn (`{ vsmov:{slug}, kkphim:{slug}, … }`).
+ *
+ * Theo thiết kế `PLAN_CATALOGUE_POSTGRES.md`: slug canonic = vsmov, còn đây là
+ * **mirror bền** của mapping identity (Redis chỉ giữ 7 ngày / bản vá tay PERSIST).
+ * Nhờ nó mà audit "phim nào trỏ nguồn nào" chạy được bằng SQL, thay vì quét Redis.
+ *
+ * UPDATE riêng cột này (không đụng upsert chính) nên không ảnh hưởng `Movie`/`MovieDetail`.
+ */
+export async function saveMovieSources(
+  slug: string,
+  sources: Record<string, { slug?: string; id?: string | number }>,
+): Promise<void> {
+  if (!hasDb() || !slug) return
+  try {
+    const db = getDb()
+    await db
+      .update(movies)
+      .set({ sources, updatedAt: new Date() })
+      .where(eq(movies.slug, slug))
+  } catch (e) {
+    console.error('[catalogue] saveMovieSources failed:', e)
+  }
+}
+
 function isFresh(d: Date | null | undefined, ttl: number): boolean {
   if (!d) return false
   return Date.now() - d.getTime() <= ttl
