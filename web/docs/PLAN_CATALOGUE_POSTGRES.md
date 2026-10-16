@@ -305,8 +305,11 @@ cd web && set -a && . ./.env.local && set +a && npx tsx tools/prewarm-lists.ts
 endpoint chỉ đạt **66/146**; qua tool (không deadline) đạt **138/146** (sau khi vá 12.1) —
 5 feed rỗng còn lại là **nguồn thật sự không có dữ liệu** (xem 12.3).
 
-**Kết quả:** `catalogue_lists` 41 → **183 dòng** (147 còn hạn, 173 có dữ liệu); thể loại
-**80/80** có dữ liệu (trước vá: 24/80).
+**Kết quả:** `catalogue_lists` 41 → **340 dòng** (303 có dữ liệu); thể loại **90/90** có dữ liệu
+(trước vá: 24/80); quốc gia 155/187 (32 còn lại là lãnh thổ nhỏ / `china`,`campuchia` — nguồn thật
+sự không có phim). Verify production sau khi deploy: slug chưa từng có cache như `vo-hiep`,
+`xa-hoi-den` (kkphim 404) → `POST /api/list` trả `status:true, items:24` (<7s) **và ghi được cache
+row** — điều trước khi vá là bất khả thi (422 → không cache).
 
 ### 12.3 Khe hở dữ liệu nguồn (CHƯA sửa — cần quyết định)
 

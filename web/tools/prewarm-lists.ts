@@ -52,8 +52,8 @@ const LIST_JOBS: Array<{ path: string; params?: Record<string, string | number> 
 ]
 const LIST_PAGES = [1, 2, 3]
 const LIST_LIMIT = 24
-const MAX_CATEGORIES = 40
-const MAX_COUNTRIES = 40
+const MAX_CATEGORIES = 200
+const MAX_COUNTRIES = 200
 const YEAR_SPAN = 8
 
 interface Job {
