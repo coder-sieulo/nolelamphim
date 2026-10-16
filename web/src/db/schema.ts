@@ -46,6 +46,8 @@ export const favorites = pgTable(
       .notNull()
       .references(() => users.sub, { onDelete: 'cascade' }),
     slug: text('slug').notNull(),
+    /** `Movie._id` nguồn — client dùng `id` này để hợp nhất thư viện với localStorage. */
+    extId: bigint('ext_id', { mode: 'number' }),
     name: text('name').notNull().default(''),
     thumb: text('thumb').notNull().default(''),
     tmdbVote: text('tmdb_vote'),

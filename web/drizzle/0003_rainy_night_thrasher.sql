@@ -1,0 +1,1 @@
+ALTER TABLE "favorites" ADD COLUMN "ext_id" bigint;

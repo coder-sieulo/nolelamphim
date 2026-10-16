@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const slug = typeof body.slug === 'string' ? body.slug.trim().slice(0, 150) : ''
   if (!slug) return json({ ok: false, error: 'Thiếu slug phim.' }, 400)
   const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined)
-  await pushHistory(user.sub, {
+  await pushHistory(user, {
     slug,
     name: typeof body.name === 'string' ? body.name.slice(0, HISTORY_CAP) : slug,
     thumb: typeof body.thumb === 'string' ? body.thumb.slice(0, HISTORY_CAP) : '',
@@ -35,6 +35,6 @@ export const DELETE: APIRoute = async ({ url, cookies }) => {
   if (!user) return json({ ok: false, error: 'Đăng nhập để xoá phim đã xem.' }, 401)
   const slug = (url.searchParams.get('slug') || '').slice(0, 150)
   if (!slug) return json({ ok: false, error: 'Thiếu slug phim.' }, 400)
-  await removeHistory(user.sub, slug)
+  await removeHistory(user, slug)
   return json({ ok: true })
 }

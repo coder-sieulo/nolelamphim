@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     thumb: typeof item.thumb === 'string' ? item.thumb.slice(0, 500) : '',
     tmdb_vote: typeof item.tmdb_vote === 'string' ? item.tmdb_vote.slice(0, 8) : undefined,
   }
-  await setFavorite(user.sub, fav, on)
+  await setFavorite(user, fav, on)
   const lib = await getUserLibrary(user.sub)
   return json({ ok: true, on, favorites: lib.favorites })
 }

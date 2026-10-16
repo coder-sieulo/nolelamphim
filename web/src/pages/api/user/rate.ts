@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const slug = typeof body.slug === 'string' ? body.slug.trim().slice(0, 150) : ''
   if (!slug) return json({ ok: false, error: 'Thiếu slug phim.' }, 400)
   const value = typeof body.value === 'number' && Number.isFinite(body.value) ? Math.round(body.value) : 0
-  await setRating(user.sub, slug, value)
+  await setRating(user, slug, value)
   const lib = await getUserLibrary(user.sub)
   return json({ ok: true, rating: lib.ratings[slug] ?? null, ratings: lib.ratings })
 }
