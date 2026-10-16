@@ -1,6 +1,6 @@
 # PLAN — Chuyển user data + bình luận sang **Supabase Postgres** bằng **Drizzle ORM**
 
-> Trạng thái: **ĐÃ DUYỆT — bước 1–3 XONG** (setup kết nối + schema + migrate). Bước 4–8 (viết lại lib/API + backfill) **CHƯA LÀM**.
+> Trạng thái: **HOÀN TẤT (bước 1–8 XONG)** — `lib/user-store.ts` + `lib/comments.ts` đã chạy Postgres (Drizzle), backfill Redis→PG đã chạy, deploy production xanh, smoke test production pass.
 > Phạm vi: thay **Redis** bằng **Postgres (Supabase)** cho **(1) thư viện người dùng** (favorites / history / ratings) và **(2) bình luận**. **Không** đụng URL SEO, không đổi response shape của API (frontend không phải sửa).
 > Không phá gì đang chạy: `astro check` 0 lỗi + `astro build` OK sau mỗi bước.
 
@@ -52,7 +52,7 @@
 ```ts
 // src/db/schema.ts
 users(sub PK, username, global_name, avatar, created_at, updated_at)
-favorites(id bigserial PK, user_sub FK→users, slug, name, thumb, tmdb_vote, created_at, UNIQUE(user_sub,slug))
+favorites(id bigserial PK, user_sub FK→users, slug, ext_id bigint, name, thumb, tmdb_vote, created_at, UNIQUE(user_sub,slug))
 ratings(user_sub FK, slug, value smallint CHECK 1..5, updated_at, PK(user_sub,slug))
 history(id bigserial PK, user_sub FK→users, slug, name, thumb, episode, episode_slug,
         position double, duration double, watched_at, UNIQUE(user_sub,slug))
@@ -65,7 +65,7 @@ Index:
 - `comments(slug, created_at desc)` và `comments(user_sub, created_at desc)` (cooldown)
 
 Quy ước tương thích shape cũ:
-- `LibFavorite.id` (number) → dùng `favorites.id` (bigint → Number).
+- `LibFavorite.id` (number) → dùng **`favorites.ext_id`** = `Movie._id` nguồn (**KHÔNG** dùng `favorites.id`), vì client (`HeroSingle`/`profile`) hợp nhất thư viện cloud ↔ localStorage theo `id` này. Cột `ext_id` bổ sung bằng migration `0003`.
 - `MovieComment.id` (string) → `comments.id` (uuid string).
 - `history` trả **mới nhất trước**, giới hạn `HISTORY_LIMIT = 50` như cũ.
 - `ratings` trả `Record<slug, number>`.
@@ -77,16 +77,16 @@ Quy ước tương thích shape cũ:
 
 ```
 web/
-├─ drizzle.config.ts               # NEW — schema + out=./drizzle, url=DIRECT_URL
-├─ drizzle/                        # NEW — migration SQL sinh tự động
+├─ drizzle.config.ts               # schema + out=./drizzle, url=DIRECT_URL
+├─ drizzle/                        # migration SQL sinh tự động (0000…0003)
 ├─ src/db/
-│  ├─ index.ts                     # NEW — drizzle client (postgres.js, prepare:false, ssl:'require', max:1)
-│  └─ schema.ts                    # NEW — định nghĩa bảng
+│  ├─ index.ts                     # drizzle client (postgres.js, prepare:false, ssl:'require', max:1)
+│  └─ schema.ts                    # định nghĩa bảng
 ├─ src/lib/
 │  ├─ user-store.ts                # REWRITE — cùng export, dùng Drizzle
 │  └─ comments.ts                  # REWRITE — cùng export, dùng Drizzle
 └─ tools/
-   └─ migrate-redis-to-pg.mjs      # NEW — backfill 1 lần (idempotent)
+   └─ migrate-redis-to-pg.mjs      # backfill 1 lần (idempotent, --dry-run)
 ```
 
 Dependencies thêm:
@@ -112,31 +112,36 @@ Dependencies thêm:
 ## 7. Viết lại lib (giữ nguyên API)
 
 ### `lib/user-store.ts`
-Giữ nguyên export: `UserLibrary`, `LibFavorite`, `LibHistoryItem`, `HISTORY_LIMIT`, `FAVORITE_LIMIT`, `getUserLibrary`, `getFavoriteSlugs`, `setFavorite`, `setRating`, `pushHistory`, `removeHistory`, `clearHistory`.
+Giữ nguyên export: `UserLibrary`, `LibFavorite`, `LibHistoryItem`, `HISTORY_LIMIT`, `FAVORITE_LIMIT`, `getUserLibrary`, `getFavoriteSlugs`, `setFavorite`, `setRating`, `pushHistory`, `removeHistory`, `clearHistory`. Thêm `ensureUser(profile)` (upsert `users`).
 Nội bộ:
-- `getUserLibrary` → 3 truy vấn song song (`Promise.all`) + upsert `users` (cập nhật tên/avatar khi có).
-- `setFavorite` → `INSERT … ON CONFLICT (user_sub,slug) DO NOTHING` / `DELETE`.
+- `getUserLibrary` → 3 truy vấn song song (`Promise.all`) + map sang shape cũ (`ext_id → id`, `watchedAt → epoch ms`).
+- `ensureUser` → upsert hồ sơ, **không ghi đè** username/avatar đã có bằng rỗng (`coalesce(nullif(...))`).
+- `setFavorite` → `INSERT … ON CONFLICT (user_sub,slug) DO UPDATE` (làm mới name/thumb/ext_id) / `DELETE`; sau đó **prune** giữ tối đa `FAVORITE_LIMIT` (200).
 - `setRating` → `INSERT … ON CONFLICT DO UPDATE`, value ngoài 1..5 → `DELETE`.
 - `pushHistory` → `INSERT … ON CONFLICT (user_sub,slug) DO UPDATE SET watched_at=now(), …` rồi **prune** giữ tối đa `HISTORY_LIMIT` (50) bản ghi/user.
 - `removeHistory` / `clearHistory` → `DELETE`.
+- Mọi hàm: guard `hasDb()` + try/catch → degrade (đọc rỗng / ghi `false`), không làm sập request.
+
+**Chữ ký ghi đổi `sub` → `user`:** các hàm **ghi** nhận `UserRef` (`{ sub, username?, global_name?, avatar? }`) thay vì chỉ `sub`, để upsert hồ sơ `users` có tên/avatar. Call site đã cập nhật (đều đã có `user` từ `getSessionUser`): `setFavorite(user, …)`, `setRating(user, …)`, `pushHistory(user, …)`, `removeHistory(user, …)`, `clearHistory(user)`. `getUserLibrary(sub)` (đọc) **giữ nguyên** tham số `sub`.
 
 ### `lib/comments.ts`
 Giữ nguyên export: `MovieComment`, `getComments(slug, limit, offset)`, `addComment`, `deleteComment`.
 Nội bộ:
 - `getComments` → `SELECT … ORDER BY created_at DESC LIMIT/OFFSET` + `COUNT(*)`.
-- `addComment` → cooldown 15s bằng `SELECT max(created_at) FROM comments WHERE user_sub=$1` (thay khóa TTL Redis); lọc text như cũ (≤500 ký tự, gộp khoảng trắng); `INSERT` trả bản ghi vừa tạo.
-- `deleteComment` → kiểm tra quyền (tác giả/admin) rồi `DELETE`.
-- `COMMENT_LIMIT` cũ (200) → bỏ giới hạn cứng, dùng paging DB.
+- `addComment` → **cooldown 15s vẫn dùng Redis** (`movie:cmt:cd:{userId}`, best-effort — Redis hợp cho rate-limit tạm thời; thiếu Redis thì bỏ qua, không chặn); lọc text như cũ (≤500 ký tự, gộp khoảng trắng); `INSERT` trả bản ghi vừa tạo; upsert `users` để có tên/ảnh; **prune** giữ tối đa `COMMENT_LIMIT` (500)/phim.
+- `deleteComment` → kiểm tra quyền (tác giả/admin) rồi `DELETE` theo `id` + `slug`.
+- **Bỏ** giới hạn cứng 200 dòng trong RAM: phân trang/đếm bằng DB.
 
 ---
 
 ## 8. Backfill Redis → Postgres (`tools/migrate-redis-to-pg.mjs`)
 
-- Quét `SCAN match=user:lib:*` → với mỗi hash: upsert `users`, insert `favorites` / `ratings` / `history`.
+- Quét `SCAN match=user:lib:*` → với mỗi hash: upsert `users`, insert `favorites` (kèm `ext_id` = `Movie._id` cũ) / `ratings` / `history`.
 - Quét `SCAN match=movie:cmt:*` → với mỗi mảng: insert `comments`.
-- **Idempotent** (ON CONFLICT DO NOTHING / DO UPDATE) → chạy lại an toàn.
+- **Idempotent** → chạy lại an toàn: `ON CONFLICT DO NOTHING` cho lib, `INSERT … WHERE NOT EXISTS` cho bình luận.
 - Cờ `--dry-run` để xem trước số bản ghi.
-- Chạy local: `node tools/migrate-redis-to-pg.mjs` (đọc `.env.local`).
+- Chạy local: `node tools/migrate-redis-to-pg.mjs [--dry-run]` (đọc `.env.local`).
+- **Kết quả đã chạy (thật):** Redis chỉ có 1 key thư viện (rỗng: 0 favorites/ratings/history) + 2 key bình luận (`movie:cmt:batman` 1 dòng, `movie:cmt:doraemon` 0 dòng). Backfill ghi **1 comment**; chạy lại xác nhận **không nhân đôi** (count vẫn = 1).
 
 ---
 
@@ -146,18 +151,18 @@ Nội bộ:
 
 1. ✅ Cài `drizzle-orm@0.45`, `postgres@3.4` (prod), `drizzle-kit@0.31` (dev).
 2. ✅ Tạo `src/db/schema.ts` (5 bảng) + `src/db/index.ts` (client) + `drizzle.config.ts`; script `db:generate/db:migrate/db:push/db:studio` trong `package.json`.
-3. ✅ `drizzle-kit generate` → `drizzle/0000_mean_slayback.sql`; `drizzle-kit migrate` (qua `DIRECT_URL`) → tạo bảng trên Supabase. Đã verify `\dt` + index + journal + smoke insert/select/delete.
-4. ⬜ Viết lại `lib/user-store.ts` → `astro check` + test API (`/api/user/lib`, favorite, history, rate) bằng dev local.
-5. ⬜ Viết lại `lib/comments.ts` → test `/api/movie/{slug}/comments` (GET/POST/DELETE + cooldown).
-6. ⬜ Viết `tools/migrate-redis-to-pg.mjs`, chạy backfill, đối chiếu số liệu.
+3. ✅ `drizzle-kit generate` → `drizzle/0000_mean_slayback.sql`; `drizzle-kit migrate` (qua `DIRECT_URL`) → tạo bảng trên Supabase. Đã verify `\dt` + index + journal + smoke insert/select/delete. (Thêm `0003` bổ sung cột `favorites.ext_id` — xem §4.)
+4. ✅ Viết lại `lib/user-store.ts` (Drizzle) → `astro check` 0 lỗi + **20/20 test** trên DB thật (favorites/ratings/history/upsert users, prune, order) — script test tự dọn dữ liệu.
+5. ✅ Viết lại `lib/comments.ts` (Drizzle) → test thật: GET/POST/DELETE, phân trang, chặn xoá người khác, cooldown, chuẩn hoá text.
+6. ✅ Viết `tools/migrate-redis-to-pg.mjs` (idempotent, `--dry-run`) + chạy backfill: 1 comment; chạy lại không nhân đôi.
 7. ✅ `astro check` (0 errors) + `astro build` OK → commit + push.
-8. ⬜ (Bạn) thêm env `DATABASE_URL`/`DIRECT_URL` trên Vercel → deploy xanh → smoke test production.
+8. ✅ Env `DATABASE_URL` (và `DIRECT_URL`) đã có trên Vercel; deploy production **Ready**; smoke test production `/api/movie/batman/comments` trả bình luận đã migrate (id uuid) + `/api/user/lib` unauth → 401.
 
 ### 9.1 Cấu trúc bảng đã tạo (verify thật trên Supabase, PostgreSQL 17.11)
 
 ```
 public.users     (sub PK, username, global_name, avatar, created_at, updated_at)
-public.favorites (id bigserial PK, user_sub FK, slug, name, thumb, tmdb_vote, created_at)
+public.favorites (id bigserial PK, user_sub FK, slug, ext_id bigint, name, thumb, tmdb_vote, created_at)
 public.ratings   (user_sub FK PK, slug, value smallint, updated_at)
 public.history   (id bigserial PK, user_sub FK, slug, name, thumb, episode, episode_slug,
                   position, duration, watched_at)
