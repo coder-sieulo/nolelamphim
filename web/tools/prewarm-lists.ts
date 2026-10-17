@@ -23,9 +23,10 @@
  *   … --concurrency 4            # số feed song song (mặc định 3)
  *   … --dry                      # chỉ in danh sách khoá sẽ warm, không crawl
  *
- * Nhóm: meta | new | lists | categories | countries | years
+ * Nhóm: meta | new | lists | categories | countries | years | cats-db
  */
-import { getFeedCached } from '../src/lib/api.server'
+import { distinctCategorySlugs } from '../src/lib/catalogue'
+import { getFeedCached, SIMILAR_TTL_MS } from '../src/lib/api.server'
 import type { FeedRequest } from '../src/lib/feed'
 
 const args = process.argv.slice(2)
@@ -59,6 +60,8 @@ const YEAR_SPAN = 8
 interface Job {
   group: string
   req: FeedRequest
+  /** Ghi đè TTL khi đọc cache (vd feed "Phim tương tự" dùng `SIMILAR_TTL_MS`). */
+  ttlMs?: number
 }
 
 /** Số item trong payload feed (`{items}` hoặc meta `{data:{items}}`). */
@@ -120,15 +123,24 @@ async function main(): Promise<void> {
   }
 
   // Meta → slug (đồng thời warm chính meta đó).
-  if (want('categories') || want('countries')) {
+  if (want('categories') || want('countries') || want('cats-db')) {
     if (want('categories')) {
       const payload = await getFeedCached({ fn: 'categories' })
       const slugs = metaSlugs(payload).slice(0, MAX_CATEGORIES)
-      console.log(`  · thể loại: ${slugs.length} slug`)
+      console.log(`  · thể loại (meta nguồn): ${slugs.length} slug`)
       for (const slug of slugs) {
         // Trang chủ / SimilarMovies dùng limit 12, trang danh sách dùng 24.
-        jobs.push({ group: 'categories', req: { fn: 'byCategory', slug, params: { page: 1, limit: 12 } } })
+        jobs.push({ group: 'categories', req: { fn: 'byCategory', slug, params: { page: 1, limit: 12 } }, ttlMs: SIMILAR_TTL_MS })
         jobs.push({ group: 'categories', req: { fn: 'byCategory', slug, params: { page: 1, limit: 24 } } })
+      }
+    }
+    if (want('cats-db')) {
+      // Thể loại THỰC CÓ trong `movies.categories` — gồm cả slug chỉ có ở vsmov/kkphim;
+      // đây mới là thứ khối "Phim tương tự" gọi tới (limit 12).
+      const slugs = await distinctCategorySlugs(MAX_CATEGORIES)
+      console.log(`  · thể loại (từ movies.categories): ${slugs.length} slug`)
+      for (const slug of slugs) {
+        jobs.push({ group: 'cats-db', req: { fn: 'byCategory', slug, params: { page: 1, limit: 12 } }, ttlMs: SIMILAR_TTL_MS })
       }
     }
     if (want('countries')) {
@@ -161,7 +173,7 @@ async function main(): Promise<void> {
   const results = await mapLimit(jobs, CONCURRENCY, async (job, i) => {
     const started = Date.now()
     try {
-      const payload = await getFeedCached(job.req)
+      const payload = await getFeedCached(job.req, job.ttlMs ? { ttlMs: job.ttlMs } : undefined)
       const n = payloadCount(payload)
       console.log(
         `  [${String(i + 1).padStart(3)}/${jobs.length}] OK   ${String(Date.now() - started).padStart(5)}ms  items=${String(n).padStart(3)}  ${label(job.req)}`,

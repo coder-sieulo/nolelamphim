@@ -56,3 +56,10 @@ jobs:
             --pages "${{ github.event.inputs.pages || '3' }}" \
             --detail-limit "${{ github.event.inputs.detail_limit || '150' }}" \
             ${{ github.event.inputs.full == 'true' && '--full' || '' }}
+
+      # Làm ấm cache danh sách đọc ở đường SSR: meta (24h) + thể loại cho khối
+      # "Phim tương tự" (TTL 30h) — gồm cả slug chỉ có ở vsmov/kkphim trong `movies.categories`.
+      - name: Prewarm list cache
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx tools/prewarm-lists.ts --only meta,categories,cats-db --concurrency 4

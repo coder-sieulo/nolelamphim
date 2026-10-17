@@ -1,6 +1,6 @@
 ---
 import MovieCard from './MovieCard.astro'
-import { getMoviesByCategory } from '../lib/api'
+import { getCategoryFeedCached } from '../lib/api.server'
 import type { Category, Movie } from '../lib/types'
 
 interface Props {
@@ -15,8 +15,10 @@ let items: Movie[] = []
 if (categories.length > 0) {
   const lists = await Promise.all(
     categories.slice(0, 4).map((c) =>
-      getMoviesByCategory(c.slug, { limit: 8 })
-        .then((d) => (Array.isArray(d.items) ? d.items : []))
+      // Đọc qua cache Postgres (`getFeedCached`, limit 12 trùng khoá prewarm) thay vì
+      // crawl nguồn mỗi lượt render SSR — trước đây tốn tới ~3.4s/lượt xem.
+      getCategoryFeedCached(c.slug, { limit: 12 })
+        .then((d) => (Array.isArray(d.items) ? d.items.slice(0, 8) : []))
         .catch(() => [] as Movie[]),
     ),
   )

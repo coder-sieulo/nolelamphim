@@ -1,4 +1,5 @@
 {
   "framework": "astro",
-  "buildCommand": "npm run build"
+  "buildCommand": "npm run build",
+  "regions": ["icn1"]
 }

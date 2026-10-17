@@ -13,7 +13,7 @@ import {
 import { feedCacheKey, isMetaFn, type FeedRequest } from './feed'
 import { knownSourceKey, peekIdentityRecord, resolveM3u8Map } from './m3u8'
 import { readSourceKey, saveMovieSources } from './catalogue'
-import type { EpisodeServer, Movie, MovieDetailResponse } from './types'
+import type { EpisodeServer, ListResponse, Movie, MovieDetailResponse } from './types'
 
 /**
  * Lớp API **server-only**: bọc `lib/api.ts` bằng cache read-through Postgres.
@@ -249,10 +249,15 @@ async function crawlFeed(req: FeedRequest): Promise<{ ok: boolean; payload: unkn
 /**
  * Đọc một feed (list/meta) qua cache Postgres. Thiếu/quá cũ thì crawl nguồn rồi
  * ghi lại (best-effort) và nạp `movies` vào catalogue.
+ *
+ * `opts.ttlMs`: ghi đè TTL mặc định (list 1h / meta 24h). Dùng cho các feed đọc
+ * ở đường SSR mà tần suất đổi thấp (vd "Phim tương tự") — TTL dài để prewarm
+ * 1 lần/ngày là đủ ấm, không phải crawl nguồn mỗi lượt xem.
  */
-export async function getFeedCached(req: FeedRequest): Promise<unknown> {
+export async function getFeedCached(req: FeedRequest, opts?: { ttlMs?: number }): Promise<unknown> {
   const key = feedCacheKey(req)
-  const cached = await readListCache(key, isMetaFn(req.fn) ? META_TTL_MS : LIST_TTL_MS)
+  const ttl = opts?.ttlMs ?? (isMetaFn(req.fn) ? META_TTL_MS : LIST_TTL_MS)
+  const cached = await readListCache(key, ttl)
   if (cached) return cached
 
   const { ok, payload } = await crawlFeed(req)
@@ -265,4 +270,33 @@ export async function getFeedCached(req: FeedRequest): Promise<unknown> {
     }
   }
   return payload
+}
+
+/**
+ * TTL cho feed "Phim tương tự" (dài hơn list thường 1h).
+ *
+ * Khối "Phim tương tự" render ở đường **SSR** (`/phim/[slug]`), trước đây crawl
+ * nguồn mỗi lượt xem (0.2–2.6s × ≤4 thể loại → tới ~3.4s/lượt). Nay đọc qua cache
+ * Postgres; TTL 30h để cron prewarm hằng ngày (24h) luôn làm ấm trước khi hết hạn.
+ */
+export const SIMILAR_TTL_MS = 30 * 60 * 60 * 1000
+
+/**
+ * Feed thể loại cho khối "Phim tương tự" — đọc qua cache Postgres thay vì crawl
+ * nguồn ở mỗi lượt render SSR.
+ *
+ * ⚠️ Phải gọi với cùng `limit` mà prewarm dùng (`limit: 12`) để trùng khoá cache
+ * (`/feed/fn=byCategory&slug=…&limit=12&page=1`); đổi `limit` sẽ tạo khoá mới và
+ * lần xem đầu phải crawl. Caller tự `.slice(0, 8)` nếu muốn ít item hơn.
+ */
+export async function getCategoryFeedCached(
+  slug: string,
+  opts?: { page?: number; limit?: number },
+): Promise<ListResponse<Movie>> {
+  const payload = await getFeedCached(
+    { fn: 'byCategory', slug, params: { page: opts?.page ?? 1, limit: opts?.limit ?? 12 } },
+    { ttlMs: SIMILAR_TTL_MS },
+  )
+  const list = payload as ListResponse<Movie> | null
+  return list && Array.isArray(list.items) ? list : { status: false, items: [] }
 }

@@ -377,6 +377,32 @@ export async function pickSlugsForDetail(limit = 20): Promise<string[]> {
   }
 }
 
+/**
+ * Slug thể loại **thực có** trong `movies.categories` (dedupe, tối đa `limit`).
+ *
+ * Dùng cho prewarm khối "Phim tương tự": các slug này mới là thứ trang chi tiết
+ * gọi tới (gồm cả slug chỉ có ở vsmov lẫn chỉ có ở kkphim), nên warm đúng chúng
+ * thay vì chỉ warm meta thể loại của nguồn.
+ */
+export async function distinctCategorySlugs(limit = 200): Promise<string[]> {
+  if (!hasDb() || limit <= 0) return []
+  try {
+    const db = getDb()
+    const rows = await db.select({ categories: movies.categories }).from(movies)
+    const out = new Set<string>()
+    for (const r of rows) {
+      for (const c of r.categories ?? []) {
+        const slug = (c?.slug ?? '').trim()
+        if (slug) out.add(slug)
+      }
+    }
+    return [...out].slice(0, limit)
+  } catch (e) {
+    console.error('[catalogue] distinctCategorySlugs failed:', e)
+    return []
+  }
+}
+
 /** Đếm số phim đã có trong catalogue (health / thống kê). */
 export async function countMovies(): Promise<number> {
   if (!hasDb()) return 0
