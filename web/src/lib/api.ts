@@ -10,6 +10,7 @@ import type {
 } from './types'
 import { BASE_URL } from './constants'
 import { getKkphimDetail } from './kkphim'
+import { toKkphimCategorySlug, toKkphimCountrySlug } from './source-alias'
 import type { FeedRequest } from './feed'
 
 const FETCH_RETRIES = 2
@@ -494,10 +495,11 @@ export async function getMoviesByCategory(
 ): Promise<MovieList> {
   const server = asMovieList(await feedViaServer({ fn: 'byCategory', slug, params: toFeedParams(params) }))
   if (server) return normalizeMovieList(server)
+  // `viaVsmov` giữ NGUYÊN slug vsmov (đường vsmov thì không alias); chỉ đường kkphim mới dịch slug.
   const viaVsmov = () => fetchAPI<MovieList>(`/the-loai/${slug}`, params).then(normalizeMovieList)
   if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
-    const d = await fetchKkphimList<MovieList>(`/the-loai/${slug}`, params)
+    const d = await fetchKkphimList<MovieList>(`/the-loai/${toKkphimCategorySlug(slug)}`, params)
     return normalizeMovieList(d)
   } catch (e) {
     logFallback('getMoviesByCategory', e)
@@ -514,7 +516,7 @@ export async function getMoviesByCountry(
   const viaVsmov = () => fetchAPI<MovieList>(`/quoc-gia/${slug}`, params).then(normalizeMovieList)
   if (hasUnsupportedKkphimFilter(params as Record<string, string | number> | undefined)) return viaVsmov()
   try {
-    const d = await fetchKkphimList<MovieList>(`/quoc-gia/${slug}`, params)
+    const d = await fetchKkphimList<MovieList>(`/quoc-gia/${toKkphimCountrySlug(slug)}`, params)
     return normalizeMovieList(d)
   } catch (e) {
     logFallback('getMoviesByCountry', e)

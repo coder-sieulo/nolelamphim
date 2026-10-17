@@ -430,3 +430,77 @@ npm run audit:identity                     # alias
 `concurrency 6` + retry; script vá dùng `concurrency 3` + retry 3 lần. **Bị 429 thì tool PHẢI dừng
 không vá** (không phân biệt được "thiếu phim" với "lỗi mạng" → không bao giờ sửa bừa). Chờ vài phút
 cooldown rồi chạy lại.
+
+---
+
+## 14. Bảng alias slug vsmov → kkphim (chỉ lúc GỌI kkphim)
+
+**Bối cảnh (§12.3):** toàn bộ link danh sách trên site (navbar, footer, sitemap, trang
+`/the-loai/[slug]`, `/quoc-gia/[slug]`) lấy meta từ **vsmov**, còn nội dung list thì crawl từ
+**kkphim**. Slug hai nguồn lệch nhau → kkphim trả **404** → `fetchKkphimList` ném lỗi → fallback
+**vsmov**. Fallback đó chậm và hay vượt `withDeadline(7s)` → **không ghi `catalogue_lists`** → lần
+nào trình duyệt cũng crawl lại.
+
+### 14.1 Đo thực tế (sửa giả định cũ)
+
+Giả định trước đây "kkphim chỉ có 26 thể loại + 36 quốc gia" **sai một phần** — đó chỉ là danh sách
+meta kkphim trả về, KHÔNG phải toàn bộ slug nó nhận. Probe **từng slug** (45 thể loại + 187 quốc gia
+của vsmov, `concurrency 3`, retry, chống 429) ra kết quả thật:
+
+| | vsmov | cùng slug với kkphim | **ngoài meta nhưng probe VẪN 200** | **404 thật trên kkphim** |
+| --- | --- | --- | --- | --- |
+| Thể loại | 45 | 12 | 2 (`gia-tuong`, `hoat-hinh`) | **31** |
+| Quốc gia | 187 | 32 | 54 (`my`, `hoa-ky`, `ukraine`, `macao`…) | **101** |
+
+→ Khe hở thật: **31 thể loại + 101 quốc gia** bị 404 → rơi về vsmov (chậm, không cache).
+**Đo bằng probe, không bằng meta** — vì meta kkphim thiếu ít nhất 56 slug mà nó vẫn phục vụ được.
+
+### 14.2 Nguyên tắc chọn alias (cố ý rất hẹp)
+
+1. **Chỉ 100% trùng bản chất** — cùng quốc gia / cùng thể loại. Không bao giờ gán thể loại "gần gần"
+   (vd *không* cho `giat-gan → tam-ly`, `lang-man → tinh-cam`, `drama → …`): trả **sai nội dung** thì
+   còn tệ hơn một trang chậm. Các mục này giữ nguyên fallback vsmov (đúng nội dung, chỉ chậm).
+2. **URL của site KHÔNG đổi** — alias chỉ áp **tại đúng chỗ dựng URL kkphim**. Link, sitemap, cache key
+   `feedCacheKey` vẫn là slug vsmov → không đổi SEO, không phải migrate `catalogue_lists`.
+3. Alias là **bảng phẳng read-only** (`web/src/lib/source-alias.ts`), tra bằng `?? slug` → slug lạ
+   (kể cả slug kkphim đi ra từ `movie.category`) đi thẳng qua, không thể sai.
+4. Fallback `viaVsmov()` vẫn dùng **slug gốc** — chỉ đường sang kkphim mới bị alias.
+
+### 14.3 Bảng 12 mục (mọi đích đã probe: **200 + items > 0**; mọi khoá đã probe: **404**)
+
+```ts
+// web/src/lib/source-alias.ts
+CATEGORY_SLUG_ALIAS = {
+  'hai': 'hai-huoc',            // Hài        → Hài Hước      (6 sp)
+  'vo-hiep': 'vo-thuat',        // Võ hiệp    → Võ Thuật      (6 sp)
+  'thieu-nhi': 'tre-em',        // Thiếu Nhi  → Trẻ Em        (6 sp)
+  'toi-pham': 'hinh-su',        // Tội Phạm   → Hình Sự       (6 sp)
+  'phim-nhac': 'am-nhac',       // Phim Nhạc   → Âm Nhạc       (6 sp)
+}
+COUNTRY_SLUG_ALIAS = {
+  'china': 'trung-quoc',                                    // China → Trung Quốc
+  'trung-quoc-dai-luc': 'trung-quoc',                       // Trung Quốc đại lục → Trung Quốc
+  'united-kingdom': 'anh',                                  // United Kingdom → Anh
+  'norway': 'na-uy',                                        // Norway → Na Uy
+  'taiwan': 'dai-loan',                                     // Taiwan → Đài Loan
+  'cac-tieu-vuong-quoc-a-rap-thong-nhat': 'uae',            // Các Tiểu vương quốc Ả Rập → UAE
+  'united-states-of-america': 'my',                         // USA → Mỹ
+}
+```
+
+Còn lại **26 thể loại + 94 quốc gia** kkphim không có bản tương đương → **không alias**, giữ vsmov
+(đúng nguyên tắc 1). Sau này muốn thêm thì chỉ cần probe xác nhận đích `200 + items` rồi thêm 1 dòng.
+
+### 14.4 Nơi áp dụng
+
+Chỉ **2 chỗ**, ngay trước `fetchKkphimList` trong `lib/api.ts`:
+
+- `getMoviesByCategory` → `/the-loai/${toKkphimCategorySlug(slug)}`
+- `getMoviesByCountry` → `/quoc-gia/${toKkphimCountrySlug(slug)}`
+
+Đủ vì **mọi đường đi đều đổ về 2 hàm này**: `crawlFeed` (server, đọc cache), trình duyệt gọi thẳng
+khi `/api/list` fail, prerender trang danh sách, `sync.ts` (cron), `SearchClient`, `SimilarMovies`,
+`ForYou`, `index.astro`.
+
+**Kết quả mong đợi:** 12 slug này lấy dữ liệu từ kkphim (crawl nhanh, <7s → **có cache**) thay vì
+fallback vsmov (hay vượt 7s → **không cache**). 31+101 slug còn lại giữ nguyên hành vi hiện tại.
