@@ -1,0 +1,70 @@
+/* ══════════════════════════════════════════════════════════════
+   Loading overlay (View Transitions) — CINEMA MINIMAL
+   Hiện khi ClientRouter bắt đầu lấy trang mới
+   (`astro:before-preparation`), tắt khi trang mới swap/load xong.
+
+   Vì che kín màn hình nên nó CHẶN luôn click trong lúc chờ → người dùng
+   không "spam" click vì tưởng bấm không ăn. Chỉ JS mới bật (`is-on`);
+   không có JS thì overlay ẩn hoàn toàn (không che nội dung).
+   ══════════════════════════════════════════════════════════════ */
+#cm-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 200; /* trên ctx-menu (115) + shortcuts (120) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--color-cm-bg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-cm) var(--ease-cm),
+    visibility 0s linear var(--duration-cm);
+}
+
+#cm-loading.is-on {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto; /* chặn click khi đang chờ */
+  transition: opacity var(--duration-cm-fast) var(--ease-cm);
+}
+
+.cm-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  text-align: center;
+}
+
+.cm-loading-ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid var(--color-cm-border-strong);
+  border-top-color: var(--color-cm-accent);
+  animation: cm-loading-spin 0.7s linear infinite;
+}
+
+.cm-loading-text {
+  font-size: var(--text-cm-body);
+  color: var(--color-cm-text-2);
+}
+
+@keyframes cm-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cm-loading,
+  #cm-loading.is-on {
+    transition: none;
+  }
+  .cm-loading-ring {
+    animation-duration: 1.8s;
+  }
+}

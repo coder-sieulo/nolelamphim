@@ -20,3 +20,4 @@
 @import "./home.css"; /* Homepage (Phase 2) — CINEMA MINIMAL */
 @import "./movie.css"; /* Movie detail (Phase 4) — CINEMA MINIMAL */
 @import "./watch.css"; /* Watch page (Phase 5) — CINEMA MINIMAL, cuối cùng → thắng hết */
+@import "./loading.css"; /* Loading overlay khi View Transitions chuyển trang — class riêng, không xung đột */

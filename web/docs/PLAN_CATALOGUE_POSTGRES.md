@@ -504,3 +504,136 @@ khi `/api/list` fail, prerender trang danh sách, `sync.ts` (cron), `SearchClien
 
 **Kết quả mong đợi:** 12 slug này lấy dữ liệu từ kkphim (crawl nhanh, <7s → **có cache**) thay vì
 fallback vsmov (hay vượt 7s → **không cache**). 31+101 slug còn lại giữ nguyên hành vi hiện tại.
+
+## 15. Trang chi tiết load chậm (4–8s): chẩn đoán & kế hoạch vá
+
+Báo cáo: *"bấm vào phim ở bất kỳ trang nào cũng rất lâu mới vào được"*.
+
+### 15.1 Số đo (prod, 2026-10-17, có cache-bust)
+
+| Đường | ttfb | Ghi chú |
+| --- | --- | --- |
+| `/` (prerender, CDN HIT) | **0.22s** | mốc so sánh |
+| `/the-loai/hanh-dong` (prerender) | **0.70s** | mốc so sánh |
+| `/phim/khong-ngu-o-seattle` | **4.71s** | **đã** có detail + tập trong Postgres |
+| `/phim/ac-quy-san-catwalk` | **4.06s** | đã có cache |
+| `/phim/bat-kha-chien-bai-phan-4` | **8.11s** | chưa có cache |
+
+→ Trang tĩnh 0.2–0.7s; trang chi tiết 4–8s. **Ngay cả phim đã cache detail + tập vẫn 4.1–4.7s**
+⇒ nút cổ chai **không** nằm ở việc crawl chi tiết.
+
+### 15.2 Hai nguyên nhân gốc
+
+**(A) `SimilarMovies` crawl nguồn ở MỖI lượt render SSR.**
+
+- `/phim/[slug]` là **SSR** (`output: 'server'`; chỉ các trang danh sách khai `prerender = true`).
+- Trên server, `getMoviesByCategory` gọi `feedViaServer` → `typeof window === 'undefined'` → trả `null`
+  → **crawl thẳng kkphim/vsmov**. Cache `catalogue_lists` **chỉ** được dùng qua `/api/list` và
+  `getFeedCached`, **không** được dùng ở đường SSR.
+- Đo tách phần (cùng slug): detail + tập + comments (song song) = **0.96–1.85s**;
+  **`SimilarMovies` (≤4 thể loại, song song) = 3.33–3.40s**.
+- Vì sao 3.3s khi mỗi thể loại chỉ ~0.2–0.5s? Thể loại nào kkphim không có (`tinh-ban`,
+  `hanh-dong-phieu-luu`, `khoa-hoc-vien-tuong-gia-tuong`) rơi xuống **fallback vsmov 1.0–2.6s**, và
+  `Promise.all` lấy **Max**.
+  - `getFeedCached` (đọc Postgres) đo thật: **1.33–1.39s**, trong đó ~0.9–1.0s là query đầu (kết nối nguội).
+  - ⚠️ Lưu ý phương pháp: `api.server.ts` có `export * from './api'` nên `api.server.getMoviesByCategory`
+    **chính là** `api.getMoviesByCategory`. Đo "cache" bằng cách import nhầm hàm này sẽ ra 77ms giả
+    (do `apiCache` in-memory của `fetchAPI`) — phải đo bằng đúng `getFeedCached`.
+
+**(B) Function chạy ở `iad1` (US East) trong khi Supabase ở Seoul.**
+
+- `x-vercel-id: hkg1::iad1::…` ⇒ function ở **Washington DC**; `vercel.json` không khai `regions`
+  nên Vercel dùng mặc định `iad1`.
+- Supabase `aws-0-ap-northeast-2.pooler.supabase.com` (Seoul): connect **2ms**; query **đầu 0.88–1.00s**;
+  query **sau 85–93ms**.
+- Từ `iad1` → Seoul mỗi query cõng thêm ~**180–220ms** RTT. Trang chi tiết có ~8–15 query
+  (detail, tập, comments, session, tương tự, upsert…) ⇒ cộng dồn 1.5–3s.
+
+### 15.3 Kế hoạch vá
+
+| # | Việc | File | Kỳ vọng |
+| --- | --- | --- | --- |
+| **P1** | `SimilarMovies` đọc qua cache Postgres | `src/lib/api.server.ts` (+ helper), `src/components/SimilarMovies.astro` | cắt ~3.3s crawl → ~0.1–0.4s |
+| **P2** | Đổi region function sang **Seoul** | `web/vercel.json` → `"regions": ["icn1"]` | mỗi query ~200ms → ~5–15ms |
+| **P3** | Prewarm 38 thể loại thực tế (`movies.categories`) + cho cron chạy prewarm | `tools/prewarm-lists.ts`, `.github/workflows/sync-catalogue.yml` | hạn chế crawl nguội lần đầu |
+
+**P1 chi tiết:** thêm `getCategoryFeedCached(slug, {page, limit})` vào `api.server.ts` (bọc
+`getFeedCached({fn:'byCategory', …})`); `SimilarMovies.astro` gọi `limit: 12` — **trùng khoá prewarm**
+(`/feed/fn=byCategory&slug=…&limit=12&page=1`) — rồi `.slice(0, 8)` mỗi thể loại → UI **y hệt**,
+nguồn là Postgres. Giữ nguyên `excludeSlug` + dedupe + `slice(0, 6)`.
+
+**P2 chi tiết:** `regions` là thuộc tính hợp lệ của `vercel.json`. Hobby chỉ cho 1 region. Static vẫn
+phát qua CDN (`hkg1`), chỉ function dời chỗ ⇒ không đổi URL, không đổi dữ liệu.
+
+**P3 chi tiết:** thêm nhóm prewarm `cats-db`:
+`select distinct c->>'slug' from movies m, jsonb_array_elements(coalesce(m.categories,'[]')) c` (38 slug)
+→ warm `byCategory` `limit: 12`. Thêm bước chạy `prewarm-lists.ts` vào workflow sync (sau sync) để bù
+TTL list 1 giờ.
+
+### 15.4 Kết quả mong đợi
+
+| | hiện | sau P1 | sau P1+P2 | sau P1+P2+P3 |
+| --- | --- | --- | --- | --- |
+| ttfb `/phim/*` (prod) | 4.0–8.1s | ~1.5–2.5s | **~0.5–1.0s** | ~0.4–0.8s |
+
+Con số sau khi deploy sẽ **đo lại và ghi vào đây** (không đoán).
+
+### 15.5 Rủi ro & rollback
+
+- **P1**: chỉ đổi *nguồn dữ liệu* của 1 khối. Cache lỗi/không có Postgres → `getFeedCached` tự crawl
+  (đã có `hasDb()` guard) ⇒ hành vi như cũ. Rollback = revert 1 file.
+- **P2**: dời region function; cần deploy lại. Không đụng dữ liệu. Rollback = bỏ 1 dòng trong `vercel.json`.
+- **P3**: prewarm chỉ ghi cache danh sách, không sửa dữ liệu phim.
+
+### 15.6 Chưa làm (đề xuất sau)
+
+- **ISR/CDN cho trang chi tiết**: vướng `getComments` + `getSessionUser` per-request (SSR thuần).
+  Muốn cache HTML theo path phải tách comments/auth sang client → đổi lớn, cần cân nhắc riêng.
+- **Giảm số query** trên trang chi tiết (gộp 2 lượt đọc detail + tập thành 1).
+
+## 16. Loading overlay "Bé Lỏ đang lấy phim cho bạn :3" (View Transitions)
+
+Yêu cầu: khi chuyển trang, hiện màn hình chờ để người dùng không tưởng "bấm không ăn" rồi
+**spam click**; mạng nhanh thì hiện rồi tắt ngay.
+
+### 16.1 Cách làm
+
+Site đã bật `ClientRouter` (View Transitions) ở `BaseLayout` → điều hướng là client-side, nên
+chặn được đúng khoảng "đang chờ server trả trang mới".
+
+- Markup: `#cm-loading` trong `BaseLayout.astro` (mọi trang đều có).
+- CSS: `src/styles/loading.css` (import cuối trong `global.css`).
+  - Ẩn mặc định (`opacity: 0; visibility: hidden; pointer-events: none`) → **không có JS thì
+    không che gì cả**.
+  - Khi bật `.is-on`: phủ kín màn hình nền `--color-cm-bg`, `z-index: 200` (trên ctx-menu 115,
+    shortcuts 120), `pointer-events: auto` → **chặn click** (đúng yêu cầu chống spam).
+  - Vòng xoay accent `--color-cm-accent` + chữ `Bé Lỏ đang lấy phim cho bạn :3`; tôn trọng
+    `prefers-reduced-motion`.
+- Logic (script inline trong `BaseLayout`, guard `window.__nllpLoadingBound`):
+  - `astro:before-preparation` → hiện.
+  - `astro:after-swap` → tắt ngay (View Transition tự cross-fade phần mờ dần).
+  - `pageshow` **chỉ khi `event.persisted`** (back/forward cache) → tắt.
+  - Lưới an toàn 30s → tự tắt nếu điều hướng treo.
+
+### 16.2 Hai cái bẫy đã gặp khi test thật (Playwright, headless chromium)
+
+1. **Không tắt ở `astro:page-load`.** Router còn gắn `page-load` vào `window.load` của **chính
+   trang đang xem** (`astro/dist/transitions/router.js`: `addEventListener("load", onPageLoad)`).
+   Trang đang xem load muộn (ảnh/font) sẽ bắn `page-load` **giữa lúc đang chờ trang mới** → tắt
+   overlay sớm, lộ trang cũ đứng hình. Đo được: overlay tắt ở 6.0s trong khi trang mới tới 15.5s.
+   → Dùng `astro:after-swap` (mốc "DOM trang mới đã vào").
+2. **Không giữ overlay thêm một khoảng tối thiểu sau swap.** Lúc đó overlay đã trong suốt nhưng
+   vẫn `pointer-events: auto` → **chặn click ~200ms trong khi màn hình trông bình thường**.
+
+### 16.3 Kiểm chứng (Playwright, dev server)
+
+| Kịch bản | Kết quả |
+| --- | --- |
+| Trang mới chậm (8.9s) | overlay bật từ `before-preparation` tới `after-swap`, `opacity` đạt 1, `pointer-events: auto` |
+| Trang mới nhanh (270ms) | overlay gần như không kịp hiện → không nhấp nháy |
+| Tải trực tiếp (F5) | overlay ẩn (`opacity 0`, `visibility hidden`, `pointer-events none`) |
+| Click phim khác khi overlay đang hiện | `document.elementFromPoint` trả `DIV#cm-loading`; click thật bị **nuốt**, URL không đổi |
+| Sau khi trang mới tới | overlay tắt, `pointer-events: none` → click lại bình thường |
+| Back/forward | không kẹt overlay |
+
+Ảnh minh hoạ (chụp từ dev): `/tmp/opencode/loading-desktop.png`, `/tmp/opencode/loading-mobile.png`.

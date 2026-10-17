@@ -71,6 +71,15 @@ Astro.response.headers.set(
     <slot name="head" />
   </head>
   <body class="min-h-full flex flex-col">
+    <!-- Overlay chờ trang (View Transitions) — hiện khi ClientRouter bắt đầu lấy
+         trang mới, tắt khi trang mới swap/load xong. Không có JS thì ẩn hoàn toàn.
+         Che màn hình nên chặn luôn click "spam" vì tưởng bấm không ăn. -->
+    <div id="cm-loading" role="status" aria-live="polite">
+      <div class="cm-loading-inner">
+        <span class="cm-loading-ring" aria-hidden="true"></span>
+        <p class="cm-loading-text">Bé Lỏ đang lấy phim cho bạn :3</p>
+      </div>
+    </div>
     <!-- Nền phẳng #0B0B0C + vignette rất nhẹ (CINEMA MINIMAL §03).
          Không blob màu; theme theo phim vẫn cô lập trong styles/themes. -->
     <div class="fixed inset-0 -z-10 pointer-events-none bg-cm-bg" aria-hidden>
@@ -156,6 +165,57 @@ Astro.response.headers.set(
         </ul>
       </div>
     </div>
+
+    <script is:inline>
+      // Overlay "Bé Lỏ đang lấy phim cho bạn" theo View Transitions.
+      // - `astro:before-preparation`: bắt đầu lấy trang mới → hiện overlay (chặn click).
+      // - `astro:after-swap`: DOM trang mới đã vào → tắt ngay. Phần mờ dần do View
+      //   Transition tự cross-fade (overlay nằm trong ảnh chụp "trang cũ").
+      // - `pageshow` (chỉ khi `persisted` = back/forward cache): tắt.
+      // - Lưới an toàn 30s: điều hướng treo thì tự tắt, không khoá màn hình.
+      //
+      // ⚠️ KHÔNG tắt ở `astro:page-load`: router còn gắn `page-load` vào `window.load`
+      // của chính trang hiện tại (astro/dist/transitions/router.js). Trang đang xem mà
+      // load muộn (ảnh/font) sẽ bắn `page-load` GIỮA lúc đang chờ trang mới → tắt overlay
+      // sớm, lộ trang cũ đứng hình. `astro:after-swap` mới là mốc "trang mới đã tới".
+      //
+      // ⚠️ KHÔNG giữ overlay thêm một khoảng tối thiểu sau swap: lúc đó overlay đã
+      // trong suốt (opacity 0) nhưng vẫn `pointer-events: auto` → chặn click ~200ms
+      // trong khi màn hình trông bình thường.
+      // Guard vì script inline có thể bị chạy lại sau mỗi swap.
+      if (!window.__nllpLoadingBound) {
+        window.__nllpLoadingBound = true
+        var LOADING_CAP_MS = 30000
+        var loadingCapTimer = 0
+
+        var loadingEl = function () {
+          return document.getElementById('cm-loading')
+        }
+        var loadingHide = function () {
+          if (loadingCapTimer) {
+            clearTimeout(loadingCapTimer)
+            loadingCapTimer = 0
+          }
+          var el = loadingEl()
+          if (el) el.classList.remove('is-on')
+        }
+        var loadingShow = function () {
+          var el = loadingEl()
+          if (!el) return
+          el.classList.add('is-on')
+          if (loadingCapTimer) clearTimeout(loadingCapTimer)
+          loadingCapTimer = setTimeout(loadingHide, LOADING_CAP_MS)
+        }
+
+        document.addEventListener('astro:before-preparation', loadingShow)
+        document.addEventListener('astro:after-swap', loadingHide)
+        // Chỉ back/forward cache mới cần dọn; `pageshow` thường bắn ngay sau khi
+        // trang đầu load xong (có thể trùng lúc đang chờ điều hướng) nên bỏ qua.
+        window.addEventListener('pageshow', function (e) {
+          if (e.persisted) loadingHide()
+        })
+      }
+    </script>
 
     <script src="../scripts/app.ts"></script>
     <script src="../scripts/context-menu.ts"></script>
