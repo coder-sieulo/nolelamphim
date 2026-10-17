@@ -570,13 +570,36 @@ phát qua CDN (`hkg1`), chỉ function dời chỗ ⇒ không đổi URL, không
 → warm `byCategory` `limit: 12`. Thêm bước chạy `prewarm-lists.ts` vào workflow sync (sau sync) để bù
 TTL list 1 giờ.
 
-### 15.4 Kết quả mong đợi
+### 15.4 Kết quả
 
-| | hiện | sau P1 | sau P1+P2 | sau P1+P2+P3 |
+| | hiện (trước) | sau P1 | sau P1+P2 | sau P1+P2+P3 |
 | --- | --- | --- | --- | --- |
-| ttfb `/phim/*` (prod) | 4.0–8.1s | ~1.5–2.5s | **~0.5–1.0s** | ~0.4–0.8s |
+| ttfb `/phim/*` (prod) | 4.0–8.1s | ~1.5–2.5s | ~0.5–1.0s | **~0.4–1.5s** |
 
-Con số sau khi deploy sẽ **đo lại và ghi vào đây** (không đoán).
+**Đo thật trên prod — 2026-10-17, sau deploy `6da8fcf`** (deploy state `success`):
+
+| Trang | trước | sau | cách đo |
+| --- | --- | --- | --- |
+| `/phim/bat-kha-chien-bai-phan-4` | 8.11s | **0.37 / 0.45 / 0.40s** | cache MISS thật (`?cb=<random>`) |
+| `/phim/ac-quy-san-catwalk` | 4.06s | **0.34 / 0.41 / 0.42s** | ″ |
+| `/phim/khong-ngu-o-seattle` | 4.71s | **1.53 / 1.54 / 0.61s** | ″ |
+| `/` (tĩnh) | 0.22s | 1.24 / 1.24 / **0.27s** | lần đầu sau deploy là MISS của CDN, steady-state như cũ |
+| `/the-loai/hanh-dong` (tĩnh) | 0.70s | 0.53 / 1.28 / **0.20s** | ″ |
+
+→ **nhanh hơn 10–20×** ở trang chi tiết. `/phim/khong-ngu-o-seattle` (1.5s) nhỉnh hơn 2 trang kia
+vì phim này không có HLS/`source kkphim` nên bước dựng tập đi đường vsmov — vẫn trong ngưỡng chấp nhận.
+
+**Bằng chứng P2 (region) đã có hiệu lực:**
+
+```
+trước:  x-vercel-id: hkg1::iad1::...      (function ở US East, Supabase ở Seoul → +180–220ms/query)
+sau:    x-vercel-id: hkg1::icn1::t96gl-…  (function ở Seoul, cạnh Supabase)
+```
+
+Kiểm tra lại sau deploy (không phá gì): "Phim tương tự" vẫn 6 card; `/api/episodes`
+`bat-kha-chien-bai-phan-4` = 5 tập/5 `.m3u8`; `huyet-quy-hon-chien-phan-2` = 3 tập/6 `.m3u8`;
+P5 `thanh-guom-diet-quy-phan-5-dai-tru-dac-huan` = `tap-1..tap-8` (không zero-pad) + **0 `.m3u8`**
+(đúng bất biến pin vsmov).
 
 ### 15.5 Rủi ro & rollback
 
