@@ -11,6 +11,7 @@
     "prewarm:idmap": "node tools/prewarm-idmap.mjs",
     "sync:catalogue": "tsx tools/sync-catalogue.mjs",
     "migrate:redis": "node tools/migrate-redis-to-pg.mjs",
+    "audit:identity": "node tools/audit-identity.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

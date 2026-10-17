@@ -328,3 +328,105 @@ Hiện các trang này vẫn chạy được (fallback vsmov, hoặc rỗng vớ
 Hướng xử lý đề xuất: **bảng alias slug vsmov → kkphim** (chỉ vài mục chắc chắn: `hai→hai-huoc`,
 `china→trung-quoc`, `vo-hiep→vo-thuat`, `toi-pham→hinh-su`, `thieu-nhi→tre-em`, `phim-nhac→am-nhac`…)
 — nhưng đây là thay đổi nội dung/SEO nên **cần duyệt trước khi làm**.
+
+---
+
+## 13. Audit dữ liệu: 2 lỗi thật đã vá (gán nhầm phần + record lệch khoá)
+
+Toàn bộ **là dữ liệu** (Redis + Postgres), không đổi code ứng dụng, không đổi URL/shape. Script vá chạy
+thủ công, backup trong `/tmp/opencode/`; tool **audit read-only** thì đưa vào repo (13.4).
+
+### 13.1 Lỗi A — gán nhầm **phần** (dùng chung `tmdb.id` cho franchise)
+
+**Triệu chứng:** 19/144 phim có `sources.kkphim` bị cờ khi audit theo tên. Đáng chú ý **toàn bộ 19 cái
+đều `HLS = 0`** — tức lỗi đang *tiềm ẩn*: chưa ai xem những phim đó, nên chưa ai phát nhầm.
+
+**Nguyên nhân:** `resolveIdentity` gộp ứng viên theo `tmdb.id` (hoặc `tên|năm|phần`). Với phim nhiều
+phần, **cả 10 phần chung một `tmdb.id`** → pool có nhiều slug; `pickHit` chốt theo số phần, nhưng khi
+dấu hiệu phần thiếu/trùng thì chọn slug đầu pool. Kết quả `rec.kkphim` trỏ sang **phần khác**.
+
+**Ví dụ thật (phát nhầm ngay trên trang):**
+
+| Trang | Trước | Sau |
+| --- | --- | --- |
+| `thuan-huyet-phan-3` (True Blood S3, 2010) | 10 HLS của **Phần 7** (`source_key=…phan-7`), `sources.kkphim=…phan-7` | 12/12 HLS của **Phần 3** |
+| `thanh-guom-diet-quy-phan-1…4` | trỏ `…-phan-5` | đúng từng phần (8–25 tập) |
+| `grey` Phần 10–19 | trỏ `…-phan-20` | đúng từng phần (17–25 tập) |
+| `ham-silo-2`, `khong-the-nao-quen-phan-1/2/3`, `nha-ngoai-giao-1`, `buoc-duong-cung` | lệch phần | đã đúng |
+
+**Cách vá (`/tmp/opencode/fix-parts.mjs`, `remediate.mjs`, `fix-thuanhuyet.mjs`):**
+mọi đích đều phải **đạt xác minh qua `/phim/{slug}` của kkphim** (đúng số phần + năm ±2) rồi mới ghi:
+
+1. `rec.kkphim` + `sources.kkphim` → đích đúng phần; `rec.vsmov`/`sources.vsmov` → `slug` (bất biến 13.2);
+2. **xoá** `movie_episodes` của phim (dòng cũ mang `source_key` sai) — rebuild qua
+   `GET /api/episodes?slug=…` để lấy HLS của nguồn đúng (**giữ nguyên cách phát**, chỉ đổi nguồn);
+3. nếu kkphim **không có** bản đúng phần → `kkphim = null` + xoá tập → **pin vsmov** (theo quy tắc
+   "không có bản đúng thì phát vsmov"). Thực tế số ca này = **0**.
+
+**Quy tắc cờ CHẶT** (dùng trong tool audit): cờ khi **(cả hai phía đều có số phần và KHÁC nhau)** hoặc
+**jaccard tên < 0,34**. *Không* cờ khi chỉ "một bên có số phần" hay "khác năm" — đó là 2 dương tính
+giả đã xác minh và chấp nhận (13.3).
+
+### 13.2 Lỗi B — record Redis **lệch khoá ↔ nội dung** (23 record)
+
+**Phát biểu bất biến:** record ghi dưới `phim:idmap:{source}:{slug}` **PHẢI** có `rec[source] === slug`.
+
+**Nguyên nhân (code thật):** `web/tools/prewarm-idmap.mjs` dựng `rec.vsmov = e.srcs.vsmov` = **slug ĐẦU
+TIÊN của pool**, rồi ghi **CÙNG một record** dưới key của **mọi** slug trong pool. Hai slug vsmov cùng
+pool (`tmdb|phần` hoặc `tên|năm|phần`) → record của slug thứ hai **nhận `rec.vsmov` của slug thứ nhất**.
+
+Hệ quả dây chuyền: `mirrorSources` đọc `rec.vsmov` để ghi `movies.sources.vsmov` → `movies.slug` ≠
+`sources.vsmov.slug` (22 dòng; nay 23, thêm `thuan-huyet-phan-3` do bản ghi prewarm cũ, TTL ~26 ngày).
+
+**Đã xác minh** 22 slug đó **tồn tại thật trên vsmov** và title khớp → chỉ sai liên kết, không mất dữ
+liệu. Vá: `redis` + `movies.sources` ghi `vsmov = slug`, dùng `SET` + `PERSIST` (xoá TTL để không
+tự lệch lại). Backup: `/tmp/opencode/fix-vsmov-backup.json`, `fix-thuanhuyet-backup.json`.
+
+**Vá gốc rễ tool** (không thể tạo record lệch khoá mới):
+
+- cắt `source`/`slug` bằng `indexOf(':')` thay `split(':')` (slug chứa `:` không bị cắt mất phần sau);
+- **chốt `rec[source] = slug` ngay tại vòng ghi** — mọi lệch đều bị sửa trước khi `SET`;
+- **log** số record bị lệch + tối đa 20 khoá mơ hồ → pool gộp nào mơ hồ là do `tmdb`/`partNum` chưa
+  tách đủ, biết đường sửa tiếp.
+
+### 13.3 Kết quả & các ngoại lệ chấp nhận
+
+```
+movies có sources.vsmov : 168 | lệch sources.vsmov.slug ≠ slug : 0
+record Redis đã kiểm    : 168 | LỆCH key↔rec                  : 0 | thiếu record: 0
+E1 (pin vsmov còn HLS)  : 0 | E2 (m3u8 bẩn) : 0 | E3 (có tập chưa sync chi tiết) : 0
+Audit theo tên          : 148 phim → 146 khớp | 1 lỗi thật (đã vá) | 1 ngoại lệ
+```
+
+**2 dương tính giả chấp nhận** (đã đối chiếu tay, *không* sửa — sửa sẽ làm sai dữ liệu nguồn):
+
+| Slug | Lý do không sửa |
+| --- | --- |
+| `dai-hinh-cho-san` | DB ghi **không có số phần**, kkphim ghi `(Phần 1)` — cùng origin *"The Cruel Tribunal"* 2026, `HLS=0`. Mapping đúng, chỉ khác cách đánh dấu. |
+| `the-than-ngu-khi-su-cuoi-cung-phan-2` | cùng **Phần 2** (sim≈1), khác năm **2024 vs 2026** — vsmov ghi năm sai, `originName` (Avatar: The Last Airbender (Season 2)) đúng. Sửa năm sẽ làm lệch dữ liệu vsmov + trang `/nam`. |
+
+**E3 = 0** sau khi cron `detail_limit=150` chạy (17 phim rebuild qua `/api/episodes` không tự stamp
+`detail_synced_at`, nên lúc đầu E3=15 — không phải lỗi).
+
+⚠️ **E1 phải dùng định nghĩa CHẶT:** `sources->'vsmov'->>'slug' IS NOT NULL AND
+sources->'kkphim' IS NULL AND EXISTS(HLS)`. Định nghĩa rộng `sources->'kkphim' IS NULL` cho ra **54** —
+sai, vì `sources IS NULL` (2.200+ phim mới crawl chưa resolve) cũng thoả điều kiện đó.
+
+### 13.4 Tool audit vào repo: `web/tools/audit-identity.mjs`
+
+```bash
+cd web && set -a && . ./.env.local && set +a
+node tools/audit-identity.mjs              # A (bất biến key↔content) + B (E1/E2/E3) — nhanh
+node tools/audit-identity.mjs --names      # + C: audit sâu theo tên ≈148 fetch kkphim
+node tools/audit-identity.mjs --names --fail-soft   # in C nhưng exit 0
+npm run audit:identity                     # alias
+```
+
+- **exit 1** khi phát hiện lỗi → chạy được trong CI/cron.
+- **Không bao giờ tự vá** — tool chỉ đọc. Mọi script ghi dữ liệu đều là thủ công ở `/tmp/opencode/`.
+- Tự đọc `web/.env.local` (giống `prewarm-idmap.mjs`), không cần `export`.
+
+**Cảnh báo vận hành:** kkphim trả **HTTP 429** khi gọi dồn dập (148 phim × nhiều lần). Tool audit dùng
+`concurrency 6` + retry; script vá dùng `concurrency 3` + retry 3 lần. **Bị 429 thì tool PHẢI dừng
+không vá** (không phân biệt được "thiếu phim" với "lỗi mạng" → không bao giờ sửa bừa). Chờ vài phút
+cooldown rồi chạy lại.

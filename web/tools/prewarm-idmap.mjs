@@ -136,19 +136,51 @@ if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
 }
 const r = new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN })
 
+/**
+ * NGUYÊN TẮC key ↔ nội dung: record lưu dưới `phim:idmap:{source}:{slug}` PHẢI có
+ * `rec[source] === slug`.
+ *
+ * Khối "build records" ở trên gán `e.srcs.vsmov` = slug ĐẦU TIÊN của pool rồi ghi
+ * CÙNG một record dưới key của MỌI slug trong pool. Khi hai slug cùng nguồn rơi vào
+ * cùng một pool (`${tmdb}|${phần}` hoặc `tên|năm|phần`), record của slug thứ 2 sẽ nhận
+ * `rec.vsmov` của slug thứ 1 → `mirrorSources` ghi `movies.sources.vsmov` trỏ sang
+ * MỘT PHIM KHÁC. Đã từng xảy ra thật: Grey's Phần 10..19 → Phần 20, Hầm SILO P2 → P3,
+ * Thanh gươm P1/P2/P4 → P5, `buoc-duong-cung` → Squid Game Challenge.
+ *
+ * Chốt lại ngay lúc ghi để không bao giờ tạo được record lệch khóa, và LOG ra để ta
+ * biết pool nào mơ hồ (pool mơ hồ = dấu hiệu `tmdb`/`partNum` chưa tách đủ).
+ */
 const BATCH = 1000
 let done = 0
+let mismatched = 0
+const mismatches = []
 const entries = [...records.entries()].filter(([k]) => ALL || k.startsWith('vsmov:'))
 console.log(`Writing ${entries.length}/${records.size} keys (TTL ${TTL_SEC}s)…`)
 for (let i = 0; i < entries.length; i += BATCH) {
   const pipe = r.pipeline()
   for (const [k, v] of entries.slice(i, i + BATCH)) {
-    const [source, slug] = k.split(':')
-    pipe.set(`phim:idmap:${source}:${slug}`, v, { ex: TTL_SEC })
+    // `indexOf` thay vì `split` để slug có dấu ":" không bị cắt mất phần sau
+    const cut = k.indexOf(':')
+    const source = k.slice(0, cut)
+    const slug = k.slice(cut + 1)
+    const rec = JSON.parse(v)
+    if (rec[source] !== slug) {
+      if (mismatches.length < 20) mismatches.push(`${k} (rec.${source}=${rec[source] ?? 'null'})`)
+      rec[source] = slug
+      mismatched++
+    }
+    pipe.set(`phim:idmap:${source}:${slug}`, JSON.stringify(rec), { ex: TTL_SEC })
   }
   await pipe.exec()
   done += Math.min(BATCH, entries.length - i)
   console.log(`  wrote ${done}/${entries.length}`)
+}
+if (mismatched) {
+  console.warn(`⚠ ${mismatched} record có pool gộp nhầm (rec[source] ≠ key slug) — đã CHỐT lại = key slug.`)
+  console.warn('  Pool mơ hồ, nên xem lại cách gộp `tmdb|phần` / `tên|năm|phần`:')
+  for (const m of mismatches) console.warn('   -', m)
+} else {
+  console.log('✓ toàn bộ record thỏa rec[source] === key slug')
 }
 
 // ——— verify ———
