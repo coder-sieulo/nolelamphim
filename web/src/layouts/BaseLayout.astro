@@ -71,13 +71,45 @@ Astro.response.headers.set(
     <slot name="head" />
   </head>
   <body class="min-h-full flex flex-col">
-    <!-- Overlay chờ trang (View Transitions) — hiện khi ClientRouter bắt đầu lấy
-         trang mới, tắt khi trang mới swap/load xong. Không có JS thì ẩn hoàn toàn.
-         Che màn hình nên chặn luôn click "spam" vì tưởng bấm không ăn. -->
+    <!-- Overlay chờ trang (View Transitions) — concept "máy chiếu phim": hạt phim,
+         dải lỗ phim 2 mép, reel quay, đèn máy chiếu, chữ hiện dần từng từ.
+         Hiện khi ClientRouter bắt đầu lấy trang mới, tắt khi trang mới swap xong.
+         Không có JS thì ẩn hoàn toàn. Che màn hình nên chặn luôn click "spam". -->
     <div id="cm-loading" role="status" aria-live="polite">
-      <div class="cm-loading-inner">
-        <span class="cm-loading-ring" aria-hidden="true"></span>
-        <p class="cm-loading-text">Bé Lỏ đang lấy phim cho bạn :3</p>
+      <div class="cm-strip cm-strip--top" aria-hidden="true"><span class="cm-strip-holes"></span></div>
+      <div class="cm-strip cm-strip--bottom" aria-hidden="true"><span class="cm-strip-holes"></span></div>
+      <div class="cm-lamp" aria-hidden="true"></div>
+      <div class="cm-motes" aria-hidden="true">
+        <span style="--x:14%;--s:3px;--d:0s;--dur:7.5s"></span>
+        <span style="--x:28%;--s:2px;--d:1.1s;--dur:9s"></span>
+        <span style="--x:39%;--s:4px;--d:2.6s;--dur:8.2s"></span>
+        <span style="--x:48%;--s:2px;--d:0.6s;--dur:6.8s"></span>
+        <span style="--x:57%;--s:3px;--d:3.4s;--dur:9.6s"></span>
+        <span style="--x:66%;--s:2px;--d:1.8s;--dur:7.1s"></span>
+        <span style="--x:74%;--s:4px;--d:4.2s;--dur:8.8s"></span>
+        <span style="--x:85%;--s:3px;--d:2.2s;--dur:7.9s"></span>
+        <span style="--x:22%;--s:2px;--d:5.1s;--dur:9.2s"></span>
+        <span style="--x:63%;--s:2px;--d:5.8s;--dur:6.6s"></span>
+      </div>
+      <div class="cm-grain" aria-hidden="true"></div>
+      <div class="cm-inner">
+        <div class="cm-reel" aria-hidden="true">
+          <span class="cm-reel-ring cm-reel-ring--outer"></span>
+          <span class="cm-reel-ring cm-reel-ring--mid"></span>
+          <span class="cm-reel-ring cm-reel-ring--arc"></span>
+          <span class="cm-reel-core"></span>
+        </div>
+        <p class="cm-loading-text">
+          <span style="--i:0">Bé</span>
+          <span style="--i:1">Lỏ</span>
+          <span style="--i:2">đang</span>
+          <span style="--i:3">lấy</span>
+          <span style="--i:4">phim</span>
+          <span style="--i:5">cho</span>
+          <span style="--i:6">bạn</span>
+          <span class="cm-face" style="--i:7">:3</span>
+        </p>
+        <div class="cm-bar" aria-hidden="true"><span></span></div>
       </div>
     </div>
     <!-- Nền phẳng #0B0B0C + vignette rất nhẹ (CINEMA MINIMAL §03).

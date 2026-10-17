@@ -1,12 +1,19 @@
 /* ══════════════════════════════════════════════════════════════
-   Loading overlay (View Transitions) — CINEMA MINIMAL
-   Hiện khi ClientRouter bắt đầu lấy trang mới
-   (`astro:before-preparation`), tắt khi trang mới swap/load xong.
+   Loading overlay (View Transitions) — concept "MÁY CHIẾU PHIM"
+
+   Hiện khi ClientRouter bắt đầu lấy trang mới (`astro:before-preparation`),
+   tắt khi trang mới swap xong (`astro:after-swap`).
 
    Vì che kín màn hình nên nó CHẶN luôn click trong lúc chờ → người dùng
    không "spam" click vì tưởng bấm không ăn. Chỉ JS mới bật (`is-on`);
    không có JS thì overlay ẩn hoàn toàn (không che nội dung).
+
+   CINEMA MINIMAL (brief §03/§23): nền phẳng + vignette/ánh sáng, KHÔNG glass,
+   KHÔNG blob màu. Accent duy nhất = --color-cm-accent (đèn + reel + progress).
+   Mọi animation chỉ dùng transform/opacity (đi trên compositor, rẻ cho mobile)
+   và CHỈ chạy khi `.is-on` → lúc ẩn không tốn CPU.
    ══════════════════════════════════════════════════════════════ */
+
 #cm-loading {
   position: fixed;
   inset: 0;
@@ -15,6 +22,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  overflow: hidden;
   background: var(--color-cm-bg);
   opacity: 0;
   visibility: hidden;
@@ -31,40 +39,401 @@
   transition: opacity var(--duration-cm-fast) var(--ease-cm);
 }
 
-.cm-loading-inner {
+/* ── Hạt phim (film grain): tile noise rất nhẹ, trôi bằng transform ── */
+.cm-grain {
+  position: absolute;
+  inset: -60%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+/* ── Đèn máy chiếu: quầng sáng accent loãng dần (ánh sáng, không phải blob màu) ── */
+.cm-lamp {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 640px;
+  height: 640px;
+  margin: -320px 0 0 -320px;
+  border-radius: 999px;
+  /* accent #f97316 */
+  background: radial-gradient(
+    circle,
+    rgba(249, 115, 22, 0.34) 0%,
+    rgba(249, 115, 22, 0.12) 34%,
+    rgba(249, 115, 22, 0.03) 56%,
+    transparent 70%
+  );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ── Hạt bụi bay trong chùm sáng (như bụi trong luồng máy chiếu) ── */
+.cm-motes {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 380px;
+  height: 100%;
+  margin-left: -190px;
+  pointer-events: none;
+}
+.cm-motes > span {
+  position: absolute;
+  left: var(--x, 50%);
+  top: 58%;
+  width: var(--s, 3px);
+  height: var(--s, 3px);
+  border-radius: 999px;
+  background: var(--color-cm-accent);
+  opacity: 0;
+}
+
+/* ── Dải lỗ phim 2 mép (letterbox) — lỗ chạy ngang, trượt vào khi hiện ── */
+.cm-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 30px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.035);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+.cm-strip--top {
+  top: 0;
+}
+.cm-strip--bottom {
+  bottom: 0;
+}
+.cm-strip-holes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24'%3E%3Crect x='6' y='6' width='16' height='12' rx='3' fill='%23ffffff' fill-opacity='.17'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: center;
+}
+
+/* ── Cụm giữa: reel + chữ + thanh tiến trình ── */
+.cm-inner {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.875rem;
   text-align: center;
 }
 
-.cm-loading-ring {
-  width: 34px;
-  height: 34px;
+/* Reel: 3 lớp — vòng lỗ phim (quay chậm) · vòng chấm (quay ngược) · cung accent */
+.cm-reel {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  margin-bottom: 26px;
+}
+.cm-reel-ring {
+  position: absolute;
   border-radius: 999px;
-  border: 2px solid var(--color-cm-border-strong);
+}
+.cm-reel-ring--outer {
+  inset: 0;
+  border: 2px dashed rgba(255, 255, 255, 0.22);
+}
+.cm-reel-ring--mid {
+  inset: 14px;
+  border: 1px dotted rgba(255, 255, 255, 0.16);
+}
+.cm-reel-ring--arc {
+  inset: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
   border-top-color: var(--color-cm-accent);
-  animation: cm-loading-spin 0.7s linear infinite;
+  border-right-color: var(--color-cm-accent);
+}
+.cm-reel-core {
+  position: absolute;
+  inset: 54px;
+  border-radius: 999px;
+  background: var(--color-cm-accent);
+  box-shadow:
+    0 0 16px rgba(249, 115, 22, 0.55),
+    0 0 40px rgba(249, 115, 22, 0.28);
+}
+.cm-reel-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid var(--color-cm-accent);
+  opacity: 0;
 }
 
 .cm-loading-text {
-  font-size: var(--text-cm-body);
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--color-cm-text-2);
 }
+.cm-loading-text span {
+  display: inline-block;
+}
+.cm-loading-text .cm-face {
+  color: var(--color-cm-accent);
+}
 
-@keyframes cm-loading-spin {
+.cm-bar {
+  position: relative;
+  width: min(240px, 62vw);
+  height: 3px;
+  margin-top: 26px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.cm-bar > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 44%;
+  border-radius: 999px;
+  background: var(--color-cm-accent);
+}
+
+/* ── Animation (chỉ khi .is-on) ── */
+#cm-loading.is-on .cm-inner {
+  animation: cm-flicker 3.4s steps(1, end) infinite;
+}
+#cm-loading.is-on .cm-grain {
+  animation: cm-grain 0.7s steps(3) infinite;
+}
+#cm-loading.is-on .cm-lamp {
+  animation: cm-lamp 2.8s ease-in-out infinite;
+}
+#cm-loading.is-on .cm-strip--top {
+  animation: cm-strip-in-top 0.5s var(--ease-cm) backwards;
+}
+#cm-loading.is-on .cm-strip--bottom {
+  animation: cm-strip-in-bottom 0.5s var(--ease-cm) backwards;
+}
+#cm-loading.is-on .cm-strip-holes {
+  animation: cm-strip-run 1.9s linear infinite;
+}
+#cm-loading.is-on .cm-motes > span {
+  animation: cm-mote var(--dur, 8s) linear var(--d, 0s) infinite;
+}
+#cm-loading.is-on .cm-reel {
+  animation: cm-pop 0.45s var(--ease-cm) backwards;
+}
+#cm-loading.is-on .cm-reel-ring--outer {
+  animation: cm-spin 9s linear infinite;
+}
+#cm-loading.is-on .cm-reel-ring--mid {
+  animation: cm-spin 6s linear infinite reverse;
+}
+#cm-loading.is-on .cm-reel-ring--arc {
+  animation: cm-spin 1.05s cubic-bezier(0.5, 0.15, 0.5, 0.85) infinite;
+}
+#cm-loading.is-on .cm-reel-core {
+  animation: cm-core 1.6s var(--ease-cm) infinite;
+}
+#cm-loading.is-on .cm-reel-core::after {
+  animation: cm-ping 1.6s var(--ease-cm) infinite;
+}
+#cm-loading.is-on .cm-loading-text span {
+  animation: cm-word 0.45s var(--ease-cm) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+/* .cm-face (":3") có 2 animation: hiện dần theo --i rồi nhấp nháy nhè nhẹ */
+#cm-loading.is-on .cm-loading-text .cm-face {
+  animation:
+    cm-word 0.45s var(--ease-cm) backwards,
+    cm-face 1.4s ease-in-out calc(0.45s + var(--i, 0) * 60ms) infinite;
+}
+#cm-loading.is-on .cm-bar > span {
+  animation: cm-bar 1.25s var(--ease-cm) infinite;
+}
+
+@keyframes cm-spin {
   to {
     transform: rotate(360deg);
   }
 }
+@keyframes cm-grain {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  33% {
+    transform: translate3d(-2.5%, 1.5%, 0);
+  }
+  66% {
+    transform: translate3d(1.5%, -2.5%, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes cm-strip-run {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes cm-strip-in-top {
+  from {
+    transform: translateY(-102%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes cm-strip-in-bottom {
+  from {
+    transform: translateY(102%);
+  }
+  to {
+    transform: none;
+  }
+}
+/* Hạt bụi trôi ngược lên trong chùm sáng */
+@keyframes cm-mote {
+  0% {
+    transform: translate3d(0, 40px, 0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate3d(0, -180px, 0) scale(1);
+    opacity: 0;
+  }
+}
+@keyframes cm-face {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes cm-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cm-core {
+  0%,
+  100% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(1);
+  }
+}
+@keyframes cm-ping {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes cm-lamp {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+/* Máy chiếu rung nhẹ (flicker) — biên độ nhỏ, nhảy bậc cho ra chất phim */
+@keyframes cm-flicker {
+  0%,
+  88% {
+    opacity: 1;
+  }
+  89% {
+    opacity: 0.86;
+  }
+  90% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0.92;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes cm-bar {
+  0% {
+    transform: translateX(-105%) scaleX(0.6);
+  }
+  50% {
+    transform: translateX(60%) scaleX(1);
+  }
+  100% {
+    transform: translateX(245%) scaleX(0.6);
+  }
+}
+@keyframes cm-word {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
+/* ── Tôn trọng prefers-reduced-motion: giữ bố cục, bỏ chuyển động ── */
 @media (prefers-reduced-motion: reduce) {
   #cm-loading,
   #cm-loading.is-on {
     transition: none;
   }
-  .cm-loading-ring {
-    animation-duration: 1.8s;
+  #cm-loading.is-on .cm-inner,
+  #cm-loading.is-on .cm-grain,
+  #cm-loading.is-on .cm-lamp,
+  #cm-loading.is-on .cm-motes > span,
+  #cm-loading.is-on .cm-strip--top,
+  #cm-loading.is-on .cm-strip--bottom,
+  #cm-loading.is-on .cm-strip-holes,
+  #cm-loading.is-on .cm-reel,
+  #cm-loading.is-on .cm-reel-ring--outer,
+  #cm-loading.is-on .cm-reel-ring--mid,
+  #cm-loading.is-on .cm-reel-ring--arc,
+  #cm-loading.is-on .cm-reel-core,
+  #cm-loading.is-on .cm-reel-core::after,
+  #cm-loading.is-on .cm-loading-text .cm-face,
+  #cm-loading.is-on .cm-bar > span,
+  #cm-loading.is-on .cm-loading-text span {
+    animation: none !important;
   }
 }

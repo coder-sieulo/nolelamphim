@@ -607,9 +607,31 @@ chặn được đúng khoảng "đang chờ server trả trang mới".
     không che gì cả**.
   - Khi bật `.is-on`: phủ kín màn hình nền `--color-cm-bg`, `z-index: 200` (trên ctx-menu 115,
     shortcuts 120), `pointer-events: auto` → **chặn click** (đúng yêu cầu chống spam).
-  - Vòng xoay accent `--color-cm-accent` + chữ `Bé Lỏ đang lấy phim cho bạn :3`; tôn trọng
-    `prefers-reduced-motion`.
-- Logic (script inline trong `BaseLayout`, guard `window.__nllpLoadingBound`):
+  - Tôn trọng `prefers-reduced-motion`: giữ bố cục, tắt hết chuyển động.
+
+### 16.1b Concept thị giác: "MÁY CHIẾU PHIM"
+
+Vẫn CINEMA MINIMAL (brief §03/§23): nền phẳng + ánh sáng, **không glass, không blob màu**; accent
+duy nhất là `--color-cm-accent` (=`#f97316`). Các lớp, từ dưới lên:
+
+| Lớp | Chi tiết |
+| --- | --- |
+| Dải lỗ phim 2 mép | `<.cm-strip>` cao 30px ở mép trên/dưới, lỗ phim là SVG data-URI (`background-repeat: repeat-x`) chạy ngang 1.9s; khi hiện thì **trượt vào** từ 2 mép |
+| Đèn máy chiếu | Quầng `radial-gradient` accent (0.34 → trong suốt) 640px sau reel, nhấp nháy nhẹ 2.8s |
+| Hạt bụi | 10 hạt accent 2–4px trôi ngược lên trong chùm sáng (7–10s, lệch pha) |
+| Hạt phim (grain) | Tile `feTurbulence` 140px, opacity 0.05, trôi bằng `transform` (0.7s, steps) |
+| Reel | 128px, **3 lớp**: vòng dashed (quay 9s) · vòng dotted (quay ngược 6s) · cung accent (1.05s) + lõi accent 20px phát sáng + vòng `ping` lan ra |
+| Chữ | `Bé Lỏ đang lấy phim cho bạn :3` — 8 từ **hiện dần từng từ** (60ms/từ), `:3` màu accent và nhấp nháy nhẹ |
+| Tiến trình | Thanh 240px, đoạn accent chạy qua lại (indeterminate) |
+| Flicker | Cả cụm rung nhẹ kiểu máy chiếu (`steps(1,end)`, biên độ nhỏ) |
+
+> Tất cả animation chỉ dùng `transform`/`opacity` (đi trên compositor) và **chỉ chạy khi `.is-on`**
+> → lúc ẩn không tốn CPU. Overlay là element trong layout nên **mỗi lần chuyển trang là DOM mới**
+> → animation chữ/reel tự chạy lại từ đầu, không cần reset bằng JS.
+
+### 16.1c Logic hiện/tắt
+
+Logic (script inline trong `BaseLayout`, guard `window.__nllpLoadingBound`):
   - `astro:before-preparation` → hiện.
   - `astro:after-swap` → tắt ngay (View Transition tự cross-fade phần mờ dần).
   - `pageshow` **chỉ khi `event.persisted`** (back/forward cache) → tắt.
@@ -636,4 +658,13 @@ chặn được đúng khoảng "đang chờ server trả trang mới".
 | Sau khi trang mới tới | overlay tắt, `pointer-events: none` → click lại bình thường |
 | Back/forward | không kẹt overlay |
 
-Ảnh minh hoạ (chụp từ dev): `/tmp/opencode/loading-desktop.png`, `/tmp/opencode/loading-mobile.png`.
+Kiểm tra phần "nhìn" (không thể xem ảnh trực tiếp): chụp screenshot rồi **đọc pixel trong
+trang bằng canvas** (`px.mjs`) — đếm pixel accent (`r>140 && r-b>50 && r>g*1.3`), lấy bbox, và
+in ASCII lấy **MAX** mỗi ô (không lấy trung bình, vì nét 2px bị pha loãng):
+
+- Desktop 1280×800: 909 pixel accent, bbox `x 584..770, y 330..503` (reel + `:3` + thanh tiến trình);
+  chữ sáng nhất `L≈162`; thấy rõ 2 dải lỗ phim (`:-:` lặp), reel 3 lớp, thanh tiến trình accent dài.
+- Mobile 390×844 (DPR2): 2957 pixel accent (diện tích ×4) — bố cục gọn, không tràn.
+- Log console/pageerror: **không có lỗi**.
+
+Ảnh minh hoạ (chụp từ dev): `/tmp/opencode/loading2-desktop.png`, `/tmp/opencode/loading2-mobile.png`.
