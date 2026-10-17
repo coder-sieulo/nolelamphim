@@ -589,6 +589,10 @@ TTL list 1 giờ.
 → **nhanh hơn 10–20×** ở trang chi tiết. `/phim/khong-ngu-o-seattle` (1.5s) nhỉnh hơn 2 trang kia
 vì phim này không có HLS/`source kkphim` nên bước dựng tập đi đường vsmov — vẫn trong ngưỡng chấp nhận.
 
+Ghi chú độ biến thiên (đo 5 mẫu liên tiếp, cache MISS): `/phim/bat-kha-chien-bai-phan-4`
+0.22–0.73s, `/phim/ac-quy-san-catwalk` 0.19–2.48s. Thỉnh thoảng có mẫu ~2.5s do **instance
+serverless nguội** (deploy mới / scale-to-zero) chứ không phải do crawl nguồn — median ~0.45s.
+
 **Bằng chứng P2 (region) đã có hiệu lực:**
 
 ```
