@@ -4,11 +4,15 @@ import {
   META_TTL_MS,
   persistDetail,
   persistEpisodes,
+  queryMovies,
   readEpisodes,
   readListCache,
   readMovieDetail,
+  similarMovies,
   upsertMovies,
   writeListCache,
+  type MovieQuery,
+  type SimilarTarget,
 } from './catalogue'
 import { feedCacheKey, isMetaFn, type FeedRequest } from './feed'
 import { knownSourceKey, peekIdentityRecord, resolveM3u8Map } from './m3u8'
@@ -246,6 +250,67 @@ async function crawlFeed(req: FeedRequest): Promise<{ ok: boolean; payload: unkn
   }
 }
 
+/** Danh sách "đặc thù" (đường dẫn không kèm thể loại/quốc gia) → điều kiện truy vấn. */
+function applyNamedList(slug: string, q: MovieQuery): void {
+  if (slug === 'phim-bo') q.type = 'series'
+  else if (slug === 'phim-le') q.type = 'single'
+  else if (slug === 'phim-dang-chieu') {
+    q.type = 'series'
+    q.status = 'ongoing'
+  }
+  // 'phim-moi-cap-nhat' → không thêm điều kiện (mới nhất toàn bộ)
+}
+
+/**
+ * Dịch một `FeedRequest` thành truy vấn Postgres **khi cần tính năng nguồn ngoài
+ * không có**: lọc ngôn ngữ (`lang`), chất lượng (`quality`), hoặc sắp theo điểm
+ * (`sort=vote`). Trả `null` cho mọi trường hợp còn lại → giữ nguyên đường crawl.
+ *
+ * Ngữ cảnh lấy từ `fn`/`path`/`slug`; tham số trong `params` (chip lọc của
+ * người dùng) được ưu tiên đè lên.
+ */
+function movieQueryFromFeed(req: FeedRequest): MovieQuery | null {
+  const p = req.params ?? {}
+  const str = (v: unknown): string | undefined => {
+    if (typeof v === 'number' && Number.isFinite(v)) return String(v)
+    return typeof v === 'string' && v.trim() !== '' && v !== 'undefined' ? v.trim() : undefined
+  }
+  const lang = str(p.lang)
+  const quality = str(p.quality)
+  const sort = str(p.sort)
+  if (!lang && !quality && sort !== 'vote') return null
+
+  const pageParam = Number(str(p.page))
+  const limitParam = Number(str(p.limit))
+  const q: MovieQuery = {
+    lang,
+    quality,
+    sort,
+    page: req.page ?? (Number.isFinite(pageParam) && pageParam > 0 ? pageParam : undefined),
+    limit: req.limit ?? (Number.isFinite(limitParam) && limitParam > 0 ? limitParam : undefined),
+  }
+
+  if (req.fn === 'byCategory') q.category = req.slug
+  else if (req.fn === 'byCountry') q.country = req.slug
+  else if (req.fn === 'byYear') q.year = req.slug
+  else {
+    const path = (req.path || '').replace(/^\/+/, '')
+    let m: RegExpExecArray | null
+    if ((m = /^the-loai\/([a-z0-9-]+)$/.exec(path))) q.category = m[1]
+    else if ((m = /^quoc-gia\/([a-z0-9-]+)$/.exec(path))) q.country = m[1]
+    else if ((m = /^nam\/(\d{4})$/.exec(path))) q.year = m[1]
+    else applyNamedList(path.replace(/^danh-sach\//, ''), q)
+  }
+
+  // Chip lọc của người dùng đè lên ngữ cảnh đường dẫn.
+  if (str(p.type)) q.type = str(p.type)
+  if (str(p.status)) q.status = str(p.status)
+  if (str(p.year)) q.year = str(p.year)
+  if (str(p.country)) q.country = str(p.country)
+
+  return q
+}
+
 /**
  * Đọc một feed (list/meta) qua cache Postgres. Thiếu/quá cũ thì crawl nguồn rồi
  * ghi lại (best-effort) và nạp `movies` vào catalogue.
@@ -259,6 +324,22 @@ export async function getFeedCached(req: FeedRequest, opts?: { ttlMs?: number })
   const ttl = opts?.ttlMs ?? (isMetaFn(req.fn) ? META_TTL_MS : LIST_TTL_MS)
   const cached = await readListCache(key, ttl)
   if (cached) return cached
+
+  // Lọc ngôn ngữ/chất lượng + sắp theo điểm: nguồn ngoài không hỗ trợ → hỏi thẳng
+  // Postgres (mục 2.3). Không có DB thì rơi xuống đường crawl như cũ.
+  const dbQuery = movieQueryFromFeed(req)
+  if (dbQuery) {
+    const res = await queryMovies(dbQuery)
+    if (res) {
+      const payload = {
+        status: true,
+        items: res.items,
+        pagination: { page: res.page, limit: res.limit, total: res.total, totalPages: res.totalPages },
+      }
+      await writeListCache(key, payload)
+      return payload
+    }
+  }
 
   const { ok, payload } = await crawlFeed(req)
   if (ok) {
@@ -299,4 +380,24 @@ export async function getCategoryFeedCached(
   )
   const list = payload as ListResponse<Movie> | null
   return list && Array.isArray(list.items) ? list : { status: false, items: [] }
+}
+
+/**
+ * "Phim tương tự" (mục 2.2) — chấm điểm trong Postgres rồi **cache theo slug**
+ * (TTL dài như feed thể loại) vì mỗi lượt xem trang phim đều hỏi, mà RTT tới DB
+ * mới là chi phí chính (bản thân truy vấn chỉ ~2ms).
+ */
+export async function getSimilarMoviesCached(
+  target: SimilarTarget,
+  opts?: { limit?: number },
+): Promise<Movie[]> {
+  const limit = opts?.limit ?? 12
+  const key = `/similar/${target.slug}?limit=${limit}`
+  const cached = await readListCache(key, SIMILAR_TTL_MS)
+  const hit = cached as { items?: Movie[] } | null
+  if (hit && Array.isArray(hit.items)) return hit.items
+
+  const items = await similarMovies(target, limit)
+  if (items.length > 0) await writeListCache(key, { status: true, items })
+  return items
 }

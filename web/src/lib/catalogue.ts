@@ -1,4 +1,4 @@
-import { eq, lt, sql } from 'drizzle-orm'
+import { and, eq, lt, ne, or, sql, type AnyColumn, type SQL } from 'drizzle-orm'
 import { getDb, hasDb } from '../db'
 import { catalogueLists, movieEpisodes, movies, type MovieEpisodeRow, type MovieRow } from '../db/schema'
 import { isRealHls } from './hls'
@@ -412,6 +412,252 @@ export async function countMovies(): Promise<number> {
     return r?.n ?? 0
   } catch {
     return 0
+  }
+}
+
+/* ─────────────────── Truy vấn lọc trực tiếp (mục 2.3) ─────────────────── */
+
+/**
+ * Tham số lọc cho truy vấn catalogue **thuần Postgres** (không crawl nguồn).
+ *
+ * Chỉ dùng ở server: route `/api/list` gọi khi client cần lọc theo ngôn ngữ /
+ * chất lượng hoặc sắp theo điểm — những thứ nguồn ngoài không hỗ trợ.
+ */
+export interface MovieQuery {
+  category?: string
+  country?: string
+  year?: number | string
+  /** `series` | `single` | `hoathinh` */
+  type?: string
+  /** `ongoing` | `completed` | `trailer` */
+  status?: string
+  /** `vietsub` | `thuyet-minh` | `long-tieng` */
+  lang?: string
+  /** `fhd` | `hd` | `cam` | `4k` */
+  quality?: string
+  /** `newest` | `vote` | `year` */
+  sort?: string
+  page?: number
+  limit?: number
+}
+
+export interface MovieQueryResult {
+  items: Movie[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+/** Nhãn ngôn ngữ UI → chuỗi khớp trong cột `lang` (ILIKE, không phân biệt hoa/thường ASCII). */
+const LANG_MATCH: Record<string, string> = {
+  vietsub: 'vietsub',
+  'thuyet-minh': 'thuyết minh',
+  'long-tieng': 'lồng tiếng',
+}
+
+/** Nhãn chất lượng UI → tập giá trị `upper(quality)` (gồm cả typo `FDH` có trong dữ liệu). */
+const QUALITY_MATCH: Record<string, string[]> = {
+  fhd: ['FHD', 'FDH'],
+  hd: ['HD'],
+  cam: ['CAM'],
+  '4k': ['4K'],
+}
+
+/** Nhãn loại UI → tập `type` trong DB (gộp biến thể của các nguồn). */
+const TYPE_MATCH: Record<string, string[]> = {
+  series: ['series', 'tvshows'],
+  single: ['single'],
+  hoathinh: ['hoathinh', 'animation'],
+}
+
+const STATUS_ALLOWED = new Set(['ongoing', 'completed', 'trailer'])
+
+/** `expr in (a, b, c)` có tham số hoá (an toàn injection). */
+function inList(expr: SQL, values: string[]): SQL {
+  return sql`${expr} in (${sql.join(
+    values.map((v) => sql`${v}`),
+    sql`, `,
+  )})`
+}
+
+/**
+ * Điểm đánh giá **có trọng số** (công thức IMDb) — kéo phim ít lượt bình chọn về
+ * mức trung bình 7.0. Không dùng điểm thô vì dữ liệu có nhiều phim 1–2 lượt mà
+ * điểm 10 (nhiễu), sẽ đứng đầu oan.
+ */
+const WEIGHTED_VOTE = sql`(
+  (coalesce(${movies.tmdbVoteCount}, 0)::numeric / (coalesce(${movies.tmdbVoteCount}, 0) + 50.0)) *
+  (case when ${movies.tmdbVoteAvg} ~ '^[0-9]+(\\.[0-9]+)?$' then ${movies.tmdbVoteAvg}::numeric else 0 end)
+  + (50.0 / (coalesce(${movies.tmdbVoteCount}, 0) + 50.0)) * 7.0
+)`
+
+/**
+ * Lọc/sắp danh sách phim trực tiếp trong Postgres.
+ *
+ * Trả `null` khi không có DB (caller tự fallback crawl nguồn) hoặc khi truy vấn
+ * lỗi. Ở quy mô hiện tại (< 3k dòng) seq scan chỉ vài ms nên không cần index.
+ */
+export async function queryMovies(q: MovieQuery): Promise<MovieQueryResult | null> {
+  if (!hasDb()) return null
+  try {
+    const db = getDb()
+    const limit = Math.min(Math.max(Math.trunc(Number(q.limit) || 24), 1), 60)
+    const page = Math.min(Math.max(Math.trunc(Number(q.page) || 1), 1), 2000)
+
+    const conds: SQL[] = []
+    const category = (q.category ?? '').trim()
+    if (category) conds.push(sql`${movies.categories} @> ${JSON.stringify([{ slug: category }])}::jsonb`)
+    const country = (q.country ?? '').trim()
+    if (country) conds.push(sql`${movies.countries} @> ${JSON.stringify([{ slug: country }])}::jsonb`)
+    const year = Math.trunc(Number(q.year) || 0)
+    if (year > 1800 && year < 2100) conds.push(sql`${movies.year} = ${year}`)
+    const typeVals = q.type ? TYPE_MATCH[q.type] : undefined
+    if (typeVals) conds.push(inList(sql`${movies.type}`, typeVals))
+    if (q.status && STATUS_ALLOWED.has(q.status)) conds.push(sql`${movies.status} = ${q.status}`)
+    const langNeedle = q.lang ? LANG_MATCH[q.lang] : undefined
+    if (langNeedle) conds.push(sql`${movies.lang} ilike ${'%' + langNeedle + '%'}`)
+    const qualityVals = q.quality ? QUALITY_MATCH[q.quality] : undefined
+    if (qualityVals) conds.push(inList(sql`upper(${movies.quality})`, qualityVals))
+
+    const where = conds.length ? and(...conds) : undefined
+
+    const order =
+      q.sort === 'vote'
+        ? sql`${WEIGHTED_VOTE} desc, coalesce(${movies.tmdbVoteCount}, 0) desc`
+        : q.sort === 'year'
+          ? sql`${movies.year} desc nulls last`
+          : sql`${movies.syncedAt} desc nulls last, ${movies.id} desc`
+
+    const rows = await db
+      .select()
+      .from(movies)
+      .where(where)
+      .orderBy(order)
+      .limit(limit)
+      .offset((page - 1) * limit)
+
+    const [countRow] = await db.select({ n: sql<number>`count(*)::int` }).from(movies).where(where)
+    const total = countRow?.n ?? 0
+
+    return {
+      items: rows.map(rowToMovie),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    }
+  } catch (e) {
+    console.error('[catalogue] queryMovies failed:', e)
+    return null
+  }
+}
+
+/* ─────────────────── Phim tương tự (mục 2.2) ─────────────────── */
+
+/**
+ * Trọng số chấm điểm tương đồng. Thể loại quan trọng nhất, rồi đạo diễn (dấu hiệu
+ * "cùng ê-kíp"), rồi diễn viên, rồi quốc gia; năm chỉ là điểm cộng nhỏ.
+ */
+const SIM_WEIGHT = { category: 3, country: 1, director: 5, actor: 2 } as const
+
+/**
+ * Dữ liệu phim đích cần cho việc chấm điểm tương đồng.
+ *
+ * Truyền thẳng từ chi tiết đã có ở trang phim (không đọc lại DB) — tiết kiệm 1
+ * vòng mạng, vốn là chi phí chính (SQL chỉ ~2ms).
+ */
+export interface SimilarTarget {
+  slug: string
+  categories?: { slug: string }[]
+  countries?: { slug: string }[]
+  director?: string[]
+  actor?: string[]
+  year?: number
+}
+
+/**
+ * Gợi ý "Phim tương tự" bằng cách **chấm điểm trong Postgres** thay vì lấy đại
+ * vài phim đầu của thể loại: cộng điểm theo thể loại/quốc gia trùng, đạo diễn &
+ * diễn viên trùng, năm gần nhau; phá hoà bằng độ phổ biến (vote_count).
+ *
+ * Chỉ trả phim chia sẻ ít nhất một thể loại/đạo diễn/diễn viên. Trả `[]` khi
+ * thiếu DB hoặc phim đích chưa có dữ liệu phân loại (caller tự fallback).
+ */
+export async function similarMovies(target: SimilarTarget, limit = 12): Promise<Movie[]> {
+  if (!hasDb() || !target?.slug) return []
+  try {
+    const db = getDb()
+    const slug = target.slug
+    const cats = (target.categories ?? []).map((c) => c?.slug).filter((s): s is string => !!s)
+    const ctys = (target.countries ?? []).map((c) => c?.slug).filter((s): s is string => !!s)
+    const dirs = (target.director ?? []).filter((d) => d && d.trim() !== '')
+    const actors = (target.actor ?? []).filter((a) => a && a.trim() !== '')
+    const year = Number(target.year) || 0
+    if (cats.length === 0 && dirs.length === 0 && actors.length === 0) return []
+
+    /** Số thể loại/quốc gia của `movies` trùng với phim đích (jsonb containment). */
+    const overlap = (slugs: string[], col: SQL | AnyColumn) =>
+      sql.join(
+        slugs.map(
+          (s) =>
+            sql`(case when ${col} @> ${JSON.stringify([{ slug: s }])}::jsonb then 1 else 0 end)`,
+        ),
+        sql` + `,
+      )
+
+    const catScore = cats.length ? overlap(cats, movies.categories) : sql`0::int`
+    const ctyScore = ctys.length ? overlap(ctys, movies.countries) : sql`0::int`
+    /** `x in (a, b, c)` — tránh bind mảng (driver biến `any($1::text[])` thành record). */
+    const list = (vals: string[]) =>
+      sql`(${sql.join(
+        vals.map((v) => sql`${v}`),
+        sql`, `,
+      )})`
+    const dirScore = dirs.length
+      ? sql`(select count(*) from unnest(${movies.director}) x where x in ${list(dirs)})`
+      : sql`0`
+    const actorScore = actors.length
+      ? sql`(select count(*) from unnest(${movies.actor}) x where x in ${list(actors)})`
+      : sql`0`
+    const yearScore = year
+      ? sql`greatest(0, 3 - least(abs(coalesce(${movies.year}, 0) - ${year}), 3))`
+      : sql`0`
+
+    const rel = sql`(
+      (${catScore}) * ${SIM_WEIGHT.category}
+      + (${ctyScore}) * ${SIM_WEIGHT.country}
+      + (${dirScore}) * ${SIM_WEIGHT.director}
+      + (${actorScore}) * ${SIM_WEIGHT.actor}
+      + (${yearScore})
+    )`
+    const pop = sql`(least(coalesce(${movies.tmdbVoteCount}, 0), 1000) / 1000.0)`
+
+    // Prefilter RẺ: chỉ chấm điểm phim thực sự chia sẻ thể loại/đạo diễn/diễn viên.
+    // Không có bước này thì phải tính điểm cho toàn bộ bảng (~380ms/truy vấn).
+    const pre: SQL[] = []
+    if (cats.length) {
+      pre.push(
+        sql`(${sql.join(
+          cats.map((c) => sql`${movies.categories} @> ${JSON.stringify([{ slug: c }])}::jsonb`),
+          sql` or `,
+        )})`,
+      )
+    }
+    if (dirs.length) pre.push(sql`${movies.director} && array[${sql.join(dirs.map((d) => sql`${d}`), sql`, `)}]`)
+    if (actors.length) pre.push(sql`${movies.actor} && array[${sql.join(actors.map((a) => sql`${a}`), sql`, `)}]`)
+
+    const rows = await db
+      .select({ row: movies, rel: sql<number>`${rel}`.as('rel') })
+      .from(movies)
+      .where(and(ne(movies.slug, slug), or(...pre)))
+      .orderBy(sql`rel desc`, sql`${pop} desc`)
+      .limit(Math.min(Math.max(limit * 3, limit), 60))
+
+    return rows.filter((r) => Number(r.rel) > 0).slice(0, limit).map((r) => rowToMovie(r.row))
+  } catch (e) {
+    console.error('[catalogue] similarMovies failed:', e)
+    return []
   }
 }
 

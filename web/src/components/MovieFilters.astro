@@ -13,6 +13,10 @@ interface Props {
     status?: boolean
     year?: boolean
     country?: boolean
+    /** Chip ngôn ngữ (Vietsub/Thuyết minh/Lồng tiếng) — lọc trong Postgres (mục 2.3). */
+    lang?: boolean
+    /** Chip chất lượng (FHD/HD/CAM) — lọc trong Postgres (mục 2.3). */
+    quality?: boolean
   }
 }
 
@@ -26,6 +30,20 @@ const TYPE_OPTIONS = [
 const STATUS_OPTIONS = [
   { key: 'ongoing', label: 'Đang chiếu' },
   { key: 'completed', label: 'Hoàn thành' },
+]
+
+/* Chip ngôn ngữ/chất lượng: giá trị khớp bảng `LANG_MATCH`/`QUALITY_MATCH` ở
+   `lib/catalogue.ts` (server lọc thẳng Postgres, nguồn ngoài không hỗ trợ). */
+const LANG_OPTIONS = [
+  { key: 'vietsub', label: 'Vietsub' },
+  { key: 'thuyet-minh', label: 'Thuyết minh' },
+  { key: 'long-tieng', label: 'Lồng tiếng' },
+]
+
+const QUALITY_OPTIONS = [
+  { key: 'fhd', label: 'FHD' },
+  { key: 'hd', label: 'HD' },
+  { key: 'cam', label: 'CAM' },
 ]
 
 const chevronBg =
@@ -95,6 +113,40 @@ const selectBase = 'px-3 py-1.5 rounded-[var(--radius-cm-btn)] bg-cm-surface bor
       )
     }
 
+    {
+      options.lang && (
+        <div class="flex items-center gap-1.5 mr-1">
+          {LANG_OPTIONS.map((o) => (
+            <button
+              type="button"
+              class={`${chipIdle} ${chipTransition}`}
+              data-chip="lang"
+              data-value={o.key}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    {
+      options.quality && (
+        <div class="flex items-center gap-1.5 mr-1">
+          {QUALITY_OPTIONS.map((o) => (
+            <button
+              type="button"
+              class={`${chipIdle} ${chipTransition}`}
+              data-chip="quality"
+              data-value={o.key}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )
+    }
+
     <button
       type="button"
       class="mf-clear hidden px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)]"
@@ -137,7 +189,7 @@ const selectBase = 'px-3 py-1.5 rounded-[var(--radius-cm-btn)] bg-cm-surface bor
     const sortBtn = root.querySelector<HTMLButtonElement>('.mf-sort')
     const gridRoot = root.querySelector<HTMLElement>('.movie-grid')
 
-    const state: Record<string, string> = { type: '', status: '', year: '', country: '', ...defaultParams }
+    const state: Record<string, string> = { type: '', status: '', year: '', country: '', lang: '', quality: '', ...defaultParams }
     let sort = 'newest'
 
     function extraParams(): string {
@@ -146,6 +198,11 @@ const selectBase = 'px-3 py-1.5 rounded-[var(--radius-cm-btn)] bg-cm-surface bor
       if (state.status) p.set('status', state.status)
       if (state.year) p.set('year', state.year)
       if (state.country) p.set('country', state.country)
+      if (state.lang) p.set('lang', state.lang)
+      if (state.quality) p.set('quality', state.quality)
+      // `sort` chỉ gửi lên server khi cần (sắp theo điểm, hoặc đang lọc sâu trong
+      // Postgres) — tránh đẩy tham số lạ xuống nguồn ngoài ở đường crawl thường.
+      if (sort === 'vote' || state.lang || state.quality) p.set('sort', sort)
       return p.toString()
     }
 
@@ -217,18 +274,32 @@ const selectBase = 'px-3 py-1.5 rounded-[var(--radius-cm-btn)] bg-cm-surface bor
       state.status = ''
       state.year = ''
       state.country = ''
+      state.lang = ''
+      state.quality = ''
       if (yearSelect) yearSelect.value = ''
       if (countrySelect) countrySelect.value = ''
+      // Sắp xếp cũng coi như một phần của bộ lọc (sort=vote đổi hẳn truy vấn server).
+      sort = 'newest'
+      if (sortBtn) {
+        sortBtn.textContent = 'Mới nhất'
+        sortBtn.className = sortOff
+      }
       refresh()
     })
 
     const sortOn = 'mf-sort px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium transition-colors duration-[var(--duration-cm)] sort-active'
     const sortOff = 'mf-sort px-3 py-1.5 rounded-[var(--radius-cm-btn)] text-cm-meta font-medium transition-colors duration-[var(--duration-cm)] bg-cm-surface border border-cm-border text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong'
+    const SORT_LABEL: Record<string, string> = {
+      newest: 'Mới nhất',
+      vote: 'Điểm cao',
+      year: 'Năm giảm dần',
+    }
+    const SORT_CYCLE = ['newest', 'vote', 'year']
 
     sortBtn?.addEventListener('click', () => {
-      sort = sort === 'newest' ? 'year' : 'newest'
-      sortBtn.textContent = sort === 'newest' ? 'Mới nhất' : 'Năm giảm dần'
-      sortBtn.className = sort === 'year' ? sortOn : sortOff
+      sort = SORT_CYCLE[(SORT_CYCLE.indexOf(sort) + 1) % SORT_CYCLE.length] || 'newest'
+      sortBtn.textContent = SORT_LABEL[sort] || 'Mới nhất'
+      sortBtn.className = sort === 'newest' ? sortOff : sortOn
       refresh()
     })
 

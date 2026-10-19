@@ -1,18 +1,31 @@
 ---
 import MovieCard from './MovieCard.astro'
-import { getCategoryFeedCached } from '../lib/api.server'
-import type { Category, Movie } from '../lib/types'
+import { getCategoryFeedCached, getSimilarMoviesCached } from '../lib/api.server'
+import type { Category, Country, Movie } from '../lib/types'
 
 interface Props {
   categories: Category[]
   excludeSlug: string
+  countries?: Country[]
+  director?: string[]
+  actor?: string[]
+  year?: number
 }
 
-const { categories, excludeSlug } = Astro.props
+const { categories, excludeSlug, countries, director, actor, year } = Astro.props
 
-let items: Movie[] = []
+const TARGET = 6
 
-if (categories.length > 0) {
+// Ưu tiên chấm điểm tương đồng trong Postgres (thể loại + quốc gia + đạo diễn +
+// diễn viên + năm). Chỉ khi có quá ít kết quả mới lấp thêm bằng feed thể loại.
+let items: Movie[] = await getSimilarMoviesCached(
+  { slug: excludeSlug, categories, countries, director, actor, year },
+  { limit: 12 },
+).catch(() => [] as Movie[])
+
+items = items.filter((m) => m.slug !== excludeSlug)
+
+if (items.length < TARGET && categories.length > 0) {
   const lists = await Promise.all(
     categories.slice(0, 4).map((c) =>
       // Đọc qua cache Postgres (`getFeedCached`, limit 12 trùng khoá prewarm) thay vì
@@ -22,17 +35,17 @@ if (categories.length > 0) {
         .catch(() => [] as Movie[]),
     ),
   )
-  const seen = new Set<string>()
-  const merged: Movie[] = []
+  const seen = new Set(items.map((m) => m.slug))
   for (const list of lists) {
     for (const m of list) {
       if (m.slug === excludeSlug || seen.has(m.slug)) continue
       seen.add(m.slug)
-      merged.push(m)
+      items.push(m)
     }
   }
-  items = merged.slice(0, 6)
 }
+
+items = items.slice(0, TARGET)
 ---
 
 {

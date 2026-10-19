@@ -24,24 +24,24 @@ const LISTS: Record<
   'phim-bo': {
     title: 'Phim Bộ',
     desc: 'Xem các bộ phim truyền hình dài tập mới nhất, hay nhất với chất lượng HD VietSub miễn phí.',
-    options: { status: true, year: true, country: true },
+    options: { status: true, year: true, country: true, lang: true, quality: true },
   },
   'phim-le': {
     title: 'Phim Lẻ',
     desc: 'Xem các bộ phim điện ảnh mới nhất, hay nhất với chất lượng HD VietSub miễn phí.',
-    options: { status: true, year: true, country: true },
+    options: { status: true, year: true, country: true, lang: true, quality: true },
   },
   'phim-dang-chieu': {
     title: 'Phim Đang Chiếu',
     desc: 'Xem các bộ phim đang phát sóng mới nhất, cập nhật tập mới liên tục với chất lượng HD VietSub miễn phí.',
     apiPath: '/danh-sach/phim-bo',
     defaultParams: { status: 'ongoing' },
-    options: { status: true, year: true, country: true },
+    options: { status: true, year: true, country: true, lang: true, quality: true },
   },
   'phim-moi-cap-nhat': {
     title: 'Phim Mới Cập Nhật',
     desc: 'Phim mới được cập nhật liên tục mỗi ngày, chất lượng HD VietSub miễn phí.',
-    options: { status: true, year: true, country: true },
+    options: { status: true, year: true, country: true, lang: true, quality: true },
   },
 }
 

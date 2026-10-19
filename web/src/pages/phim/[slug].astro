@@ -290,7 +290,14 @@ const chipClass =
               }
 
               <div class="mt-8">
-                <SimilarMovies categories={movie.category ?? []} excludeSlug={slug} />
+                <SimilarMovies
+                  categories={movie.category ?? []}
+                  countries={movie.country ?? []}
+                  director={movie.director}
+                  actor={movie.actor}
+                  year={movie.year}
+                  excludeSlug={slug}
+                />
               </div>
             </section>
 

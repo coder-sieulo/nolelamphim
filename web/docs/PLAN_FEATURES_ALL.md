@@ -90,9 +90,18 @@ File chính: `src/pages/xem/[slug]/[episode].astro` (927 dòng), `src/components
 
 ## 4. P2 — SEO & dữ liệu (2.1–2.5)
 
-**Migration dùng chung (0005)**: thêm cột dẫn xuất + GIN index để **lọc/tính điểm bằng SQL** (nhanh, không crawl):
+**Migration dùng chung (0005)** — ⚠️ **ĐÃ QUYẾT ĐỊNH BỎ (không cần)**.
+
+Sau khi đo thật: `categories`/`countries` đã là **jsonb** (lọc bằng `@>` được ngay), `actor`/`director` đã là **`text[]`** (overlap `&&` được ngay), và bảng chỉ có **~2.666 dòng** ⇒ seq scan ~1,8ms. Thêm cột dẫn xuất + GIN index là **tối ưu không cần thiết** mà lại sinh rủi ro lệch dữ liệu (denormalize) + phải backfill. Vì vậy 2.2/2.3 **không cần migration**.
+
+Chốt khác so với kế hoạch ban đầu:
+- 2.3 **không tạo endpoint mới** `/api/catalogue/query`; thay vào đó nhét thẳng vào đường cũ: `/api/list` → `getFeedCached()` tự phát hiện `lang`/`quality`/`sort=vote` rồi gọi `queryMovies()` (thuần Postgres) thay vì crawl. Client (`MovieGrid`) **không phải sửa**.
+- Lọc `lang` dùng `ILIKE` trên cột `lang` (không cần `lang_tags`); `quality` so `upper(quality)` và gom cả typo `FDH`.
+- Sắp xếp "Điểm cao" dùng **trung bình có trọng số kiểu IMDb** (m=50, C=7.0), không dùng điểm thô — vì dữ liệu có nhiều phim 1–2 lượt bình chọn mà điểm 10 (đứng đầu oan).
+- Hero trang chủ cũng đổi sang công thức trọng số này.
 
 ```sql
+-- (KHÔNG chạy) giữ lại để tham chiếu lịch sử
 alter table movies add column category_slugs text[] default '{}';
 alter table movies add column country_slugs  text[] default '{}';
 alter table movies add column lang_tags      text[] default '{}';   -- {vietsub, thuyet-minh, long-tieng}
@@ -111,8 +120,8 @@ create index on movies (quality_norm);
 | Mã | Việc | Giải pháp | Công |
 |---|---|---|---|
 | **2.4** | Hero/backdrop đúng & nhẹ | Hero đã dùng đúng `poster_url` (ngang). Việc còn lại: **không upscale ảnh 500×281 vsmov lên 1600w** (proxy đã `withoutEnlargement`, nhưng cần `sizes`/`srcset` để mobile không tải 1600w) + `fetchpriority="high"`. Thêm srcset 800/1200/1600 qua proxy. | S |
-| **2.3** | Lọc **ngôn ngữ** + chất lượng + sắp xếp | API mới **đọc thẳng Postgres** (không crawl): `GET /api/catalogue/query?category=&country=&year=&type=&lang=&quality=&sort=&page=`. Chip mới trong `MovieFilters` (client-side, **URL không đổi** ⇒ an toàn SEO). Dùng `lang_tags`/`quality_norm`. | M |
-| **2.2** | "Phim tương tự" chấm điểm | SQL: `overlap(category_slugs)×3 + director×4 + actor×2 + gần năm + vote`, `order by score desc, tmdb_vote_avg desc nulls last limit 12`; thay `SimilarMovies` từ list cache sang hàm mới `getSimilarMovies(slug)`. Đo lại ttfb. | M |
+| **2.3** | Lọc **ngôn ngữ** + chất lượng + sắp xếp | ✅ **XONG 2026-10-19**. Chip `lang`/`quality` trong `MovieFilters` + nút sắp xếp vòng `Mới nhất → Điểm cao → Năm giảm dần`; `extraParams()` gửi `sort` chỉ khi cần. Server: `getFeedCached()` phát hiện `lang`/`quality`/`sort=vote` → `queryMovies()` (Postgres). **URL không đổi** ⇒ an toàn SEO. | M |
+| **2.2** | "Phim tương tự" chấm điểm | ✅ **XONG 2026-10-19**. `similarMovies(target)` chấm điểm trong SQL: thể loại ×3 + quốc gia ×1 + đạo diễn ×5 + diễn viên ×2 + gần năm (0..3), phá hoà bằng `vote_count`; có **prefilter rẻ** (`categories @>` / `director &&` / `actor &&`) để không quét cả bảng. Truyền sẵn dữ liệu phim đích từ trang phim (bỏ 1 vòng mạng). Cache `/similar/{slug}` TTL 30h. Fallback về feed thể loại khi < 6 kết quả. | M |
 | **2.1** | Trang **diễn viên / đạo diễn** | Bảng `people(id, name, slug, movie_count, updated_at)` + `movie_people(people_id, movie_id, role)` (migration 0006), backfill từ `actor`/`director`; route `/dien-vien/[slug]`, `/dao-dien/[slug]` (SSR + cache công khai). **`noindex` nếu < 3 phim**; chỉ vào sitemap nếu ≥ 3. Link tên diễn viên ở trang chi tiết. Lưu ý: chỉ phủ ~673 phim. | M |
 | **2.5** | Bộ sưu tập biên tập | Bảng `curated_lists(slug,title,description,cover,position)` + `curated_items(list_slug, movie_slug, position, note)` (migration 0007); trang `/bo-suu-tap/[slug]`; quản lý qua 4.3; seed 4–5 list. | M |
 

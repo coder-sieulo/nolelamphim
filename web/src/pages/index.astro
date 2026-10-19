@@ -55,7 +55,16 @@ const heroPool: Movie[] = []
     heroPool.push(m)
   }
 }
-const heroScore = (m: Movie) => (Number(m.tmdb?.vote_average) || 0) * 10000 + (Number(m.year) || 0)
+const heroScore = (m: Movie) => {
+  const r = Number(m.tmdb?.vote_average) || 0
+  const v = Number(m.tmdb?.vote_count) || 0
+  // Trung bình có trọng số (IMDb): phim ít lượt bị kéo về mức 7.0 — tránh phim
+  // 1–2 lượt bình chọn mà điểm 10 đứng đầu banner.
+  const M = 50
+  const weighted = v > 0 ? (v / (v + M)) * r + (M / (v + M)) * 7 : 0
+  const year = Math.min(Math.max((Number(m.year) || 0) - 2000, 0), 40)
+  return weighted * 100 + year
+}
 const heroMovies: Movie[] = heroPool
   .slice()
   .sort((a, b) => heroScore(b) - heroScore(a))
