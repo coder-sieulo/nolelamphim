@@ -415,6 +415,58 @@ export async function countMovies(): Promise<number> {
   }
 }
 
+/* ─────────────────── Đọc dữ liệu sitemap (mục 4.4) ─────────────────── */
+
+export interface SitemapMovie {
+  slug: string
+  /** Mốc "đã cập nhật" gần nhất — ưa `synced_at` (đã enrich), fallback `updated_at`. */
+  lastmod: string | null
+}
+
+/** `lastmod` mới nhất toàn catalogue (dùng cho sitemap index, 1 query). */
+export async function sitemapLastmod(): Promise<string | null> {
+  if (!hasDb()) return null
+  try {
+    const db = getDb()
+    const [r] = await db
+      .select({
+        m: sql<string | null>`to_char(max(coalesce(movies.synced_at, movies.updated_at)) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
+      })
+      .from(movies)
+    return r?.m ?? null
+  } catch (e) {
+    console.error('[catalogue] sitemapLastmod failed:', e)
+    return null
+  }
+}
+
+/**
+ * Đọc slug + mốc cập nhật cho sitemap, phân trang `offset/limit` (1 query/chunk).
+ *
+ * `ORDER BY slug` để thứ tự ổn định giữa các lần đọc → chunk không bị lệch
+ * khi thêm phim mới giữa chừng (vẫn có thể lệch 1 phần tử, chấp nhận được:
+ * sitemap chỉ cần đủ URL, không cần đúng 100% thứ tự).
+ */
+export async function sitemapMovieSlugs(offset = 0, limit = 5000): Promise<SitemapMovie[]> {
+  if (!hasDb() || limit <= 0) return []
+  try {
+    const db = getDb()
+    const rows = await db
+      .select({
+        slug: movies.slug,
+        lastmod: sql<string | null>`coalesce(to_char(movies.synced_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), to_char(movies.updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'))`,
+      })
+      .from(movies)
+      .orderBy(movies.slug)
+      .limit(limit)
+      .offset(offset)
+    return rows.map((r) => ({ slug: r.slug, lastmod: r.lastmod ?? null }))
+  } catch (e) {
+    console.error('[catalogue] sitemapMovieSlugs failed:', e)
+    return []
+  }
+}
+
 /* ─────────────────── Truy vấn lọc trực tiếp (mục 2.3) ─────────────────── */
 
 /**
