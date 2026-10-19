@@ -89,3 +89,112 @@
   width: 0;
   transition: width 1s linear;
 }
+
+/* ---------- Nút PiP (cửa sổ nhỏ) — góc dưới trái player ----------
+ * Chỉ hiện khi đang phát bằng <video> (JS gỡ `.hidden`). Iframe bên thứ ba
+ * không hỗ trợ Picture-in-Picture nên nút ẩn ở chế độ đó. */
+.watch-pip {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-cm-btn);
+  background: rgba(10, 10, 12, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-cm-text-2);
+  transition:
+    background-color var(--duration-cm) var(--ease-cm),
+    border-color var(--duration-cm) var(--ease-cm),
+    color var(--duration-cm) var(--ease-cm);
+}
+.watch-pip:hover {
+  background: rgba(10, 10, 12, 0.9);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--color-cm-text);
+}
+.watch-pip.hidden {
+  display: none;
+}
+
+/* ---------- Tự chuyển tập: thẻ đếm ngược (giữa dưới player) ---------- */
+.watch-autonext {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 24px);
+  padding: 8px 10px 8px 12px;
+  border-radius: var(--radius-cm-modal);
+  background: rgba(10, 10, 12, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-cm-text);
+  font-size: var(--text-cm-meta);
+  box-shadow: var(--shadow-cm-up);
+  animation: watch-autonext-in 220ms var(--ease-cm) both;
+}
+.watch-autonext-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.watch-autonext-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-cm-accent);
+  font-weight: 600;
+}
+.watch-autonext-go {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-cm-btn);
+  background: var(--color-cm-accent);
+  color: #fff;
+  font-size: var(--text-cm-meta);
+  font-weight: 600;
+}
+.watch-autonext-go:hover {
+  filter: brightness(1.08);
+}
+.watch-autonext-cancel {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--radius-cm-btn);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: var(--color-cm-text-2);
+  font-size: var(--text-cm-meta);
+}
+.watch-autonext-cancel:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--color-cm-text);
+}
+@keyframes watch-autonext-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .watch-autonext {
+    animation: none;
+  }
+}

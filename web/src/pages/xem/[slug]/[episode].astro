@@ -9,6 +9,7 @@ import { getKkphimDetail, buildM3u8Map } from '../../../lib/kkphim'
 import { imgUrl, imgProxyUrl } from '../../../lib/img'
 import { SITE_URL } from '../../../lib/site'
 import { breadcrumbLd } from '../../../lib/seo'
+import { isRealHls } from '../../../lib/hls'
 import { FaCirclePlay, FaChevronLeft, FaChevronRight, FaListUl, FaXmark, FaChevronDown } from 'react-icons/fa6'
 
 const slug = Astro.params.slug ?? ''
@@ -48,8 +49,13 @@ const serverData = episodes.map((s, si) => ({
     name: e.name,
     slug: e.slug,
     embed: e.embed,
-    // m3u8 thật lấy từ kkphim (m3u8 của vsmov là link embed); map rỗng thì giữ e.m3u8.
-    ...(si === 0 && m3u8Map[e.slug] ? { m3u8: m3u8Map[e.slug] } : e.m3u8 ? { m3u8: e.m3u8 } : {}),
+    // m3u8 thật lấy từ kkphim (m3u8 của vsmov là link embed, KHÔNG phải HLS).
+    // Chỉ nhận khi đúng là HLS thật — tránh thử hls.js vô ích rồi mới rơi về iframe.
+    ...(si === 0 && m3u8Map[e.slug]
+      ? { m3u8: m3u8Map[e.slug] }
+      : isRealHls(e.m3u8)
+        ? { m3u8: e.m3u8 }
+        : {}),
   })),
 }))
 
@@ -57,7 +63,9 @@ const currentServer = episodes[0]
 const currentList = currentServer?.list ?? []
 const currentEpIdx = currentList.findIndex((e) => e.slug === episode)
 const currentEp = currentList[currentEpIdx]
-const currentEpM3u8 = currentEp ? m3u8Map[currentEp.slug] || currentEp.m3u8 || '' : ''
+const currentEpM3u8 = currentEp
+  ? m3u8Map[currentEp.slug] || (isRealHls(currentEp.m3u8) ? currentEp.m3u8 : '')
+  : ''
 const prevEp = currentEpIdx > 0 ? currentList[currentEpIdx - 1] : null
 const nextEp = currentEpIdx < currentList.length - 1 ? currentList[currentEpIdx + 1] : null
 
@@ -169,6 +177,29 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
                 </a>
               )}
             </div>
+
+            {/* Nút PiP — JS chỉ gỡ `.hidden` khi đang phát bằng <video>. */}
+            <button
+              id="watch-pip"
+              type="button"
+              class="watch-pip hidden"
+              aria-label="Cửa sổ nhỏ (picture-in-picture)"
+              title="Cửa sổ nhỏ (i)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="w-[18px] h-[18px]"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4.5" width="18" height="15" rx="2.5"></rect>
+                <rect x="12" y="11" width="7" height="6" rx="1.2" fill="currentColor" stroke="none"></rect>
+              </svg>
+            </button>
 
             {/* Server switch — dropdown nhỏ góc phải player */}
             {serverData.length > 1 && (
@@ -360,6 +391,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
     import { addRecent, updateRecentProgress, getRecent } from '../../../scripts/store'
     import { escapeHTML } from '../../../scripts/cards'
     import { registerPageInit } from '../../../scripts/lifecycle'
+    import { imgProxyUrl } from '../../../lib/img'
 
     registerPageInit(() => {
       const page = document.querySelector<HTMLElement>('.watch-page')
@@ -461,7 +493,15 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
             if (Number.isFinite(v.duration) && v.duration > 0) duration = v.duration
           }, { passive: true })
           v.addEventListener('pause', flushProgress, { passive: true })
-          v.addEventListener('ended', flushProgress, { passive: true })
+          v.addEventListener('ended', () => {
+            flushProgress()
+            showAutoNext()
+          }, { passive: true })
+          // Người dùng tua/phát lại → huỷ đếm ngược tự chuyển tập.
+          v.addEventListener('seeking', clearAutoNext, { passive: true })
+          v.addEventListener('play', () => {
+            if (v.currentTime < (v.duration || 0) - 1) clearAutoNext()
+          }, { passive: true })
           v.addEventListener('loadeddata', seekToResume, { once: true })
           v.addEventListener('playing', seekToResume, { once: true })
         }
@@ -531,6 +571,44 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       let hlsLevels: HlsLevel[] = []
       let currentLevel = -1 // -1 = Auto
 
+      /* ── Ghi nhớ tuỳ chọn player: tốc độ / âm lượng / tắt tiếng / mức chất lượng ──
+       * Lưu ở localStorage (không đụng schema, dùng được cả khi chưa đăng nhập). */
+      interface PlayerPrefs {
+        rate?: number
+        volume?: number
+        muted?: boolean
+        level?: number
+      }
+      const PREFS_KEY = 'nllp:player'
+      function loadPrefs(): PlayerPrefs {
+        try {
+          const raw = localStorage.getItem(PREFS_KEY)
+          return raw ? (JSON.parse(raw) as PlayerPrefs) : {}
+        } catch {
+          return {}
+        }
+      }
+      function savePrefs(patch: PlayerPrefs) {
+        try {
+          localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), ...patch }))
+        } catch {
+          /* ignore */
+        }
+      }
+      /* Áp tuỳ chọn âm lượng/tốc độ cho <video> vừa tạo. */
+      function applyPrefsToVideo(v: HTMLVideoElement) {
+        const p = loadPrefs()
+        if (typeof p.volume === 'number' && p.volume >= 0 && p.volume <= 1) v.volume = p.volume
+        if (typeof p.muted === 'boolean') v.muted = p.muted
+        if (typeof p.rate === 'number' && p.rate > 0) {
+          try {
+            v.playbackRate = p.rate
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
       /* ── Chọn chất lượng (mức HLS của hls.js) ── */
       const qdd = document.getElementById('watch-quality-dd')
       const qTrigger = document.getElementById('watch-quality-trigger')
@@ -557,6 +635,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         if (!hls) return
         hls.currentLevel = level
         currentLevel = level
+        savePrefs({ level })
         if (qLabel) qLabel.textContent = level === -1 ? 'Tự động' : qualityLabel(hlsLevels[level], level)
         markQuality(level)
         closeQualityMenu()
@@ -578,9 +657,13 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         qMenu.querySelectorAll<HTMLButtonElement>('button[data-level]').forEach((b) => {
           b.addEventListener('click', () => selectLevel(Number(b.dataset.level)))
         })
-        currentLevel = -1
-        if (qLabel) qLabel.textContent = 'Tự động'
-        markQuality(-1)
+        // Khôi phục mức chất lượng người dùng đã chọn trước đó (nếu còn hợp lệ).
+        const saved = loadPrefs().level
+        const restored = typeof saved === 'number' && saved >= -1 && saved < hlsLevels.length ? saved : -1
+        currentLevel = restored
+        if (restored >= 0 && hls) hls.currentLevel = restored
+        if (qLabel) qLabel.textContent = restored === -1 ? 'Tự động' : qualityLabel(hlsLevels[restored], restored)
+        markQuality(restored)
         qdd.classList.remove('hidden')
       }
 
@@ -652,6 +735,8 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
           frame = null
         }
         currentMode = 'none'
+        hidePipButton()
+        clearAutoNext()
         // Đổi nguồn/tập → bỏ trạng thái chất lượng cũ (sẽ dựng lại khi parse manifest mới).
         hideQuality()
         hlsLevels = []
@@ -674,6 +759,14 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         stage.appendChild(v)
         videoEl = v
         currentMode = 'video'
+        applyPrefsToVideo(v)
+        // Ghi nhớ thay đổi âm lượng / tắt tiếng / tốc độ.
+        const persist = () =>
+          savePrefs({ volume: v.volume, muted: v.muted, rate: v.playbackRate })
+        v.addEventListener('volumechange', persist, { passive: true })
+        v.addEventListener('ratechange', persist, { passive: true })
+        wireMediaSession(v, title)
+        showPipButton()
         return v
       }
 
@@ -879,6 +972,121 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         }
       })
 
+      /* ── Picture-in-Picture ── */
+      const pipBtn = document.getElementById('watch-pip')
+      function pipSupported(): boolean {
+        return typeof document !== 'undefined' && 'pictureInPictureEnabled' in document
+          ? (document as Document & { pictureInPictureEnabled?: boolean }).pictureInPictureEnabled === true
+          : false
+      }
+      function showPipButton() {
+        if (!pipBtn) return
+        if (pipSupported()) pipBtn.classList.remove('hidden')
+        else pipBtn.classList.add('hidden')
+      }
+      function hidePipButton() {
+        pipBtn?.classList.add('hidden')
+      }
+      function togglePip() {
+        if (!videoEl) return
+        const doc = document as Document & {
+          pictureInPictureElement?: Element | null
+          exitPictureInPicture?: () => Promise<void>
+        }
+        const v = videoEl as HTMLVideoElement & { requestPictureInPicture?: () => Promise<unknown> }
+        try {
+          if (doc.pictureInPictureElement) doc.exitPictureInPicture?.().catch(() => {})
+          else v.requestPictureInPicture?.().catch(() => {})
+        } catch {
+          /* ignore */
+        }
+      }
+      pipBtn?.addEventListener('click', togglePip)
+
+      /* ── Media Session: điều khiển từ khoá/màn hình khoá (chỉ <video>) ── */
+      function wireMediaSession(v: HTMLVideoElement, title: string) {
+        const ms = (navigator as Navigator & { mediaSession?: MediaSession }).mediaSession
+        if (!ms) return
+        try {
+          const artwork = movieThumb
+            ? [
+                { src: imgProxyUrl(movieThumb, 320), sizes: '320x480', type: 'image/webp' },
+              ]
+            : []
+          ms.metadata = new MediaMetadata({
+            title: title || movieName,
+            artist: movieName,
+            album: 'Nô Lệ Làm Phim',
+            artwork,
+          })
+          const seekBy = (delta: number) => {
+            try {
+              v.currentTime = Math.max(0, Math.min((v.duration || 1e9), v.currentTime + delta))
+            } catch {
+              /* ignore */
+            }
+          }
+          ms.setActionHandler('play', () => v.play().catch(() => {}))
+          ms.setActionHandler('pause', () => v.pause())
+          ms.setActionHandler('seekbackward', () => seekBy(-10))
+          ms.setActionHandler('seekforward', () => seekBy(10))
+          ms.setActionHandler('nexttrack', () => clickNavLink('watch-next'))
+          ms.setActionHandler('previoustrack', () => clickNavLink('watch-prev'))
+        } catch {
+          /* ignore — một số trình duyệt thiếu action */
+        }
+      }
+
+      /* ── Tự chuyển tập: sau khi tập hiện tại kết thúc (chỉ <video>), hiện thẻ
+       *    đếm ngược và tự đi tiếp; người dùng có thể "Xem ngay" hoặc "Huỷ". ── */
+      const AUTONEXT_SECONDS = 10
+      let autoNextTimer = 0
+      let autoNextEl: HTMLElement | null = null
+      function clearAutoNext() {
+        if (autoNextTimer) {
+          window.clearInterval(autoNextTimer)
+          autoNextTimer = 0
+        }
+        if (autoNextEl) {
+          autoNextEl.remove()
+          autoNextEl = null
+        }
+      }
+      function showAutoNext() {
+        clearAutoNext()
+        const next = document.getElementById('watch-next')
+        if (!next || next.tagName !== 'A') return
+        const wrap = document.createElement('div')
+        wrap.className = 'watch-autonext'
+        wrap.setAttribute('role', 'status')
+        wrap.innerHTML =
+          `<span class="watch-autonext-text">Tập tiếp theo sau <span class="watch-autonext-count" data-count>${AUTONEXT_SECONDS}</span>s</span>` +
+          `<a class="watch-autonext-go" href="${(next as HTMLAnchorElement).getAttribute('href') || '#'}">Xem ngay</a>` +
+          `<button type="button" class="watch-autonext-cancel" data-cancel>Huỷ</button>`
+        const playerBox = stage?.parentElement
+        ;(playerBox || stage)?.appendChild(wrap)
+        autoNextEl = wrap
+        wrap.querySelector('[data-cancel]')?.addEventListener('click', () => {
+          clearAutoNext()
+        })
+        const countEl = wrap.querySelector('[data-count]')
+        let left = AUTONEXT_SECONDS
+        autoNextTimer = window.setInterval(() => {
+          left -= 1
+          if (countEl) countEl.textContent = String(Math.max(0, left))
+          if (left <= 0) {
+            clearAutoNext()
+            const go = document.getElementById('watch-next')
+            if (go && go.tagName === 'A') (go as HTMLAnchorElement).click()
+          }
+        }, 1000)
+      }
+      /* ── Điều hướng tập (dùng chung cho Media Session + bàn phím) ── */
+      function clickNavLink(id: 'watch-next' | 'watch-prev') {
+        const el = document.getElementById(id)
+        if (el && el.tagName === 'A') (el as HTMLAnchorElement).click()
+      }
+
       /* ── Keyboard ── */
       function isTyping(): boolean {
         const el = document.activeElement
@@ -889,32 +1097,129 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
 
       function onKey(e: KeyboardEvent) {
         if (isTyping()) return
-        if (e.key === 'Escape') {
+        const k = e.key
+
+        if (k === 'Escape') {
           if (drawer?.classList.contains('open')) closeDrawer()
           closeQualityMenu()
+          clearAutoNext()
           return
         }
-        if (e.key === 'ArrowRight') {
-          const next = document.getElementById('watch-next')
-          if (next && next.tagName === 'A') {
-            e.preventDefault()
-            next.click()
-          }
-        } else if (e.key === 'ArrowLeft') {
+
+        // Chỉ khi thực sự đang phát bằng <video> mới can thiệp phím của video.
+        const videoMode = currentMode === 'video' && videoEl !== null
+        const shift = e.shiftKey
+
+        // Chuyển tập: Shift+←/→ ở mọi chế độ; ←/→ khi KHÔNG có <video>
+        // (iframe bên thứ ba không cho đọc/ tua thời gian nên giữ nguyên hành vi cũ).
+        if (k === 'ArrowLeft' && (shift || !videoMode)) {
           const prev = document.getElementById('watch-prev')
           if (prev && prev.tagName === 'A') {
             e.preventDefault()
-            prev.click()
+            ;(prev as HTMLAnchorElement).click()
           }
-        } else if (e.key === 'f' || e.key === 'F') {
-          const f = document.getElementById('watch-frame') as HTMLIFrameElement | null
-          if (f && typeof f.requestFullscreen === 'function') {
+          return
+        }
+        if (k === 'ArrowRight' && (shift || !videoMode)) {
+          const next = document.getElementById('watch-next')
+          if (next && next.tagName === 'A') {
             e.preventDefault()
-            f.requestFullscreen().catch(() => {})
-          } else if (videoEl && typeof videoEl.requestFullscreen === 'function') {
-            e.preventDefault()
-            videoEl.requestFullscreen().catch(() => {})
+            ;(next as HTMLAnchorElement).click()
           }
+          return
+        }
+
+        if (!videoMode || !videoEl) {
+          // Không có video: chỉ còn phím fullscreen cho iframe.
+          if (k === 'f' || k === 'F') {
+            const f = document.getElementById('watch-frame') as HTMLIFrameElement | null
+            if (f && typeof f.requestFullscreen === 'function') {
+              e.preventDefault()
+              f.requestFullscreen().catch(() => {})
+            }
+          }
+          return
+        }
+
+        const v = videoEl
+        const seekBy = (delta: number) => {
+          const dur = Number.isFinite(v.duration) && v.duration > 0 ? v.duration : Number.MAX_SAFE_INTEGER
+          v.currentTime = Math.max(0, Math.min(dur, v.currentTime + delta))
+        }
+        switch (k) {
+          case ' ':
+          case 'k':
+          case 'K':
+            e.preventDefault()
+            clearAutoNext()
+            if (v.paused) v.play().catch(() => {})
+            else v.pause()
+            break
+          case 'j':
+          case 'J':
+            e.preventDefault()
+            seekBy(-10)
+            break
+          case 'l':
+          case 'L':
+            e.preventDefault()
+            seekBy(10)
+            break
+          case 'ArrowLeft':
+            e.preventDefault()
+            seekBy(-10)
+            break
+          case 'ArrowRight':
+            e.preventDefault()
+            seekBy(10)
+            break
+          case 'ArrowUp':
+            e.preventDefault()
+            v.volume = Math.min(1, Math.round((v.volume + 0.05) * 100) / 100)
+            v.muted = false
+            break
+          case 'ArrowDown':
+            e.preventDefault()
+            v.volume = Math.max(0, Math.round((v.volume - 0.05) * 100) / 100)
+            break
+          case 'm':
+          case 'M':
+            e.preventDefault()
+            v.muted = !v.muted
+            break
+          case 'n':
+          case 'N':
+            e.preventDefault()
+            clickNavLink('watch-next')
+            break
+          case 'p':
+          case 'P':
+            e.preventDefault()
+            clickNavLink('watch-prev')
+            break
+          case 'i':
+          case 'I':
+            e.preventDefault()
+            togglePip()
+            break
+          case 'f':
+          case 'F': {
+            e.preventDefault()
+            const anyV = v as HTMLVideoElement & { webkitEnterFullscreen?: () => void }
+            if (typeof v.requestFullscreen === 'function') {
+              if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+              else v.requestFullscreen().catch(() => {})
+            } else if (typeof anyV.webkitEnterFullscreen === 'function') {
+              anyV.webkitEnterFullscreen()
+            }
+            break
+          }
+          default:
+            // 0–9: nhảy tới % tương ứng của thời lượng.
+            if (/^[0-9]$/.test(k) && Number.isFinite(v.duration) && v.duration > 0) {
+              e.preventDefault()
+              v.currentTime = v.duration * (Number(k) / 10)
+            }
         }
       }
       document.addEventListener('keydown', onKey)
@@ -922,6 +1227,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       return () => {
         document.removeEventListener('keydown', onKey)
         document.removeEventListener('visibilitychange', onVisibility)
+        clearAutoNext()
       }
     })
   </script>
