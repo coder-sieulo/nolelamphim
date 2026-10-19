@@ -52,6 +52,32 @@ export function removeRecent(slug: string) {
   writeJSON('recent', getRecent().filter((r) => r.slug !== slug))
 }
 
+/* ── Tiến trình theo TỪNG TẬP (mục 1.4) ──
+ * `recent` chỉ giữ 1 dòng/phim (tập mới nhất) nên không đủ để vẽ vòng tiến trình
+ * cho mọi tập. Lưu riêng theo phim: `ep-progress:{slug}` = { [epSlug]: {p,d,w} }. */
+export interface EpProgress {
+  position: number
+  duration: number
+  watchedAt: number
+}
+
+export function getEpProgress(slug: string): Record<string, EpProgress> {
+  return readJSON<Record<string, EpProgress>>(`ep-progress:${slug}`, {})
+}
+
+export function setEpProgress(slug: string, epSlug: string, position: number, duration: number) {
+  if (!slug || !epSlug) return
+  if (!Number.isFinite(position) || position <= 0) return
+  if (!Number.isFinite(duration) || duration <= 0) return
+  const map = getEpProgress(slug)
+  map[epSlug] = {
+    position: Math.min(position, duration * 0.99),
+    duration,
+    watchedAt: Date.now(),
+  }
+  writeJSON(`ep-progress:${slug}`, map)
+}
+
 /** Cập nhật tiến trình xem (giữ nguyên thứ tự + watchedAt) để "Tiếp tục xem"
  *  hiện thanh tiến trình thật (Home/Recent/profile dùng chung source này). */
 export function updateRecentProgress(slug: string, position: number, duration: number) {

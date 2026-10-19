@@ -198,3 +198,34 @@
     animation: none;
   }
 }
+
+/* ---------- Tiến trình từng tập (mục 1.4) ----------
+ * Thanh mảnh ở đáy nút tập: accent = đang xem dở, mờ = đã xem xong. */
+.ep-btn {
+  position: relative;
+}
+.ep-prog {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 6px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.3);
+  overflow: hidden;
+  pointer-events: none;
+}
+.ep-prog > i {
+  display: block;
+  height: 100%;
+  width: var(--ep-pct, 0%);
+  background: var(--color-cm-accent);
+  border-radius: 999px;
+}
+.ep-btn.current .ep-prog > i {
+  background: #fff;
+}
+.ep-btn.ep-watched .ep-prog > i {
+  background: currentColor;
+  opacity: 0.55;
+}

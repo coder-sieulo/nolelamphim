@@ -363,9 +363,9 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
                       const isCurrent = e.slug === episode
                       const cls = `ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius-cm-btn)] text-cm-meta flex items-center justify-center font-medium${isCurrent ? ' current' : ''}`
                       return isCurrent ? (
-                        <span class={cls} aria-current="true">{e.name}</span>
+                        <span class={cls} aria-current="true" data-ep-slug={e.slug}>{e.name}</span>
                       ) : (
-                        <a href={`/xem/${slug}/${e.slug}`} class={cls}>{e.name}</a>
+                        <a href={`/xem/${slug}/${e.slug}`} class={cls} data-ep-slug={e.slug}>{e.name}</a>
                       )
                     })
                   }
@@ -388,7 +388,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
   }
 
   <script>
-    import { addRecent, updateRecentProgress, getRecent } from '../../../scripts/store'
+    import { addRecent, updateRecentProgress, getRecent, getEpProgress, setEpProgress } from '../../../scripts/store'
     import { escapeHTML } from '../../../scripts/cards'
     import { registerPageInit } from '../../../scripts/lifecycle'
     import { imgProxyUrl } from '../../../lib/img'
@@ -431,10 +431,49 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       let progressActive = false
       let progressTick = 0
 
+      /* ── Vẽ thanh tiến trình cho từng nút tập (mục 1.4) ──
+       * Đọc từ localStorage `ep-progress:{slug}` (giữ được cho cả khách chưa đăng nhập).
+       * ≥ 92% coi như "đã xem". Gọi lại sau mỗi lần dựng lại lưới tập. */
+      function decorateEpProgress() {
+        let map: Record<string, { position: number; duration: number }> = {}
+        try {
+          map = getEpProgress(slug)
+        } catch {
+          map = {}
+        }
+        document.querySelectorAll<HTMLElement>('.ep-btn').forEach((b) => {
+          const epSlug = b.dataset.epSlug || ''
+          const p = epSlug ? map[epSlug] : null
+          const bar = b.querySelector('.ep-prog')
+          if (!p || !p.duration || p.position <= 0) {
+            if (bar) bar.remove()
+            b.classList.remove('ep-watched')
+            b.style.removeProperty('--ep-pct')
+            return
+          }
+          const pct = Math.max(0, Math.min(100, Math.round((p.position / p.duration) * 100)))
+          const watched = pct >= 92
+          b.classList.toggle('ep-watched', watched)
+          b.style.setProperty('--ep-pct', `${watched ? 100 : pct}%`)
+          let el = bar as HTMLElement | null
+          if (!el) {
+            el = document.createElement('span')
+            el.className = 'ep-prog'
+            el.setAttribute('aria-hidden', 'true')
+            el.innerHTML = '<i></i>'
+            b.appendChild(el)
+          }
+          const fill = el.querySelector('i')
+          if (fill) fill.style.width = `${watched ? 100 : pct}%`
+        })
+      }
+
       function flushProgress() {
         if (elapsed <= 0) return
         const position = Math.min(elapsed, duration * 0.92)
         updateRecentProgress(slug, position, duration)
+        // Tiến trình theo TỪNG TẬP (để vẽ vòng ở danh sách tập).
+        setEpProgress(slug, episode, position, duration)
         // Đồng bộ tiến trình lên tài khoản (nếu đã đăng nhập) — throttled bên gọi.
         fetch('/api/auth/me', { credentials: 'same-origin' })
           .then((r) => r.json())
@@ -880,7 +919,11 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       const drawerGrid = document.getElementById('watch-drawer-grid')
       const drawerCount = document.getElementById('watch-drawer-count')
 
+      // Lưới tập ban đầu do server render → trang trí tiến trình ngay khi vào trang.
+      decorateEpProgress()
+
       function openDrawer() {
+        decorateEpProgress() // vẽ lại thanh tiến trình (localStorage có thể vừa đổi)
         drawer?.classList.add('open')
         veil?.classList.add('open')
         document.body.classList.add('overflow-hidden')
@@ -908,11 +951,12 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
             const isCurrent = i === activeIdx
             const cls = `ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius-cm-btn)] text-cm-meta flex items-center justify-center font-medium${isCurrent ? ' current' : ''}`
             return isCurrent
-              ? `<span class="${cls}" aria-current="true">${escapeHTML(e.name)}</span>`
-              : `<a href="/xem/${slug}/${escapeHTML(e.slug)}" class="${cls}">${escapeHTML(e.name)}</a>`
+              ? `<span class="${cls}" aria-current="true" data-ep-slug="${escapeHTML(e.slug)}">${escapeHTML(e.name)}</span>`
+              : `<a href="/xem/${slug}/${escapeHTML(e.slug)}" class="${cls}" data-ep-slug="${escapeHTML(e.slug)}">${escapeHTML(e.name)}</a>`
           })
           .join('')
         if (drawerCount) drawerCount.textContent = `(${items.length} tập)`
+        decorateEpProgress()
       }
 
       function selectServer(i: number) {
