@@ -24,6 +24,11 @@
   padding: 1.5rem;
   overflow: hidden;
   background: var(--color-cm-bg);
+  /* Kênh RGB của accent RIÊNG cho overlay — để "skin theo thể loại" (mục 5.2)
+     đổi tông được mà không phải chạm `--color-cm-accent` toàn cục. Các chỗ khác
+     của overlay dùng `--color-cm-accent`, khi cần thì skin override luôn biến đó
+     ngay trên `#cm-loading` (cascade xuống reel/bar/text). */
+  --cm-load-rgb: 249 115 22; /* accent cam #f97316 */
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -58,12 +63,12 @@
   height: 640px;
   margin: -320px 0 0 -320px;
   border-radius: 999px;
-  /* accent #f97316 */
+  /* accent cam, đổi theo skin thể loại qua --cm-load-rgb */
   background: radial-gradient(
     circle,
-    rgba(249, 115, 22, 0.34) 0%,
-    rgba(249, 115, 22, 0.12) 34%,
-    rgba(249, 115, 22, 0.03) 56%,
+    rgb(var(--cm-load-rgb) / 0.34) 0%,
+    rgb(var(--cm-load-rgb) / 0.12) 34%,
+    rgb(var(--cm-load-rgb) / 0.03) 56%,
     transparent 70%
   );
   opacity: 0.6;
@@ -160,8 +165,8 @@
   border-radius: 999px;
   background: var(--color-cm-accent);
   box-shadow:
-    0 0 16px rgba(249, 115, 22, 0.55),
-    0 0 40px rgba(249, 115, 22, 0.28);
+    0 0 16px rgb(var(--cm-load-rgb) / 0.55),
+    0 0 40px rgb(var(--cm-load-rgb) / 0.28);
 }
 .cm-reel-core::after {
   content: "";
@@ -436,4 +441,37 @@
   #cm-loading.is-on .cm-loading-text span {
     animation: none !important;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Skin theo thể loại (mục 5.2)
+
+   `ThemeBG` set `data-theme` trên <html> (hiện chỉ 'horror' — phim thể loại
+   kinh dị ở trang xem; 'noir' giữ cho tương lai). Overlay đọc biến đó để đổi
+   TÔNG, nhưng:
+
+   - CHỈ đổi biến CSS (accent + nền) — KHÔNG thêm animation mới, nên không tốn
+     thêm CPU trên mobile.
+   - KHÔNG dùng đỏ cho accent (đỏ chỉ dành cho danger/error) — dùng tông ember
+     cam/vàng. Nền thì mượn đúng nền của skin để overlay "liền" với trang.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Kinh dị: ember cam ấm trên nền than đỏ sẫm (đồng bộ nền trang xem) ── */
+html[data-theme='horror'] #cm-loading {
+  --color-cm-accent: #fb923c; /* orange-400 — ấm, KHÔNG phải đỏ */
+  --cm-load-rgb: 251 146 60;
+  background:
+    radial-gradient(ellipse at 22% 18%, rgba(180, 0, 40, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 78%, rgba(120, 0, 30, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, #150306 0%, #0b0203 58%, #080101 100%);
+}
+
+/* ── Noir (thám tử): đèn hổ phách trên nền đêm indigo ── */
+html[data-theme='noir'] #cm-loading {
+  --color-cm-accent: #ffaa46; /* hổ phách — ngọn đèn phá án */
+  --cm-load-rgb: 255 170 70;
+  background:
+    radial-gradient(ellipse at 82% 10%, rgba(255, 170, 70, 0.12) 0%, transparent 46%),
+    radial-gradient(ellipse at 16% 20%, rgba(120, 80, 255, 0.12) 0%, transparent 52%),
+    linear-gradient(180deg, #15152f 0%, #0e0e28 46%, #090918 100%);
 }

@@ -17,6 +17,7 @@ import ReportButton from '../../components/ReportButton.astro'
 import ThemeBG from '../../components/ThemeBG.astro'
 import Breadcrumb from '../../components/ui/Breadcrumb.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../lib/api.server'
+import { ratingStats } from '../../lib/catalogue'
 import { imgUrl, imgProxyUrl } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
 import { breadcrumbLd } from '../../lib/seo'
@@ -40,6 +41,7 @@ const episodes = epRes.status ? epRes.episodes : []
 const viewer = await getSessionUser(Astro.cookies)
 const canHost = isAdmin(viewer)
 const commentData = await getComments(slug, 20, 0)
+const communityRating = await ratingStats(slug).catch(() => null)
 
 const metaTitle = movie.name
 const metaDescription = movie.content
@@ -65,6 +67,19 @@ const jsonLd = {
   genre: Array.isArray(movie.category) ? movie.category.map((c) => c.name) : undefined,
   director: Array.isArray(movie.director) ? movie.director.map((d) => ({ '@type': 'Person', name: d })) : undefined,
   actor: Array.isArray(movie.actor) ? movie.actor.map((a) => ({ '@type': 'Person', name: a })) : undefined,
+  // Điểm cộng đồng (3.5): chỉ khai báo khi thật có lượt đánh giá — Google phạt
+  // `aggregateRating` rỗng/không khớp nội dung hiển thị.
+  ...(communityRating
+    ? {
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: communityRating.average,
+          ratingCount: communityRating.count,
+          bestRating: 5,
+          worstRating: 1,
+        },
+      }
+    : {}),
 }
 
 function formatViewCount(v: number): string {
@@ -355,6 +370,17 @@ const chipClass =
                 <p class="text-cm-h3 font-semibold text-cm-text">Bạn thấy phim này thế nào?</p>
                 <p class="text-cm-meta text-cm-text-3 -mt-1">Chọn 1 trong 5 mức độ — lưu vào tài khoản khi đăng nhập</p>
                 <RatingBox slug={slug} name={movie.name} />
+                {
+                  communityRating && (
+                    <p class="text-cm-meta text-cm-text-2 mt-1 inline-flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5 text-cm-accent" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                      <span class="font-semibold text-cm-text">{communityRating.average.toFixed(1)}</span>
+                      <span class="text-cm-text-3">· {communityRating.count} lượt đánh giá</span>
+                    </p>
+                  )
+                }
               </div>
               <MovieComments slug={slug} comments={commentData.comments} total={commentData.total} user={viewer} isAdmin={canHost} />
             </section>

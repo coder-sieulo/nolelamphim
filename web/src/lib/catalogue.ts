@@ -1,6 +1,6 @@
 import { and, eq, lt, ne, or, sql, type AnyColumn, type SQL } from 'drizzle-orm'
 import { getDb, hasDb } from '../db'
-import { catalogueLists, movieEpisodes, movies, type MovieEpisodeRow, type MovieRow } from '../db/schema'
+import { catalogueLists, movieEpisodes, movies, ratings, type MovieEpisodeRow, type MovieRow } from '../db/schema'
 import { isRealHls } from './hls'
 import type { Category, Country, EpisodeItem, EpisodeServer, Movie, MovieDetail } from './types'
 
@@ -658,6 +658,42 @@ export async function similarMovies(target: SimilarTarget, limit = 12): Promise<
   } catch (e) {
     console.error('[catalogue] similarMovies failed:', e)
     return []
+  }
+}
+
+/* ─────────────────── Điểm cộng đồng (mục 3.5) ─────────────────── */
+
+export interface RatingStats {
+  /** Điểm trung bình 1–5 (đã làm tròn 1 chữ số). */
+  average: number
+  /** Số lượt đánh giá. */
+  count: number
+}
+
+/**
+ * Điểm đánh giá cộng đồng của một phim (trung bình + số lượt).
+ *
+ * Trả `null` khi thiếu DB hoặc chưa có lượt nào — nơi gọi chỉ hiện khi có dữ
+ * liệu thật (tránh "0.0 · 0 lượt" vô nghĩa và tránh JSON-LD rỗng).
+ */
+export async function ratingStats(slug: string): Promise<RatingStats | null> {
+  if (!hasDb() || !slug) return null
+  try {
+    const db = getDb()
+    const [row] = await db
+      .select({
+        avg: sql<number | null>`avg(${ratings.value})`,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(ratings)
+      .where(eq(ratings.slug, slug))
+    const n = Number(row?.n) || 0
+    if (n === 0) return null
+    const average = Math.round((Number(row?.avg) || 0) * 10) / 10
+    return { average, count: n }
+  } catch (e) {
+    console.error('[catalogue] ratingStats failed:', e)
+    return null
   }
 }
 
