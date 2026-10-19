@@ -85,6 +85,7 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
 
   <script>
     // @ts-nocheck
+    import { imgUrl, imgProxyUrl } from '../lib/img'
     // --- DNA PROFILE TYPES ---
     const DNA_PROFILES = [
       {
@@ -394,8 +395,15 @@ const description = 'Trả lời 5 câu hỏi ngắn để khám phá "DNA phim"
           card.href = `/phim/${m.slug}`
           card.className =
             'flex items-center gap-3 p-3 rounded-[var(--radius-cm-card)] bg-cm-surface border border-cm-border hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] group'
+          // `thumb_url` từ vsmov có thể là đường dẫn tương đối → quy về tuyệt đối
+          // trước khi đưa qua proxy `/img` (proxy từ chối src tương đối).
+          const thumbAbs = m.thumb_url
+            ? m.thumb_url.startsWith('http')
+              ? m.thumb_url
+              : 'https://vsmov.com' + m.thumb_url
+            : ''
           card.innerHTML = `
-            ${m.thumb_url ? `<img src="${m.thumb_url.startsWith('http') ? m.thumb_url : 'https://vsmov.com' + m.thumb_url}" alt="" class="w-12 h-[72px] rounded-[var(--radius-cm-btn)] object-cover shrink-0" loading="lazy" decoding="async" />` : ''}
+            ${thumbAbs ? `<img src="${imgUrl(thumbAbs, 96)}" srcset="${imgUrl(thumbAbs, 96)} 96w, ${imgUrl(thumbAbs, 192)} 192w" sizes="48px" width="48" height="72" data-proxy="${imgProxyUrl(thumbAbs, 96)}" alt="" class="w-12 h-[72px] rounded-[var(--radius-cm-btn)] object-cover shrink-0" loading="lazy" decoding="async" />` : ''}
             <div class="min-w-0">
               <p class="text-sm text-cm-text font-medium truncate group-hover:text-cm-text transition-colors">${name}${year}</p>
               ${episode ? `<p class="text-xs text-cm-text-3 mt-0.5">${episode}</p>` : ''}

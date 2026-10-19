@@ -18,7 +18,7 @@ import ThemeBG from '../../components/ThemeBG.astro'
 import Breadcrumb from '../../components/ui/Breadcrumb.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../lib/api.server'
 import { ratingStats } from '../../lib/catalogue'
-import { imgUrl, imgProxyUrl } from '../../lib/img'
+import { imgUrl, imgProxyUrl, imgSrcSet } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
 import { breadcrumbLd } from '../../lib/seo'
 import { getSessionUser, isAdmin } from '../../lib/auth'
@@ -190,10 +190,16 @@ const chipClass =
         image ? (
           <img
             src={imgUrl(image, 1600)}
+            srcset={imgSrcSet(image)}
+            sizes="100vw"
             data-proxy={imgProxyUrl(image, 1600)}
             alt={movie.name}
+            width="1600"
+            height="900"
             class="absolute inset-0 w-full h-full object-cover"
             loading="eager"
+            fetchpriority="high"
+            decoding="async"
           />
         ) : (
           <div class="w-full h-full flex items-center justify-center text-cm-meta text-cm-text-3">

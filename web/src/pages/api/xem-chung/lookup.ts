@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro'
 import { searchMovies, getMovieEpisodes } from '../../../lib/api.server'
 import { getSessionUser, isAdmin } from '../../../lib/auth'
+import { imgUrl, imgProxyUrl } from '../../../lib/img'
 
 export const GET: APIRoute = async ({ url, cookies }) => {
   const q = (url.searchParams.get('q') || '').trim()
@@ -28,7 +29,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     results.push({
       slug,
       name: m.name,
-      thumb: m.thumb_url || m.poster_url || '',
+      // Ảnh chỉ hiện ở cỡ 36px trong dropdown → đi qua proxy để lấy bản 96w nhẹ
+      // (thumb gốc có thể nặng ~2MB); kèm `proxy` để client fallback như card.
+      thumb: imgUrl(m.thumb_url || m.poster_url || '', 96),
+      proxy: imgProxyUrl(m.thumb_url || m.poster_url || '', 96),
       episodes: epList.slice(0, 60),
     })
   }

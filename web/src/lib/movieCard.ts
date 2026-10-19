@@ -117,8 +117,14 @@ export function continueCardHTML(
   const name = escapeHTML(item.name)
   const episode = item.episode ? escapeHTML(item.episode) : ''
   const href = `/xem/${slug}/${escapeHTML(item.episodeSlug || '')}`
+  // Ảnh: CDN tốt → chỉ `src` + `data-proxy` (fallback); còn lại đi qua proxy nên thêm srcset.
+  const thumbUrl = item.thumb ? imgUrl(item.thumb, 300) : ''
+  const thumbDirect = !!thumbUrl && !thumbUrl.startsWith(IMG_PROXY_PATH)
+  const thumbSet = item.thumb && !thumbDirect
+    ? `srcset="${escapeHTML(imgUrl(item.thumb, 150))} 150w, ${escapeHTML(imgUrl(item.thumb, 300))} 300w, ${escapeHTML(imgUrl(item.thumb, 600))} 600w" sizes="150px"`
+    : ''
   const thumb = item.thumb
-    ? `<img src="${escapeHTML(imgUrl(item.thumb, 300))}" data-proxy="${escapeHTML(imgProxyUrl(item.thumb, 300))}" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
+    ? `<img src="${escapeHTML(thumbUrl)}" ${thumbSet} width="150" height="225" data-proxy="${escapeHTML(imgProxyUrl(item.thumb, 300))}" alt="${name}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[var(--duration-cm)] ease-[var(--ease-cm)] group-hover:scale-[1.04]" />`
     : ''
   const vote = opts.vote ? formatVote(opts.vote) : ''
 

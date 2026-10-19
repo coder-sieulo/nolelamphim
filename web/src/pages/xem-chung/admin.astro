@@ -283,7 +283,7 @@ if (!user || !isAdmin(user)) {
         const thumbEl = $('xc-pick-thumb') as HTMLImageElement | null
         const nameEl = $('xc-pick-name')
         const metaEl = $('xc-pick-meta')
-        if (thumbEl) thumbEl.src = mv.thumb || '/logo.png'
+        if (thumbEl) thumbEl.src = mv.thumb || '/logo-64.png'
         if (nameEl) nameEl.textContent = mv.name
         if (metaEl) metaEl.textContent = `${episodes.length} nguồn/tập`
         grid.innerHTML = episodes.map((ep, i) => `

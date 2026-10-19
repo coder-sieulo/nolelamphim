@@ -6,7 +6,7 @@ import HorrorGate from '../../../components/HorrorGate.astro'
 import { getMovieDetail, getMovieEpisodes } from '../../../lib/api.server'
 import { resolveIdentity } from '../../../lib/identity'
 import { getKkphimDetail, buildM3u8Map } from '../../../lib/kkphim'
-import { imgUrl, imgProxyUrl } from '../../../lib/img'
+import { imgUrl, imgProxyUrl, imgSrcSet } from '../../../lib/img'
 import { SITE_URL } from '../../../lib/site'
 import { breadcrumbLd } from '../../../lib/seo'
 import { isRealHls } from '../../../lib/hls'
@@ -146,9 +146,14 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
                 {posterSrc && (
                   <img
                     src={imgUrl(posterSrc, 1600)}
+                    srcset={imgSrcSet(posterSrc)}
+                    sizes="100vw"
                     data-proxy={imgProxyUrl(posterSrc, 1600)}
                     alt=""
+                    width="1600"
+                    height="900"
                     class="absolute inset-0 w-full h-full object-cover"
+                    fetchpriority="high"
                     decoding="async"
                   />
                 )}

@@ -198,7 +198,7 @@ const isHost = !!user && user.sub === room.hostId
     }
 
     function avatarUrl(id: string, avatar?: string | null): string {
-      return avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=64` : '/logo.png'
+      return avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=64` : '/logo-64.png'
     }
 
     const ICON_MUTE =
@@ -802,7 +802,7 @@ const isHost = !!user && user.sub === room.hostId
         const thumbEl = $('xc-pick-thumb') as HTMLImageElement | null
         const nameEl = $('xc-pick-name')
         const metaEl = $('xc-pick-meta')
-        if (thumbEl) thumbEl.src = mv.thumb || '/logo.png'
+        if (thumbEl) thumbEl.src = mv.thumb || '/logo-64.png'
         if (nameEl) nameEl.textContent = mv.name
         if (metaEl) metaEl.textContent = `${pickEpisodes.length} nguồn/tập`
         epGrid.innerHTML = pickEpisodes.map((ep, i) => `
