@@ -105,6 +105,7 @@ const ico = {
               <a
                 href={`/xem/${slug}/${ep.slug}`}
                 class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius-cm-btn)] text-cm-meta flex items-center justify-center font-medium"
+                data-ep-slug={ep.slug}
               >
                 {ep.name}
               </a>
@@ -147,6 +148,7 @@ const ico = {
   import { escapeHTML } from '../scripts/cards'
   import { pageList } from '../lib/pagination'
   import { registerPageInit } from '../scripts/lifecycle'
+  import { decorateEpProgress } from '../scripts/ep-progress'
 
   registerPageInit(() => {
     const list = document.querySelector<HTMLElement>('.episode-list')
@@ -228,7 +230,7 @@ const ico = {
             ? visible
                 .map(
                   (ep) =>
-                    `<a href="/xem/${slug}/${escapeHTML(ep.slug)}" class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius-cm-btn)] text-cm-meta flex items-center justify-center font-medium">${escapeHTML(ep.name)}</a>`,
+                    `<a href="/xem/${slug}/${escapeHTML(ep.slug)}" class="ep-btn w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius-cm-btn)] text-cm-meta flex items-center justify-center font-medium" data-ep-slug="${escapeHTML(ep.slug)}">${escapeHTML(ep.name)}</a>`,
                 )
                 .join('')
             : `<div class="w-full py-8 flex flex-col items-center justify-center text-center">
@@ -236,6 +238,9 @@ const ico = {
                 <p class="text-cm-meta text-cm-text-3/70 mt-1">Vui lòng quay lại sau</p>
               </div>`
       }
+
+      // Vẽ thanh tiến trình từng tập (mục 1.4) sau khi dựng lưới.
+      decorateEpProgress(slug)
 
       serverBtns.forEach((btn) => {
         btn.className = Number(btn.dataset.server) === serverIdx ? serverActive : serverIdle

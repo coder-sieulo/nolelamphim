@@ -388,7 +388,8 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
   }
 
   <script>
-    import { addRecent, updateRecentProgress, getRecent, getEpProgress, setEpProgress } from '../../../scripts/store'
+    import { addRecent, updateRecentProgress, getRecent, setEpProgress } from '../../../scripts/store'
+    import { decorateEpProgress as decorateEpProgressFor } from '../../../scripts/ep-progress'
     import { escapeHTML } from '../../../scripts/cards'
     import { registerPageInit } from '../../../scripts/lifecycle'
     import { imgProxyUrl } from '../../../lib/img'
@@ -431,41 +432,9 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       let progressActive = false
       let progressTick = 0
 
-      /* ── Vẽ thanh tiến trình cho từng nút tập (mục 1.4) ──
-       * Đọc từ localStorage `ep-progress:{slug}` (giữ được cho cả khách chưa đăng nhập).
-       * ≥ 92% coi như "đã xem". Gọi lại sau mỗi lần dựng lại lưới tập. */
+      /* ── Vẽ thanh tiến trình cho từng nút tập (mục 1.4) — xem scripts/ep-progress.ts ── */
       function decorateEpProgress() {
-        let map: Record<string, { position: number; duration: number }> = {}
-        try {
-          map = getEpProgress(slug)
-        } catch {
-          map = {}
-        }
-        document.querySelectorAll<HTMLElement>('.ep-btn').forEach((b) => {
-          const epSlug = b.dataset.epSlug || ''
-          const p = epSlug ? map[epSlug] : null
-          const bar = b.querySelector('.ep-prog')
-          if (!p || !p.duration || p.position <= 0) {
-            if (bar) bar.remove()
-            b.classList.remove('ep-watched')
-            b.style.removeProperty('--ep-pct')
-            return
-          }
-          const pct = Math.max(0, Math.min(100, Math.round((p.position / p.duration) * 100)))
-          const watched = pct >= 92
-          b.classList.toggle('ep-watched', watched)
-          b.style.setProperty('--ep-pct', `${watched ? 100 : pct}%`)
-          let el = bar as HTMLElement | null
-          if (!el) {
-            el = document.createElement('span')
-            el.className = 'ep-prog'
-            el.setAttribute('aria-hidden', 'true')
-            el.innerHTML = '<i></i>'
-            b.appendChild(el)
-          }
-          const fill = el.querySelector('i')
-          if (fill) fill.style.width = `${watched ? 100 : pct}%`
-        })
+        decorateEpProgressFor(slug)
       }
 
       function flushProgress() {
