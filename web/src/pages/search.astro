@@ -11,6 +11,6 @@ const params = Astro.url.searchParams
 const q = params.get('q') ?? ''
 ---
 
-<BaseLayout title="Tìm kiếm phim" description="Tìm kiếm phim theo từ khoá, thể loại, quốc gia, năm tại Nô Lệ Làm Phim.">
+<BaseLayout title="Tìm kiếm phim" description="Tìm kiếm phim theo từ khoá, thể loại, quốc gia, năm tại Nô Lệ Làm Phim." cache="public">
   <SearchClient initialQuery={q} />
 </BaseLayout>

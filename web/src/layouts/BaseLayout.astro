@@ -22,6 +22,17 @@ interface Props {
   keywords?: string
   ogImage?: string
   noIndex?: boolean
+  /**
+   * Chính sách cache CDN. **Mac dinh fail-closed**:
+   * - Trang tĩnh (`prerender = true`) → `'public'` (cache edge bình thường).
+   * - Trang SSR → `'private'` (KHÔNG cache edge), vì HTML có thể chứa dữ liệu
+   *   theo người dùng (session, tên/avatar, cờ admin…). Vercel cache cả request
+   *   kèm Cookie nên nếu để `public` sẽ rò dữ liệu người dùng này sang người khác.
+   *
+   * Trang SSR **thuần công khai** (không đọc session) muốn được cache thì truyền
+   * `cache="public"` tường minh.
+   */
+  cache?: 'public' | 'private'
 }
 
 const {
@@ -30,14 +41,18 @@ const {
   keywords,
   ogImage,
   noIndex = false,
+  cache,
 } = Astro.props
 
 const pageTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME
 const canonical = new URL(Astro.url.pathname, SITE_URL)
 
+const cacheMode = cache ?? (Astro.isPrerendered ? 'public' : 'private')
 Astro.response.headers.set(
   'Cache-Control',
-  'public, s-maxage=60, stale-while-revalidate=300',
+  cacheMode === 'private'
+    ? 'private, no-store, max-age=0'
+    : 'public, s-maxage=60, stale-while-revalidate=300',
 )
 ---
 

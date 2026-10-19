@@ -92,7 +92,7 @@ const serverIdle =
 const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] text-xs font-medium border sort-active'
 ---
 
-<BaseLayout title={pageTitle} description={`Xem ${movie.name} ${currentEp ? `tập ${currentEp.name}` : ''} HD VietSub miễn phí tại Nô Lệ Làm Phim.`} ogImage={`${SITE_URL}/og/${slug}.png`}>
+<BaseLayout title={pageTitle} description={`Xem ${movie.name} ${currentEp ? `tập ${currentEp.name}` : ''} HD VietSub miễn phí tại Nô Lệ Làm Phim.`} ogImage={`${SITE_URL}/og/${slug}.png`} cache="public">
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
   {embedOrigin && <link rel="preconnect" href={embedOrigin} slot="head" />}
   <ThemeBG name={slug} variant={isHorror ? 'horror' : undefined} />
