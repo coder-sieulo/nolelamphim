@@ -1,177 +1,332 @@
 ---
 /**
- * HeroSingle — hero TRANG CHỦ chỉ 1 phim nổi bật (brief §06).
- * Backdrop full-bleed 1 lớp (poster ~1600w + gradient đen từ đáy), KHÔNG carousel,
- * KHÔNG glass/ken-burns. Nhịp CTA tối thiểu: [▶ Xem ngay] [＋ Danh sách].
+ * HeroSingle — hero TRANG CHỦ, xoay vòng qua vài phim "top".
+ *
+ * Trước đây chỉ 1 phim (brief §06 cũ: KHÔNG carousel). Nay theo yêu cầu, hero
+ * tự chạy qua tối đa 6 phim nổi bật: backdrop full-bleed + gradient đen từ đáy.
+ * Vẫn KHÔNG glass/ken-burns; chỉ cross-fade + đổi nội dung.
+ *
+ * Kỹ thuật:
+ * - Slide 0 render ảnh thật (SSR) → không JS vẫn thấy hero như cũ.
+ * - Slide khác để `data-src`/`data-srcset`, JS nạp khi tới lượt (nhẹ bytes).
+ * - Tôn trọng `prefers-reduced-motion`: không tự chạy, chỉ đổi khi bấm chấm.
  */
 import type { Movie } from '../lib/types'
-import { imgUrl, imgProxyUrl } from '../lib/img'
+import { imgUrl, imgProxyUrl, imgSrcSet, HERO_WIDTHS } from '../lib/img'
 import { FaPlay } from 'react-icons/fa6'
 
 interface Props {
-  movie: Movie
+  movies: Movie[]
 }
-const { movie } = Astro.props
 
-const image = movie.poster_url || movie.thumb_url
-const vote = movie.tmdb?.vote_average
-const voteNum = vote && Number(vote) > 0 ? Number(vote).toFixed(1) : ''
-const meta = [voteNum ? ` · ${voteNum}` : '', movie.year ?? '', movie.time ?? '', movie.quality ?? '']
-  .filter(Boolean)
-  .join(' ')
---- 
+const { movies } = Astro.props
+const slides = (movies || []).filter(Boolean).slice(0, 6)
 
-<section class="relative overflow-hidden bg-cm-bg" id="home-hero" aria-label={`Phim nổi bật ${movie.name}`}>
-  {/* `w-full` BẮT BUỘC: nếu chỉ có aspect-ratio + min-h/max-h thì trình duyệt suy
-      ngược chiều RỘNG từ chiều cao (vd mobile: 420 × 3/2 = 630px > viewport 390px),
-      khiến hero tràn phải và ảnh bị cắt lệch. */}
-  <div class="relative w-full flex items-end min-h-[420px] sm:min-h-[480px] lg:min-h-[70vh] max-h-[85vh] aspect-[3/2] sm:aspect-[16/9] lg:aspect-[21/9]">
-    {image && (
-      <img
-        src={imgUrl(image, 1600)}
-        data-proxy={imgProxyUrl(image, 1600)}
-        alt=""
-        width={1600}
-        height={900}
-        fetchpriority="high"
-        decoding="async"
-        class="absolute inset-0 w-full h-full object-cover"
-      />
-    )}
-    {/* Gradient đáy 1 lớp sang nền trang — nối liền nội dung bên dưới */}
-    <div class="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-cm-bg via-cm-bg/55 to-transparent" aria-hidden />
+const slideImg = (m: Movie) => m.poster_url || m.thumb_url || ''
+const slideVote = (m: Movie) => {
+  const v = m.tmdb?.vote_average
+  return v && Number(v) > 0 ? Number(v).toFixed(1) : ''
+}
+---
 
-    <div class="relative w-full px-4 sm:px-6 md:px-8 pb-8 sm:pb-10 hero-enter">
-      {movie.year && (
-        <p class="text-cm-meta text-cm-text-3 font-medium uppercase tracking-[0.18em] mb-2">{movie.year}</p>
-      )}
-      <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-cm-text leading-tight line-clamp-2 max-w-3xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
-        {movie.name}
-      </h1>
-      {movie.origin_name && (
-        <p class="mt-1 text-sm md:text-base text-cm-text-2 line-clamp-1 max-w-2xl">{movie.origin_name}</p>
-      )}
-      {(voteNum || movie.time || movie.quality) && (
-        <p class="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-cm-meta text-cm-text-2">
-          {voteNum && (
-            <span class="inline-flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-cm-accent" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-              </svg>
-              {voteNum}
-            </span>
-          )}
-          {movie.time && <span>{movie.time}</span>}
-          {movie.quality && <span>{movie.quality}</span>}
-        </p>
-      )}
-      <div class="mt-5 flex flex-wrap items-center gap-2.5">
-        <a
-          href={`/phim/${movie.slug}`}
-          class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-sm font-semibold hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]"
-          aria-label={`Xem ngay ${movie.name}`}
-        >
-          <FaPlay className="w-3.5 h-3.5" />
-          Xem ngay
-        </a>
-        <button
-          type="button"
-          class="hero-fav inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-surface/80 border border-cm-border text-cm-text text-sm font-medium hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]"
-          data-id={movie._id}
-          data-name={movie.name}
-          data-slug={movie.slug}
-          data-thumb={movie.thumb_url || movie.poster_url || ''}
-          data-vote={movie.tmdb?.vote_average || ''}
-          aria-pressed="false"
-          aria-label={`Thêm ${movie.name} vào danh sách`}
-        >
-          <svg class="hero-fav-plus w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-          </svg>
-          <svg class="hero-fav-check w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-          </svg>
-          <span class="hero-fav-label">Danh sách</span>
-        </button>
+{
+  slides.length > 0 && (
+    <section class="relative overflow-hidden bg-cm-bg" id="home-hero" aria-label="Phim nổi bật">
+      {/* `w-full` BẮT BUỘC: nếu chỉ có aspect-ratio + min-h/max-h thì trình duyệt suy
+          ngược chiều RỘNG từ chiều cao, khiến hero tràn phải và ảnh bị cắt lệch. */}
+      <div class="relative w-full min-h-[420px] sm:min-h-[480px] lg:min-h-[70vh] max-h-[85vh] aspect-[3/2] sm:aspect-[16/9] lg:aspect-[21/9]">
+        {slides.map((m, i) => {
+          const image = slideImg(m)
+          const voteNum = slideVote(m)
+          const active = i === 0
+          return (
+            <div
+              class:list={['hero-slide', active && 'is-active']}
+              data-hero-slide={i}
+              aria-hidden={active ? 'false' : 'true'}
+            >
+              {image && (
+                <img
+                  src={active ? imgUrl(image, 1600) : undefined}
+                  srcset={active ? imgSrcSet(image, HERO_WIDTHS) : undefined}
+                  data-src={active ? undefined : imgUrl(image, 1600)}
+                  data-srcset={active ? undefined : imgSrcSet(image, HERO_WIDTHS)}
+                  data-proxy={imgProxyUrl(image, 1600)}
+                  alt=""
+                  width="1600"
+                  height="900"
+                  sizes="100vw"
+                  loading={active ? 'eager' : 'lazy'}
+                  fetchpriority={active ? 'high' : undefined}
+                  decoding="async"
+                  class="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+              <div
+                class="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-cm-bg via-cm-bg/55 to-transparent"
+                aria-hidden
+              />
+
+              <div class="hero-body absolute inset-x-0 bottom-0 w-full px-4 sm:px-6 md:px-8 pb-8 sm:pb-10">
+                {m.year && (
+                  <p class="text-cm-meta text-cm-text-3 font-medium uppercase tracking-[0.18em] mb-2">
+                    {m.year}
+                  </p>
+                )}
+                <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-cm-text leading-tight line-clamp-2 max-w-3xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+                  {m.name}
+                </h1>
+                {m.origin_name && (
+                  <p class="mt-1 text-sm md:text-base text-cm-text-2 line-clamp-1 max-w-2xl">
+                    {m.origin_name}
+                  </p>
+                )}
+                {(voteNum || m.time || m.quality) && (
+                  <p class="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-cm-meta text-cm-text-2">
+                    {voteNum && (
+                      <span class="inline-flex items-center gap-1.5">
+                        <svg
+                          class="w-3.5 h-3.5 text-cm-accent"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                        </svg>
+                        {voteNum}
+                      </span>
+                    )}
+                    {m.time && <span>{m.time}</span>}
+                    {m.quality && <span>{m.quality}</span>}
+                  </p>
+                )}
+                <div class="mt-5 flex flex-wrap items-center gap-2.5">
+                  <a
+                    href={`/phim/${m.slug}`}
+                    class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-sm font-semibold hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]"
+                    aria-label={`Xem ngay ${m.name}`}
+                  >
+                    <FaPlay className="w-3.5 h-3.5" />
+                    Xem ngay
+                  </a>
+                  <button
+                    type="button"
+                    class="hero-fav inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-surface/80 border border-cm-border text-cm-text text-sm font-medium hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]"
+                    data-id={m._id}
+                    data-name={m.name}
+                    data-slug={m.slug}
+                    data-thumb={m.thumb_url || m.poster_url || ''}
+                    data-vote={m.tmdb?.vote_average || ''}
+                    aria-pressed="false"
+                    aria-label={`Thêm ${m.name} vào danh sách`}
+                  >
+                    <svg class="hero-fav-plus w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                    <svg
+                      class="hero-fav-check w-4 h-4 hidden"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg>
+                    <span class="hero-fav-label">Danh sách</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {slides.length > 1 && (
+          <div class="hero-dots" role="tablist" aria-label="Chọn phim nổi bật">
+            {slides.map((m, i) => (
+              <button
+                type="button"
+                class="hero-dot"
+                role="tab"
+                data-hero-dot={i}
+                aria-label={m.name}
+                aria-selected={i === 0 ? 'true' : 'false'}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
-  </div>
-</section>
+    </section>
+  )
+}
 
 <script>
   import { isFavorite, toggleFavorite, getFavorites, writeJSON } from '../scripts/store'
   import { registerPageInit } from '../scripts/lifecycle'
 
   registerPageInit(() => {
-    const btn = document.querySelector<HTMLButtonElement>('.hero-fav')
-    if (!btn) return () => {}
-    const ac = new AbortController()
+    const section = document.getElementById('home-hero')
+    if (!section) return () => {}
 
-    const item = {
+    /* ── Nút "Danh sách" cho MỌI slide ── */
+    const favBtns = Array.from(section.querySelectorAll<HTMLButtonElement>('.hero-fav'))
+    const favItem = (btn: HTMLButtonElement) => ({
       id: Number(btn.dataset.id || 0),
       name: btn.dataset.name || '',
       slug: btn.dataset.slug || '',
       thumb: btn.dataset.thumb || '',
       tmdb_vote: btn.dataset.vote || undefined,
-    }
-    const label = btn.querySelector<HTMLElement>('.hero-fav-label')
-    const plus = btn.querySelector<HTMLElement>('.hero-fav-plus')
-    const check = btn.querySelector<HTMLElement>('.hero-fav-check')
-    const setActive = (active: boolean) => {
+    })
+    const setActive = (btn: HTMLButtonElement, active: boolean) => {
       btn.setAttribute('aria-pressed', String(active))
       btn.classList.toggle('hero-fav-active', active)
-      if (plus && check && label) {
-        plus.classList.toggle('hidden', active)
-        check.classList.toggle('hidden', !active)
-        label.textContent = active ? 'Đã thêm' : 'Danh sách'
-      }
+      const plus = btn.querySelector<HTMLElement>('.hero-fav-plus')
+      const check = btn.querySelector<HTMLElement>('.hero-fav-check')
+      const label = btn.querySelector<HTMLElement>('.hero-fav-label')
+      plus?.classList.toggle('hidden', active)
+      check?.classList.toggle('hidden', !active)
+      if (label) label.textContent = active ? 'Đã thêm' : 'Danh sách'
     }
-
-    let ready = false
-    const apply = (active: boolean) => {
-      setActive(active)
-      if (!ready) {
-        ready = true
-        btn.addEventListener('click', () => {
-          const next = toggleFavorite(item)
-          setActive(next)
-          // Đồng bộ lên tài khoản khi đã đăng nhập
-          fetch('/api/auth/me', { credentials: 'same-origin' })
-            .then((r) => r.json())
-            .then((d) => {
-              if (!d?.user) return
-              return fetch('/api/user/favorite', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify({ item, on: next }),
-              })
+    for (const btn of favBtns) {
+      const item = favItem(btn)
+      const apply = (active: boolean) => setActive(btn, active)
+      apply(isFavorite(item.id))
+      btn.addEventListener('click', () => {
+        const next = toggleFavorite(item)
+        apply(next)
+        fetch('/api/auth/me', { credentials: 'same-origin' })
+          .then((r) => r.json())
+          .then((d) => {
+            if (!d?.user) return
+            return fetch('/api/user/favorite', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ item, on: next }),
             })
-            .catch(() => {})
-        })
-      }
+          })
+          .catch(() => {})
+      })
     }
 
-    // Trạng thái khởi tạo từ localStorage
-    apply(isFavorite(item.id))
-
-    // Đã đăng nhập → merge favorites cloud về localStorage để đồng nhất
+    /* ── Đồng bộ favorites từ tài khoản (1 lần, áp cho mọi nút) ── */
+    const ac = new AbortController()
     fetch('/api/auth/me', { credentials: 'same-origin' })
       .then((r) => r.json())
       .then((d) => {
         if (!d?.user) return
         return fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
       })
-      .then((res: { lib?: { favorites?: { id: number; slug: string }[] } } | void) => {
+      .then((res: { lib?: { favorites?: { id: number }[] } } | void) => {
         if (!res?.lib?.favorites || res.lib.favorites.length === 0 || ac.signal.aborted) return
         const local = getFavorites()
         const known = new Set(local.map((f) => f.id))
         const merged = [...local, ...res.lib.favorites.filter((f) => !known.has(f.id))]
         writeJSON('favorites', merged)
-        apply(isFavorite(item.id))
+        for (const btn of favBtns) setActive(btn, isFavorite(Number(btn.dataset.id || 0)))
       })
       .catch(() => {})
 
-    return () => ac.abort()
+    /* ── Xoay vòng slide ── */
+    const slides = Array.from(section.querySelectorAll<HTMLElement>('[data-hero-slide]'))
+    const dots = Array.from(section.querySelectorAll<HTMLButtonElement>('[data-hero-dot]'))
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const INTERVAL = 7000
+    let active = 0
+    let timer = 0
+
+    const load = (i: number) => {
+      const img = slides[i]?.querySelector('img')
+      if (img && img.dataset.src && !img.getAttribute('src')) {
+        if (img.dataset.srcset) img.setAttribute('srcset', img.dataset.srcset)
+        img.setAttribute('src', img.dataset.src)
+      }
+    }
+    const go = (i: number, user = false) => {
+      if (slides.length === 0) return
+      active = ((i % slides.length) + slides.length) % slides.length
+      slides.forEach((s, k) => {
+        const on = k === active
+        s.classList.toggle('is-active', on)
+        s.setAttribute('aria-hidden', on ? 'false' : 'true')
+        if (on && !reduce) {
+          const body = s.querySelector('.hero-body')
+          if (body) {
+            body.classList.remove('hero-enter')
+            void (body as HTMLElement).offsetWidth // ép reflow để chạy lại animation
+            body.classList.add('hero-enter')
+          }
+        }
+      })
+      dots.forEach((d, k) => d.setAttribute('aria-selected', k === active ? 'true' : 'false'))
+      load(active)
+      load((active + 1) % slides.length)
+      if (user) restart()
+    }
+    const stop = () => {
+      if (timer) {
+        window.clearInterval(timer)
+        timer = 0
+      }
+    }
+    const start = () => {
+      if (reduce || slides.length < 2) return
+      stop()
+      timer = window.setInterval(() => go(active + 1), INTERVAL)
+    }
+    const restart = () => {
+      stop()
+      start()
+    }
+
+    dots.forEach((d, k) => d.addEventListener('click', () => go(k, true)))
+
+    let hovered = false
+    const onEnter = () => {
+      hovered = true
+      stop()
+    }
+    const onLeave = () => {
+      hovered = false
+      start()
+    }
+    section.addEventListener('mouseenter', onEnter)
+    section.addEventListener('mouseleave', onLeave)
+
+    const onVisibility = () => {
+      if (document.hidden) stop()
+      else if (!hovered) start()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    // Vuốt ngang trên mobile
+    let sx = 0
+    let sy = 0
+    section.addEventListener(
+      'touchstart',
+      (e) => {
+        sx = e.touches[0].clientX
+        sy = e.touches[0].clientY
+      },
+      { passive: true },
+    )
+    section.addEventListener(
+      'touchend',
+      (e) => {
+        const dx = e.changedTouches[0].clientX - sx
+        const dy = e.changedTouches[0].clientY - sy
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(active + (dx < 0 ? 1 : -1), true)
+      },
+      { passive: true },
+    )
+
+    go(0)
+    start()
+
+    return () => {
+      stop()
+      ac.abort()
+      document.removeEventListener('visibilitychange', onVisibility)
+      section.removeEventListener('mouseenter', onEnter)
+      section.removeEventListener('mouseleave', onLeave)
+    }
   })
 </script>

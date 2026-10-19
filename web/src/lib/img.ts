@@ -36,3 +36,22 @@ export function imgUrl(src: unknown, w: number): string {
   if (isDirectHost(src)) return src
   return imgProxyUrl(src, w)
 }
+
+/** Các bề rộng dùng cho `srcset` ảnh lớn (hero/backdrop). */
+export const HERO_WIDTHS = [640, 960, 1280, 1600, 2000]
+
+/**
+ * Chuỗi `srcset` responsive qua proxy `/img` (dùng kèm thuộc tính `sizes`).
+ *
+ * Trả `''` khi ảnh đã là đường proxy (không lồng proxy) hoặc host CDN tự tối ưu
+ * (TMDB có sẵn size trong path) — khi đó chỉ cần `imgUrl`.
+ */
+export function imgSrcSet(src: unknown, widths: number[] = HERO_WIDTHS): string {
+  if (typeof src !== 'string' || !src) return ''
+  if (src.startsWith(IMG_PROXY_PATH)) return ''
+  if (isDirectHost(src)) return ''
+  return widths
+    .filter((w) => Number.isFinite(w) && w > 0)
+    .map((w) => `${imgProxyUrl(src, w)} ${w}w`)
+    .join(', ')
+}

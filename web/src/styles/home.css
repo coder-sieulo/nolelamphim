@@ -4,11 +4,82 @@
    ══════════════════════════════════════════════════════════════ */
 
 /* Nút "+ Danh sách" trên hero khi đã thêm vào danh sách (proxy cho .fav-active
-   cũ — không dùng gradient/glass). */
+   cũ — không dùng gradient/glass). Dùng accent cam, KHÔNG dùng đỏ. */
 .hero-fav-active {
   border-color: var(--color-cm-accent);
   color: var(--color-cm-accent);
-  background: rgba(229, 9, 20, 0.1);
+  background: color-mix(in srgb, var(--color-cm-accent) 12%, transparent);
+}
+
+/* ---------- Hero xoay vòng (banner "chạy") ----------
+   Các slide xếp chồng tuyệt đối; chỉ slide .is-active hiện. Cross-fade thuần
+   opacity/visibility (rẻ cho GPU), không parallax/ken-burns. */
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 600ms var(--ease-cm),
+    visibility 0s linear 600ms;
+}
+.hero-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 600ms var(--ease-cm),
+    visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide {
+    transition: none;
+  }
+}
+
+/* Chấm chuyển slide — góc dưới phải (chỗ trống, không đè CTA bên trái). */
+.hero-dots {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(10, 10, 12, 0.5);
+}
+.hero-dot {
+  width: 22px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  transition:
+    background-color var(--duration-cm) var(--ease-cm),
+    width var(--duration-cm) var(--ease-cm);
+}
+.hero-dot:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+.hero-dot[aria-selected='true'] {
+  background: var(--color-cm-accent);
+  width: 34px;
+}
+@media (max-width: 640px) {
+  .hero-dots {
+    right: 12px;
+    bottom: 12px;
+    padding: 5px 8px;
+    gap: 5px;
+  }
+  .hero-dot {
+    width: 16px;
+  }
+  .hero-dot[aria-selected='true'] {
+    width: 24px;
+  }
 }
 
 /* Skeleton home: phẳng, không shimmer — đợi nội dung render trong microtask */
