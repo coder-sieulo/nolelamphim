@@ -37,12 +37,34 @@
 /* Compact header khi scroll xuống (brief §05) */
 .site-header.scrolled .site-bar {
   height: 48px;
-  background: rgba(27, 27, 31, 0.92);
   box-shadow: var(--shadow-cm-up);
 }
 @media (min-width: 768px) {
   .site-header.scrolled .site-bar {
     height: 52px;
+  }
+}
+
+/* "Tan biến" thanh xám khi đã cuộn (desktop): bỏ nền + viền + bóng của bar,
+   chỉ còn viên thuốc nổi trên nội dung. Mobile giữ nguyên bar (có bottom nav
+   riêng + logo cần nền để đọc). */
+@media (min-width: 768px) {
+  .site-header.scrolled .site-bar {
+    background: transparent;
+    border-bottom-color: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  /* Viên thuốc phải nhận chuột lại + đổ bóng đậm hơn để tách khỏi nội dung. */
+  .site-header.scrolled .site-nav {
+    pointer-events: auto;
+  }
+  .site-header.scrolled .nav-island {
+    background: color-mix(in srgb, var(--color-cm-elevated) 88%, transparent);
+    backdrop-filter: blur(12px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 8px 28px rgba(0, 0, 0, 0.55);
   }
 }
 
