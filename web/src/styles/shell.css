@@ -96,10 +96,45 @@
   }
 }
 
-/* Ẩn các phần không phải island khi đã cuộn (desktop) */
+/* Đích đến của nút tìm kiếm trong viên thuốc (desktop).
+   Mặc định thu về 0 rộng; khi `.scrolled` bung ra 28px để icon "trú ngụ". */
+.island-search-slot {
+  display: none;
+}
+@media (min-width: 768px) {
+  .island-search-slot {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0;
+    height: 26px;
+    border-radius: 999px;
+    color: var(--color-cm-text-2);
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      width var(--duration-cm) var(--ease-cm),
+      margin-left var(--duration-cm) var(--ease-cm),
+      opacity var(--duration-cm) var(--ease-cm),
+      color var(--duration-cm) var(--ease-cm);
+  }
+  .site-header.scrolled .island-search-slot {
+    width: 28px;
+    margin-left: 2px;
+    opacity: 1;
+  }
+  .site-header.scrolled .island-search-slot:hover {
+    color: var(--color-cm-text);
+  }
+}
+
+/* Ẩn các phần không phải island khi đã cuộn (desktop).
+   Lưu ý: nút tìm kiếm KHÔNG bị ẩn ở đây — nó "bay" vào pill (xem
+   .site-header.scrolled #search-open bên dưới). Chỉ ẩn logo + các nút khác. */
 @media (min-width: 768px) {
   .site-header.scrolled .site-logo,
-  .site-header.scrolled .site-actions {
+  .site-header.scrolled .site-actions > *:not(#search-open) {
     opacity: 0;
     pointer-events: none;
     transform: translateY(-4px);
@@ -108,10 +143,43 @@
       transform var(--duration-cm) var(--ease-cm);
   }
   .site-header .site-logo,
-  .site-header .site-actions {
+  .site-header .site-actions > *:not(#search-open) {
     transition:
       opacity var(--duration-cm-slow) var(--ease-cm),
       transform var(--duration-cm-slow) var(--ease-cm);
+  }
+}
+
+/* Nút tìm kiếm: trượt từ vị trí header vào khe cắm trong viên thuốc.
+   `--fly-x/--fly-y` do navbar.ts đo và ghi vào (FLIP). */
+@media (min-width: 768px) {
+  #search-open {
+    transform: translate3d(var(--fly-x, 0px), var(--fly-y, 0px), 0);
+    transition:
+      transform var(--duration-cm-slow) var(--ease-cm),
+      opacity var(--duration-cm) var(--ease-cm),
+      color var(--duration-cm) var(--ease-cm),
+      background-color var(--duration-cm) var(--ease-cm);
+    will-change: transform;
+  }
+  /* Khi đã "đáp" vào pill: mờ hẳn đi để nhường chỗ cho icon trong khe cắm
+     (tránh thấy 2 icon chồng nhau). Trễ opacity một nhịp để icon kịp bay tới
+     rồi mới tan — nếu tắt ngay thì icon biến mất giữa đường. */
+  .site-header.scrolled #search-open {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform var(--duration-cm-slow) var(--ease-cm),
+      opacity var(--duration-cm) var(--ease-cm) var(--duration-cm-slow);
+  }
+  /* Icon trong khe cắm chỉ hiện khi nút bay gần tới (trễ bằng đúng thời gian
+     bay) → cảm giác icon "chui vào" pill. */
+  .site-header.scrolled .island-search-slot {
+    transition:
+      width var(--duration-cm) var(--ease-cm),
+      margin-left var(--duration-cm) var(--ease-cm),
+      opacity var(--duration-cm) var(--ease-cm) var(--duration-cm-slow),
+      color var(--duration-cm) var(--ease-cm);
   }
 }
 

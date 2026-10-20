@@ -7,12 +7,59 @@ registerPageInit(() => {
 
   const nav = document.getElementById('navbar')
 
+  // ── Nút tìm kiếm "bay" vào viên thuốc (FLIP) ──────────────────────────
+  // Khi cuộn xuống: đo chênh lệch giữa nút tìm kiếm ở header và khe cắm trong
+  // pill, rồi dịch chuyển nút bằng `transform` để nó trượt vào pill. Khi cuộn
+  // lên: trả về 0. Dùng biến CSS `--fly-*` để giữ mượt bằng transition CSS.
+  const searchBtn = document.getElementById('search-open')
+  const searchSlot = document.getElementById('island-search')
+  const logoEl = document.querySelector<HTMLElement>('.site-logo')
+  const actionsEl = document.querySelector<HTMLElement>('.site-actions')
+
+  function computeFly() {
+    if (!searchBtn || !searchSlot || !logoEl || !actionsEl) return
+    // Chỉ chạy desktop (pill tồn tại). Mobile: ẩn hẳn, không bay.
+    if (window.matchMedia('(max-width: 767px)').matches) return
+    // Khe cắm bung từ width 0 → 28px bằng transition, nên đo ngay sau khi thêm
+    // class sẽ ra width ~0. Cần đo ở khung hình KẾ TIẾP (sau khi layout đã bung).
+    requestAnimationFrame(() => {
+      if (!searchBtn || !searchSlot) return
+      const to = searchSlot.getBoundingClientRect()
+      if (to.width === 0) return
+      // ⚠️ Nút nguồn có thể ĐANG bị dịch bởi transform cũ (resize lúc scrolled).
+      // Phải trừ transform hiện tại để lấy vị trí "tĩnh" thật, nếu không delta
+      // sẽ cộng dồn sai.
+      const m = new DOMMatrixReadOnly(getComputedStyle(searchBtn).transform)
+      const from = searchBtn.getBoundingClientRect()
+      const staticCenterX = from.left + from.width / 2 - m.m41
+      const staticCenterY = from.top + from.height / 2 - m.m42
+      const dx = to.left + to.width / 2 - staticCenterX
+      const dy = to.top + to.height / 2 - staticCenterY
+      // Ghi vào biến CSS của nút nguồn: transition CSS sẽ lo phần trượt.
+      searchBtn.style.setProperty('--fly-x', `${dx.toFixed(2)}px`)
+      searchBtn.style.setProperty('--fly-y', `${dy.toFixed(2)}px`)
+    })
+  }
+
   function onScroll() {
     if (!nav) return
-    nav.classList.toggle('scrolled', window.scrollY > 8)
+    const scrolled = window.scrollY > 8
+    nav.classList.toggle('scrolled', scrolled)
+    if (scrolled) computeFly()
   }
-  window.addEventListener('scroll', onScroll, { passive: true, signal: ac.signal })
+
+  // Khi chuyển từ scrolled -> top, xoá transform để nút trượt về chỗ cũ.
+  function syncFlyOnTop() {
+    if (!nav || nav.classList.contains('scrolled')) return
+    if (!searchBtn) return
+    searchBtn.style.setProperty('--fly-x', '0px')
+    searchBtn.style.setProperty('--fly-y', '0px')
+  }
+
+  window.addEventListener('scroll', () => { onScroll(); syncFlyOnTop() }, { passive: true, signal: ac.signal })
+  window.addEventListener('resize', () => { onScroll(); if (!nav?.classList.contains('scrolled')) syncFlyOnTop() }, { passive: true, signal: ac.signal })
   onScroll()
+  syncFlyOnTop()
 
   // ---------- Dropdown Thể loại (lazy-load categories từ API) ----------
   const genreWrap = document.getElementById('genre-wrap')
@@ -98,6 +145,8 @@ registerPageInit(() => {
 
   openSearchBtn?.addEventListener('click', openSearch, { signal: ac.signal })
   bnSearch?.addEventListener('click', openSearch, { signal: ac.signal })
+  // Nút tìm kiếm trong viên thuốc (lúc đã cuộn) — cùng mở overlay.
+  document.getElementById('island-search')?.addEventListener('click', openSearch, { signal: ac.signal })
   document.getElementById('search-close')?.addEventListener('click', closeSearch, { signal: ac.signal })
 
   // Phím "/" focus search (brief §22 hidden features)

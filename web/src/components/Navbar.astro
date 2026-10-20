@@ -75,6 +75,18 @@ const bottomItems = [
           </button>
           <div id="genre-menu" class="menu-panel"></div>
         </div>
+        <!-- Đích đến của nút tìm kiếm: khi cuộn xuống, icon bay từ header vào đây.
+             Đây cũng là nút tìm kiếm thật lúc đã cuộn (slot sáng lên khi icon "đáp"). -->
+        <button
+          id="island-search"
+          class="island-search-slot"
+          type="button"
+          aria-label="Tìm kiếm"
+          title="Tìm kiếm (/)"
+          tabindex="-1"
+        >
+          <FaMagnifyingGlass className="w-[16px] h-[16px]" />
+        </button>
       </div>
     </div>
 
