@@ -33,6 +33,13 @@ interface Props {
    * `cache="public"` tường minh.
    */
   cache?: 'public' | 'private'
+  /**
+   * Tinh chỉnh TTL khi `cache="public"` (giây). Mặc định 60/300 (an toàn cho
+   * trang danh sách). Trang chi tiết phim dùng 300/3600 — nội dung đổi chậm,
+   * HTML đã công khai thật (4.2).
+   */
+  sMaxAge?: number
+  staleWhileRevalidate?: number
 }
 
 const {
@@ -42,6 +49,8 @@ const {
   ogImage,
   noIndex = false,
   cache,
+  sMaxAge = 60,
+  staleWhileRevalidate = 300,
 } = Astro.props
 
 const pageTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME
@@ -52,7 +61,7 @@ Astro.response.headers.set(
   'Cache-Control',
   cacheMode === 'private'
     ? 'private, no-store, max-age=0'
-    : 'public, s-maxage=60, stale-while-revalidate=300',
+    : `public, s-maxage=${Math.max(0, Math.round(sMaxAge))}, stale-while-revalidate=${Math.max(0, Math.round(staleWhileRevalidate))}`,
 )
 ---
 

@@ -3,13 +3,9 @@ import { SITE_URL } from './site'
 /** IndexNow key — file `public/indexnow-key.txt` chứa cùng key này. */
 export const INDEXNOW_KEY = 'indexnow-key'
 
-/** Host gốc (vd https://nolelamphim.vercel.app) */
+/** Host gốc (vd nolelamphim.vercel.app) */
 function getHost(): string {
   return SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')
-}
-
-function getBase(): string {
-  return SITE_URL
 }
 
 /** Trạng thái trả về khi ping IndexNow. */

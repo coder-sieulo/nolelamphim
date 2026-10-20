@@ -1,108 +1,67 @@
 ---
-import { escapeHTML } from '../lib/movieCard'
-import type { MovieComment } from '../lib/comments'
-import type { SessionPayload } from '../lib/auth'
+/**
+ * MovieComments — khối bình luận phim.
+ *
+ * **4.2 (ISR/CDN an toàn)**: component này KHÔNG được đọc session ở SSR nữa —
+ * toàn bộ dữ liệu người dùng (danh tính, quyền xoá, danh sách bình luận) do
+ * client nạp:
+ *
+ *   `GET /api/auth/me`                     → biết đã đăng nhập chưa + cờ admin
+ *   `GET /api/movie/{slug}/comments?…`     → 20 bình luận đầu + tổng số
+ *
+ * Nhờ vậy HTML của `/phim/[slug]` giống hệt nhau với mọi người dùng ⇒ bật được
+ * cache CDN công khai (`s-maxage=300, stale-while-revalidate=3600`).
+ *
+ * Giữ NGUYÊN id/class (`#comments-root`, `#cmt-list`, `#cmt-form`, `#cmt-more`,
+ * `data-slug`, `.cmt-delete`…) để script `scripts/movie-comments.ts` chạy tiếp.
+ */
+import { FaComment } from 'react-icons/fa6'
 
 interface Props {
   slug: string
-  comments: MovieComment[]
-  total: number
-  user: SessionPayload | null
-  isAdmin: boolean
+  /** Prefill cache-warm (không bắt buộc): bình luận fetch sẵn từ server. */
+  comments?: unknown[]
+  total?: number
 }
 
-const { slug, comments, total, user, isAdmin } = Astro.props
-const currentId = user?.sub || ''
+const { slug, comments = [], total = 0 } = Astro.props
 
-
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts
-  const min = Math.floor(diff / 60000)
-  if (min < 1) return 'vừa xong'
-  if (min < 60) return `${min} phút trước`
-  const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr} giờ trước`
-  const day = Math.floor(hr / 24)
-  if (day < 30) return `${day} ngày trước`
-  return new Date(ts).toLocaleDateString('vi-VN')
-}
-
-
-function avatarHTML(c: MovieComment): string {
-  if (c.avatar) {
-    return `<img src="https://cdn.discordapp.com/avatars/${escapeHTML(c.userId)}/${escapeHTML(c.avatar)}.png?size=64" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover bg-cm-elevated"></img>`
-  }
-  return `<div class="w-10 h-10 rounded-full bg-cm-elevated flex items-center justify-center text-cm-text-2 text-sm font-bold shrink-0">${escapeHTML((c.username || '?').slice(0, 1).toUpperCase())}</div>`
-}
-
-function commentItemHTML(c: MovieComment, canDelete: boolean): string {
-  const flagHTML = c.userId === currentId ? `<span class="text-[10px] px-1.5 py-0.5 rounded-[4px] bg-cm-surface border border-cm-border text-cm-text-3 font-medium">Bạn</span>` : ''
-  const adminFlagHTML = isAdmin ? `<span class="text-[10px] px-1.5 py-0.5 rounded-[4px] bg-cm-surface border border-cm-border text-cm-text-3 font-medium">Admin</span>` : ''
-  const deleteHTML = canDelete
-    ? `<button type="button" class="cmt-delete shrink-0 self-start w-7 h-7 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-3 hover:text-red-400 hover:border-cm-border-strong flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-cid="${escapeHTML(c.id)}" aria-label="Xoá bình luận">
-        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-      </button>`
-    : ''
-  return `
-    <div class="movie-comment flex gap-3 py-3.5 border-b border-cm-border group" data-cid="${escapeHTML(c.id)}">
-      ${avatarHTML(c)}
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-sm font-semibold text-cm-text truncate">${escapeHTML(c.username)}</span>
-          ${flagHTML}
-          ${adminFlagHTML}
-          <span class="text-cm-meta text-cm-text-3">${escapeHTML(timeAgo(c.ts))}</span>
-        </div>
-        <p class="text-cm-body text-cm-text-2 mt-1 break-words whitespace-pre-wrap">${escapeHTML(c.text)}</p>
-      </div>
-      ${deleteHTML}
-    </div>
-  `
-}
-
-const commentsHTML = (() => { const _r: string[] = []; for (const c of comments) _r.push(commentItemHTML(c, isAdmin || c.userId === currentId)); return _r.join(''); })()
-const countText = total > 0 ? '(' + total + ')' : ''
+/** Trạng thái server luôn là "chưa biết" — client sẽ điền sau khi gọi /api/auth/me. */
+const skeleton = `
+      <div class="cmt-skeleton space-y-3" aria-hidden="true">
+        ${'<div class="flex gap-3 py-3.5"><div class="w-10 h-10 rounded-full bg-cm-elevated shrink-0"></div><div class="flex-1 space-y-2"><div class="h-3 w-28 rounded bg-cm-elevated"></div><div class="h-3 w-3/4 rounded bg-cm-elevated"></div></div></div>'.repeat(2)}
+      </div>`
 ---
 
-<section id="comments-root" class="mt-2" data-slug={slug} data-init-shown={comments.length} data-total={total} data-me={currentId} data-admin={isAdmin ? '1' : '0'}>
+<section
+  id="comments-root"
+  class="mt-2"
+  data-slug={slug}
+  data-total={total}
+  data-hydrated="0"
+  data-async="1"
+>
   <h2 class="text-cm-h3 font-semibold text-cm-text mb-4 flex items-center gap-2">
-    <svg class="w-4 h-4 text-cm-text-3" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+    <FaComment className="w-4 h-4 text-cm-text-3" />
     Bình luận
-    <span id="cmt-count" class="text-cm-meta text-cm-text-3 font-normal">{countText}</span>
+    <span id="cmt-count" class="text-cm-meta text-cm-text-3 font-normal">{total > 0 ? `(${total})` : ''}</span>
   </h2>
 
-  {
-    user ? (
-      <>
-        <form id="cmt-form" class="flex gap-2.5 mb-2">
-          <textarea
-            id="cmt-input"
-            rows={2}
-            maxlength={500}
-            required
-            placeholder="Chia sẻ cảm nghĩ về phim… (đã đăng nhập là @{user.username})"
-            class="flex-1 resize-none px-3.5 py-2.5 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-body text-cm-text placeholder:text-cm-text-3 focus:outline-none focus:border-cm-border-strong transition-colors"
-          ></textarea>
-          <button id="cmt-submit" type="submit" class="self-end px-4 h-10 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-cm-body font-semibold hover:bg-cm-accent-hover disabled:opacity-50 transition-colors duration-[var(--duration-cm)]">
-            Gửi
-          </button>
-        </form>
-        <p id="cmt-error" class="hidden text-cm-meta text-red-400 mb-2"></p>
-      </>
-    ) : (
-      <a href="/api/auth/discord" class="flex items-center justify-center gap-2 px-4 py-3 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] mb-2">
-        Đăng nhập để bình luận
-      </a>
-    )
-  }
+  {/* Vùng form: client thay bằng form thật hoặc nút đăng nhập sau khi biết danh tính. */}
+  <div id="cmt-auth-slot">
+    <div class="h-[68px] rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border animate-pulse"></div>
+  </div>
+  <p id="cmt-error" class="hidden text-cm-meta text-red-400 mb-2"></p>
 
-  <div id="cmt-list" set:html={commentsHTML}></div>
+  <div id="cmt-list" set:html={skeleton}></div>
 
-  {comments.length < total && (
-    <button id="cmt-more" type="button" class="mt-4 w-full h-10 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]">
-      Xem thêm bình luận…
-    </button>
-  )}
+  <button
+    id="cmt-more"
+    type="button"
+    class="mt-4 w-full h-10 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] hidden"
+  >
+    Xem thêm bình luận…
+  </button>
 
   <script>
     import "../scripts/movie-comments"

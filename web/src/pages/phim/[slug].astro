@@ -21,10 +21,18 @@ import { ratingStats } from '../../lib/catalogue'
 import { imgUrl, imgProxyUrl, imgSrcSet } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
 import { breadcrumbLd } from '../../lib/seo'
-import { getSessionUser, isAdmin } from '../../lib/auth'
-import { getComments } from '../../lib/comments'
 import { FaPlay, FaArrowLeft } from 'react-icons/fa6'
 
+/**
+ * 4.2 — HTML của trang này phải **công khai thật** (byte-identical với mọi người
+ * dùng) để bật cache CDN. Vì vậy KHÔNG đọc session/cookie ở SSR nữa:
+ *
+ *  - Không gọi `getSessionUser` / `isAdmin` / `getComments`.
+ *  - Phần theo người dùng (bình luận, nút XemChung cho admin, yêu thích, đánh giá,
+ *    "tiếp tục xem") do client lo qua `/api/auth/me` + API tương ứng.
+ *
+ * ⚠️ Tuyệt đối không thêm lại `Astro.cookies`/session vào file này.
+ */
 const slug = Astro.params.slug ?? ''
 
 const [data, epRes] = await Promise.all([
@@ -38,9 +46,6 @@ if (!data.status || !data.movie) {
 
 const movie = data.movie
 const episodes = epRes.status ? epRes.episodes : []
-const viewer = await getSessionUser(Astro.cookies)
-const canHost = isAdmin(viewer)
-const commentData = await getComments(slug, 20, 0)
 const communityRating = await ratingStats(slug).catch(() => null)
 
 const metaTitle = movie.name
@@ -176,7 +181,15 @@ const chipClass =
   'px-3 py-1.5 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)]'
 ---
 
-<BaseLayout title={metaTitle} description={metaDescription} keywords={metaKeywords} ogImage={ogImage}>
+<BaseLayout
+  title={metaTitle}
+  description={metaDescription}
+  keywords={metaKeywords}
+  ogImage={ogImage}
+  cache="public"
+  sMaxAge={300}
+  staleWhileRevalidate={3600}
+>
   <script is:inline set:html={JSON.stringify(jsonLd)} type="application/ld+json" />
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />
   <ThemeBG name={slug} />
@@ -248,7 +261,9 @@ const chipClass =
           }
           <FavoriteButton id={movie._id} name={movie.name} slug={slug} thumb={movie.thumb_url || ''} vote={movie.tmdb?.vote_average} variant="action" />
           <FavoriteButton id={movie._id} name={movie.name} slug={slug} thumb={movie.thumb_url || ''} vote={movie.tmdb?.vote_average} variant="icon" />
-          {canHost && <XemChungButton slug={slug} name={movie.name} thumb={image || ''} servers={episodes} />}
+          {/* Nút tạo phòng XemChung: render công khai (không phụ thuộc session), script
+              `xc-quick` tự ẩn với người không phải admin (4.2). */}
+          <XemChungButton slug={slug} name={movie.name} thumb={image || ''} servers={episodes} />
           <div id="phim-resume" class="hidden"></div>
           <ShareButton slug={slug} name={movie.name} />
         </div>
@@ -388,7 +403,7 @@ const chipClass =
                   )
                 }
               </div>
-              <MovieComments slug={slug} comments={commentData.comments} total={commentData.total} user={viewer} isAdmin={canHost} />
+              <MovieComments slug={slug} />
             </section>
           </Tabs>
         </div>
