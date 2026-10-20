@@ -13,6 +13,7 @@
 }
 
 .site-bar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,7 +24,8 @@
   border-bottom: 1px solid var(--color-cm-border);
   transition:
     height var(--duration-cm) var(--ease-cm),
-    background-color var(--duration-cm-slow) var(--ease-cm);
+    background-color var(--duration-cm-slow) var(--ease-cm),
+    border-color var(--duration-cm-slow) var(--ease-cm);
 }
 @media (min-width: 768px) {
   .site-bar {
@@ -44,12 +46,60 @@
   }
 }
 
+/* ── Dynamic island (brief §05) ──────────────────────────────────────────
+   Desktop: 4 mục nav gom thành 1 viên thuốc ở giữa. Khi `.scrolled`, logo +
+   search + actions ẩn hẳn, viên thuốc giữ nguyên vị trí (đặt absolute giữa)
+   nên trông như header "co lại còn viên thuốc" — không nhảy layout.
+   Mobile: không có island (đã có bottom nav riêng). */
+.nav-island {
+  display: none;
+}
+@media (min-width: 768px) {
+  .nav-island {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 42px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--color-cm-elevated);
+    border: 1px solid var(--color-cm-border);
+    box-shadow: var(--shadow-cm-up);
+    transition:
+      height var(--duration-cm) var(--ease-cm),
+      background-color var(--duration-cm) var(--ease-cm);
+  }
+  .site-header.scrolled .nav-island {
+    height: 38px;
+  }
+}
+
+/* Ẩn các phần không phải island khi đã cuộn (desktop) */
+@media (min-width: 768px) {
+  .site-header.scrolled .site-logo,
+  .site-header.scrolled .site-actions {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition:
+      opacity var(--duration-cm) var(--ease-cm),
+      transform var(--duration-cm) var(--ease-cm);
+  }
+  .site-header .site-logo,
+  .site-header .site-actions {
+    transition:
+      opacity var(--duration-cm-slow) var(--ease-cm),
+      transform var(--duration-cm-slow) var(--ease-cm);
+  }
+}
+
 .site-logo {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
+
 .site-logo img {
   width: 32px;
   height: 32px;
@@ -71,42 +121,40 @@
 .site-nav {
   display: none;
   align-items: center;
-  gap: 2px;
 }
 @media (min-width: 768px) {
   .site-nav {
     display: flex;
-    margin-inline: auto;
+    /* Ghim giữa header tuyệt đối: logo và actions rộng khác nhau nên
+       `margin-inline: auto` sẽ lệch tâm vài px. */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 .site-nav .nav-link {
-  height: 36px;
+  height: 30px;
   padding: 0 14px;
   display: inline-flex;
   align-items: center;
-  border-radius: var(--radius-cm-btn);
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-cm-text-2);
   position: relative;
-  transition: color var(--duration-cm) var(--ease-cm);
+  white-space: nowrap;
+  transition:
+    color var(--duration-cm) var(--ease-cm),
+    background-color var(--duration-cm) var(--ease-cm);
 }
 .site-nav .nav-link:hover {
   color: var(--color-cm-text);
 }
-/* Active = màu accent + underline (brief §03: active navigation) */
+/* Active = nền accent mờ + chữ sáng (đọc rõ trong pill) */
 .site-nav .nav-link.active {
   color: var(--color-cm-text);
-}
-.site-nav .nav-link.active::after {
-  content: '';
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 5px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--color-cm-accent);
+  background: color-mix(in srgb, var(--color-cm-accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 45%, transparent);
 }
 
 /* Dropdown Thể loại */
@@ -114,21 +162,28 @@
   position: relative;
 }
 .genre-btn {
-  height: 36px;
-  padding: 0 14px;
+  height: 30px;
+  padding: 0 12px 0 14px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border-radius: var(--radius-cm-btn);
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-cm-text-2);
-  transition: color var(--duration-cm) var(--ease-cm);
+  white-space: nowrap;
+  transition:
+    color var(--duration-cm) var(--ease-cm),
+    background-color var(--duration-cm) var(--ease-cm);
 }
 .genre-btn:hover,
 .genre-wrap.open .genre-btn,
 .genre-wrap.genre-on .genre-btn {
   color: var(--color-cm-text);
+}
+.genre-wrap.genre-on .genre-btn {
+  background: color-mix(in srgb, var(--color-cm-accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 45%, transparent);
 }
 .genre-btn .chevron {
   transition: transform var(--duration-cm) var(--ease-cm);

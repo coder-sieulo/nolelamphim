@@ -53,24 +53,28 @@ const bottomItems = [
       <span>Nô Lệ Làm Phim</span>
     </a>
 
+    <!-- Dynamic island (brief §05): 4 mục gom vào 1 viên thuốc. Khi cuộn xuống,
+         toàn bộ phần còn lại của header (logo/search/actions) ẩn đi, chỉ còn pill. -->
     <div id="nav-links" class="site-nav">
-      {
-        links.map((link, i) => (
-          <a
-            href={link.href}
-            class:list={['nav-link', i === activeIndex && 'active']}
-            aria-current={i === activeIndex ? 'page' : undefined}
-          >
-            {link.label}
-          </a>
-        ))
-      }
-      <div id="genre-wrap" class:list={['genre-wrap', genreActive && 'genre-on']}>
-        <button id="genre-btn" class="genre-btn" aria-haspopup="true" aria-expanded="false">
-          Thể loại
-          <FaChevronDown className="chevron w-3 h-3" />
-        </button>
-        <div id="genre-menu" class="menu-panel"></div>
+      <div id="nav-island" class="nav-island">
+        {
+          links.map((link, i) => (
+            <a
+              href={link.href}
+              class:list={['nav-link', i === activeIndex && 'active']}
+              aria-current={i === activeIndex ? 'page' : undefined}
+            >
+              {link.label}
+            </a>
+          ))
+        }
+        <div id="genre-wrap" class:list={['genre-wrap', genreActive && 'genre-on']}>
+          <button id="genre-btn" class="genre-btn" aria-haspopup="true" aria-expanded="false">
+            Thể loại
+            <FaChevronDown className="chevron w-3 h-3" />
+          </button>
+          <div id="genre-menu" class="menu-panel"></div>
+        </div>
       </div>
     </div>
 
