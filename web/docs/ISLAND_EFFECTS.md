@@ -13,6 +13,52 @@ Stack: Astro 5 + CSS thuần + TypeScript module (không framework UI), `data-th
 
 ---
 
+## TRẠNG THÁI TRIỂN KHAI (đã làm hết)
+
+> Toàn bộ 28 mục dưới đây **đã được hiện thực** trên nhánh local (CHƯA push).
+> Commit: `0f61263` (P1+P2 hoá thân) · `4e37e7d` (P3 chuyển động) ·
+> `0b299a8` (P4+P5 chức năng & hình dạng/màu sắc).
+
+| Mục | Hiệu ứng | Nơi code | Cách tự kiểm (Playwright / mắt thường) |
+|---|---|---|---|
+| 1.1 | Morph pill theo trang | `island.ts` `buildContent()` | vào `/`, `/phim/x`, `/xem/...` xem nội dung pill đổi |
+| 1.2 | Pill "nuốt" poster | `navbar.ts` + `@keyframes island-swallow` | bấm card phim → ảnh bay sang backdrop (View Transitions) |
+| 1.3 | Remote nhớ phim dở | `island.ts` `lastWatched()`, mode `remote` | cuộn > 420px khi có phim dở → pill hiện "Xem tiếp" |
+| 1.4 | Thu thành "giọt" khi cuộn sâu | `.island-drop` | cuộn > 640px → nhãn nav thu lại, hover bung |
+| 1.5 | Hình dạng theo vùng cuộn | `data-island-shape` = top/mid/end | cuối trang → hiện nút "lên đầu" |
+| 2.1 | Indicator trượt | `#island-marker`, `positionMarker()` | marker khớp tâm+rộng mục active (lệch ≤1px) |
+| 2.2 | Nhún đàn hồi khi "đáp" | `.island-bounce` + `nllp:island-search-landed` | cuộn → nút search đáp vào pill → nhún |
+| 2.3 | Viền sáng theo con trỏ | `--sheen-x/--sheen-y` | rê chuột ngang pill → viền sáng chạy theo |
+| 2.4 | Pill "thở" khi có phim mới | `.island-pulse` + `data-new-latest` | đổi `localStorage['island-seen-new']` rồi tải lại → pulse |
+| 2.5 | Magnetic pill | `--mag-x/--mag-y` | đưa chuột gần pill → dịch nhẹ ≤3px |
+| 2.6 | Ink ripple khi bấm mục | `.island-ripple` | bấm mục nav → gợn sóng bung |
+| 3.1 | Ambient màu từ poster | `dominantColor()` (canvas `/img`) | mở trang phim → pill lấy accent từ ảnh |
+| 3.2 | Tông theo thể loại | `data-island-tone` | phim kinh dị (`/phim/quai-vat-khong-gian`) → tone `horror` |
+| 3.3 | Tối dần theo độ sâu | `--island-depth-ratio` | càng cuộn sâu opacity càng giảm (tối đa 30%) |
+| 3.4 | Trong suốt thích ứng | `backdrop-filter` khi scrolled | pill mờ nền khi cuộn |
+| 4.1 | Vòng tiến trình đọc | `#island-progress` SVG | đầu trang ~0 → giữa ~0.58 → cuối 1 |
+| 4.2 | Command palette (Ctrl+K) | `island.ts` keydown trong search | Ctrl/⌘+K hoặc `/` → gõ, ↑↓ chọn, ↵ mở |
+| 4.3 | Nhảy giữa 3 nguồn | `.island-src-menu` + `nllp:switch-source` | trang xem → bấm `vsmov ⌄` → chọn nguồn |
+| 4.4 | Phiếu đánh giá nhanh | `.island-star` → `/api/user/rate` | trang phim → bấm sao trong pill |
+| 4.5 | Xem cùng nhau từ pill | `[data-island-xc]` → `XemChungButton` | (chỉ admin thấy nút trên trang) |
+| 4.6 | Tìm kiếm trong pill | `#island-search-input` + panel | bấm/search → pill morph thành ô nhập, kết quả trượt xuống |
+| 4.7 | Lịch sử & gợi ý | `localStorage recent-search` + "đang xem" | mở search → thấy "Vừa tìm" + phim dở |
+| 5.1 | Pill "chạy trốn" khi cuộn nhanh | `.island-compact` | cuộn nhanh > 90px/khung → thu gọn |
+| 5.2 | Chia đôi nav/tiến trình | `data-island-split='on'` | cuộn ở chế độ nav → có vạch chia giữa |
+| 5.3 | "Đang có X người xem" | `/api/presence` (Redis HLL) | trang xem → pill hiện số khi ≥3 người |
+| 5.4 | Pill "cắn" theo nhịp phim | `.island-bite` + `nllp:player-tick` | đang phát <video> → pill nhấp nhô nhẹ |
+| 5.5 | Làm mờ nội dung khi hover | `.island-focus` | đưa chuột gần pill → pill nổi lên |
+| 5.6 | Easter egg bấm logo 3 lần | `.island-flip` | bấm logo 3 lần nhanh → pill lật |
+
+**Nguyên tắc đã giữ:**
+- Mobile (<768px) tắt hết hiệu ứng con trỏ/chuyển động; tôn trọng `prefers-reduced-motion`.
+- Không đưa session/admin vào SSR trang công khai (4.2) — mọi dữ liệu người dùng dựng ở client.
+- 5.3 dùng **dữ liệu thật** (Redis HyperLogLog), không bịa số; không Redis thì tự ẩn.
+
+**Lệnh kiểm nhanh:** `cd /tmp/opencode/pw && node test-island-{morph,pill-regress,motion,func,func2}.mjs`
+
+---
+
 ## PHẦN 1 — VIÊN THUỐC NHƯ MỘT THỰC THỂ (morph)
 
 > Đây là nhóm "đột phá": cùng 1 element, ý nghĩa thay đổi theo việc bạn đang làm.
