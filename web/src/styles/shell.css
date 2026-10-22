@@ -802,6 +802,7 @@
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
    `.nav-island` đổi nội dung theo `data-island-mode`. Chỉ desktop (≥768px).
    Mọi biến thể dùng transform/opacity để không gây layout thrash.
    ══════════════════════════════════════════════════════════════════════════ */

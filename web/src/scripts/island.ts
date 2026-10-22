@@ -15,6 +15,7 @@
  */
 
 import { getRecent, getEpProgress } from './store'
+import { imgProxyUrl } from '../lib/img'
 
 export type IslandMode = 'nav' | 'movie' | 'watch' | 'search' | 'remote'
 
@@ -75,11 +76,15 @@ function esc(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
-/** Đường dẫn ảnh proxy (cùng origin → trích màu bằng canvas được). */
+/**
+ * Đường dẫn ảnh proxy (cùng origin → trích màu bằng canvas được).
+ * Dùng chung `imgProxyUrl` của `lib/img` để khoá tham số (`?src=&w=`) với
+ * server `/img`; tự viết tay `?url=` từng gây 400 → ảnh bị ẩn (bug đã gặp).
+ */
 function proxied(url: string | undefined, w = 48): string {
   if (!url) return ''
   if (url.startsWith('/')) return url
-  return `/img?url=${encodeURIComponent(url)}&w=${w}`
+  return imgProxyUrl(url, w)
 }
 
 /**
