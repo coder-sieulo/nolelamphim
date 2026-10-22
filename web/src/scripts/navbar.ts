@@ -2,6 +2,7 @@ import { registerPageInit } from './lifecycle'
 import { getCategories } from '../lib/api'
 import { escapeHTML } from '../lib/movieCard'
 import { initIsland, lastWatched } from './island'
+import { initIslandMotion } from './island-motion'
 
 registerPageInit(() => {
   const ac = new AbortController()
@@ -10,6 +11,8 @@ registerPageInit(() => {
 
   // ── Viên thuốc: khởi tạo bộ điều khiển (mục 1.1 / 1.3) ──
   const disposeIsland = initIsland()
+  // ── Hiệu ứng chuyển động của viên thuốc (mục 2.1–2.6, 4.1, 5.1…) ──
+  const disposeMotion = initIslandMotion()
 
   // ── Nút tìm kiếm "bay" vào viên thuốc (FLIP) ──────────────────────────
   // Khi cuộn xuống: đo chênh lệch giữa nút tìm kiếm ở header và khe cắm trong
@@ -45,11 +48,22 @@ registerPageInit(() => {
     })
   }
 
+  let wasScrolled = false
+  let landTimer: number | undefined
   function onScroll() {
     if (!nav) return
     const scrolled = window.scrollY > 8
     nav.classList.toggle('scrolled', scrolled)
     if (scrolled) computeFly()
+    // Khi vừa chuyển sang trạng thái cuộn: nút search "đáp" vào pill sau khi bay.
+    if (scrolled && !wasScrolled) {
+      clearTimeout(landTimer)
+      landTimer = window.setTimeout(
+        () => window.dispatchEvent(new CustomEvent('nllp:island-search-landed')),
+        340,
+      )
+    }
+    wasScrolled = scrolled
 
     // ── 1.3 / 5.1: cuộn sâu thì viên thuốc "nhớ" phim đang xem dở (remote) ──
     const api = window.__nllpIsland
@@ -235,6 +249,8 @@ registerPageInit(() => {
 
   return () => {
     disposeIsland()
+    disposeMotion()
+    clearTimeout(landTimer)
     ac.abort()
   }
 })

@@ -57,6 +57,13 @@ const bottomItems = [
          toàn bộ phần còn lại của header (logo/search/actions) ẩn đi, chỉ còn pill. -->
     <div id="nav-links" class="site-nav">
       <div id="nav-island" class="nav-island">
+        <!-- Khối cam trượt giữa các mục (mục 2.1) — JS định vị -->
+        <span id="island-marker" class="island-marker" aria-hidden="true"></span>
+        <!-- Vòng tiến trình đọc ven pill (mục 4.1) — chỉ hiện ở chế độ nav -->
+        <svg id="island-progress" class="island-progress" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <rect class="island-progress-bg" x="0" y="0" width="100" height="100" rx="50" ry="50" pathLength="1" />
+          <rect class="island-progress-fg" x="0" y="0" width="100" height="100" rx="50" ry="50" pathLength="1" />
+        </svg>
         {
           links.map((link, i) => (
             <a
