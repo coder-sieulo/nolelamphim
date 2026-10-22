@@ -53,6 +53,9 @@ interface Props {
     movieQuality?: string
     movieSource?: string
     movieAccent?: string
+    movieType?: string
+    movieGenres?: string
+    movieWatchers?: number
     episodeSlug?: string
     episodeName?: string
     episodeIndex?: number
@@ -95,6 +98,9 @@ Astro.response.headers.set(
     data-movie-quality={island?.movieQuality}
     data-movie-source={island?.movieSource}
     data-movie-accent={island?.movieAccent}
+    data-movie-type={island?.movieType}
+    data-movie-genres={island?.movieGenres}
+    data-movie-watchers={island?.movieWatchers}
     data-episode-slug={island?.episodeSlug}
     data-episode-name={island?.episodeName}
     data-episode-index={island?.episodeIndex}

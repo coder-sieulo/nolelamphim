@@ -167,6 +167,10 @@ const serverIdle =
       }, { signal: ac.signal })
 
       document.addEventListener('click', (e) => {
+        const t = e.target as HTMLElement
+        // Bỏ qua click phát sinh TỪ viên thuốc (pill) — nếu không, chính cú
+        // bấm mở panel từ pill sẽ bị coi là "bấm ra ngoài" và đóng ngay.
+        if (t.closest?.('#nav-island')) return
         if (!box.contains(e.target as Node)) panel?.classList.remove('open')
       }, { signal: ac.signal })
 

@@ -196,6 +196,10 @@ const chipClass =
     movieYear: movie.year ? String(movie.year) : '',
     movieQuality: movie.quality || '',
     movieSource: 'vsmov',
+    movieType: movie.type || '',
+    movieGenres: Array.isArray(movie.category)
+      ? movie.category.map((c) => (typeof c === 'string' ? c : c.name)).join('|')
+      : '',
     episodeTotal: episodes[0]?.list?.length || 0,
   }}
 >

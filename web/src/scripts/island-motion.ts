@@ -188,6 +188,62 @@ export function initIslandMotion(): () => void {
     fastScrollCheck()
   })
 
+  /* ── 2.4: pill "thở" khi có phim mới (so với lần xem trước) ──
+   * Đọc `data-new-latest` của section "Mới cập nhật" (SSR). Nếu slug đầu khác
+   * lần trước (localStorage) → pill pulse vài nhịp để hút mắt. Không bịa: chỉ
+   * kích hoạt khi dữ liệu THẬT đổi. */
+  function checkNewPulse() {
+    if (!isDesktop() || reducedMotion()) return
+    const section = document.querySelector<HTMLElement>('[data-new-latest]')
+    const latest = section?.dataset.newLatest
+    if (!latest) return
+    let seen = ''
+    try {
+      seen = localStorage.getItem('island-seen-new') || ''
+    } catch {
+      /* ignore */
+    }
+    if (seen && seen !== latest) {
+      island!.classList.add('island-pulse')
+      setTimeout(() => island!.classList.remove('island-pulse'), 8000)
+    }
+    try {
+      localStorage.setItem('island-seen-new', latest)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /* ── 5.2: pill chia đôi — nửa trái nav, nửa phải tiến trình ──
+   * Khi ở chế độ nav và đã cuộn (có tiến trình), gắn `data-island-split='on'`. */
+  function updateSplit() {
+    if (!isDesktop()) {
+      island!.removeAttribute('data-island-split')
+      return
+    }
+    const scrolled = document.getElementById('navbar')?.classList.contains('scrolled')
+    const on = island!.dataset.islandMode === 'nav' && !!scrolled
+    island!.setAttribute('data-island-split', on ? 'on' : 'off')
+  }
+
+  /* ── 5.4: pill "cắn" theo nhịp phim đang phát ──
+   * Nghe `nllp:player-tick` (player phát khi đang phát) → pill nhấp nhô nhẹ.
+   * Không nghe audio (không xin quyền) — chỉ dùng nhịp phát thật từ player. */
+  let biteTimer: number | undefined
+  function onPlayerTick() {
+    if (!isDesktop() || reducedMotion()) return
+    island!.classList.remove('island-bite')
+    void island!.offsetWidth
+    island!.classList.add('island-bite')
+    clearTimeout(biteTimer)
+    biteTimer = window.setTimeout(() => island!.classList.remove('island-bite'), 400)
+  }
+
+  const onScroll2 = rafThrottle(() => updateSplit())
+  window.addEventListener('scroll', onScroll2, { passive: true, signal: ac.signal })
+  window.addEventListener('nllp:island-change', updateSplit, { signal: ac.signal })
+  window.addEventListener('nllp:player-tick', onPlayerTick, { signal: ac.signal })
+
   window.addEventListener('scroll', onScroll, { passive: true, signal: ac.signal })
   window.addEventListener('resize', repositionMarker, { passive: true, signal: ac.signal })
   window.addEventListener('pointermove', onPointerMove, { passive: true, signal: ac.signal })
@@ -200,6 +256,8 @@ export function initIslandMotion(): () => void {
   requestAnimationFrame(() => {
     positionMarker()
     updateRing()
+    updateSplit()
+    checkNewPulse()
   })
   const fontsReady = (document as Document & { fonts?: FontFaceSet }).fonts
   fontsReady?.ready?.then(() => positionMarker()).catch(() => {})
@@ -208,5 +266,6 @@ export function initIslandMotion(): () => void {
     ac.abort()
     clearTimeout(settleTimer)
     clearTimeout(logoClickTimer)
+    clearTimeout(biteTimer)
   }
 }

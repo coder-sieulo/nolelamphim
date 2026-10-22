@@ -1035,3 +1035,326 @@
   color: var(--color-cm-text);
   background: color-mix(in srgb, var(--color-cm-accent) 16%, transparent);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ISLAND — MÀU SẮC THEO BỐI CẢNH (mục 3.1–3.4) & HÌNH DẠNG THEO CUỘN (1.4, 1.5)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  /* ── 3.2: tông theo thể loại (data-island-tone) ──
+     Chỉ đổi biến --island-accent nếu trang KHÔNG tự cung cấp accent từ poster. */
+  #nav-island:not([style*='--island-accent'])[data-island-tone='horror'] {
+    --island-accent: #fb923c;
+  }
+  #nav-island:not([style*='--island-accent'])[data-island-tone='noir'] {
+    --island-accent: #ffaa46;
+  }
+  #nav-island:not([style*='--island-accent'])[data-island-tone='warm'] {
+    --island-accent: #f59e0b;
+  }
+  #nav-island:not([style*='--island-accent'])[data-island-tone='action'] {
+    --island-accent: #ef4444;
+  }
+  #nav-island:not([style*='--island-accent'])[data-island-tone='romance'] {
+    --island-accent: #f472b6;
+  }
+  /* Tông thể loại áp cho viền + CTA ngay cả khi pill chưa cần accent. */
+  #nav-island[data-island-tone]:not([data-island-tone='default'])[data-island-mode='movie'],
+  #nav-island[data-island-tone]:not([data-island-tone='default'])[data-island-mode='watch'],
+  #nav-island[data-island-tone]:not([data-island-tone='default'])[data-island-mode='remote'] {
+    border-color: color-mix(in srgb, var(--island-accent, var(--color-cm-accent)) 55%, var(--color-cm-border));
+  }
+
+  /* ── 3.3: pill tối dần theo độ sâu cuộn (--island-depth-ratio 0..1) ──
+     Chỉ giảm nhẹ (tối đa ~30%) để không mất khả năng đọc. */
+  .site-header.scrolled .nav-island {
+    opacity: calc(1 - 0.3 * var(--island-depth-ratio, 0));
+  }
+
+  /* ── 3.4: pill thích ứng tông sáng/tối theo ảnh nền ──
+     Dùng mix-blend để viền/nền tự tương phản với nội dung phía sau. */
+  .site-header.scrolled .nav-island {
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  /* ── 1.4 + 1.5: hình dạng theo vùng cuộn ──
+     - shape=top : pill đầy đủ (mặc định, không cần lớp phủ)
+     - shape=mid : pill có "gân" tiến trình đọc (đã có ở #island-progress)
+     - shape=end : pill thu lại + hiện nút "lên đầu"  */
+  #nav-island[data-island-shape='end'] {
+    height: 38px;
+    padding: 0 8px;
+  }
+  /* Ở cuối trang: link nav thu gọn lại, nhường chỗ cho nút lên đầu. */
+  #nav-island[data-island-shape='end'] .nav-link,
+  #nav-island[data-island-shape='end'] .genre-btn {
+    padding-inline: 8px;
+    font-size: 12.5px;
+    opacity: 0.7;
+  }
+  #nav-island[data-island-shape='end'] .nav-link:hover,
+  #nav-island[data-island-shape='end'] .genre-btn:hover {
+    opacity: 1;
+  }
+  /* Nút "lên đầu" chỉ hiện ở shape=end (JS chèn nút này khi cần). */
+  .island-top-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    color: var(--color-cm-text-2);
+    transition: color var(--duration-cm) var(--ease-cm), background-color var(--duration-cm) var(--ease-cm);
+  }
+  #nav-island[data-island-shape='end'] .island-top-btn {
+    display: inline-flex;
+  }
+  .island-top-btn:hover {
+    color: var(--color-cm-text);
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  /* ── 1.4: pill thu thành "giọt" khi cuộn sâu (JS gắn .island-drop) ── */
+  #nav-island.island-drop .nav-link .nav-label,
+  #nav-island.island-drop .genre-btn .genre-label {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: max-width var(--duration-cm-slow) var(--ease-cm), opacity var(--duration-cm) var(--ease-cm);
+  }
+
+  /* ── 5.2: pill chia đôi — nửa trái nav, nửa phải vòng tiến trình ── */
+  #nav-island[data-island-split='on']::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    background: var(--color-cm-border);
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+/* ── 5.3: số người đang xem ── */
+.island-watchers {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-cm-text-3);
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.island-watchers svg {
+  color: #4ade80;
+}
+
+/* ── 4.3: panel chọn nguồn phát (dropdown trong pill) ── */
+.island-src-menu-dropdown .island-src-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-cm-text-2);
+  text-align: left;
+}
+.island-src-menu-dropdown .island-src-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-cm-text);
+}
+.island-src-dot.off {
+  background: var(--color-cm-text-3);
+  box-shadow: none;
+}
+
+/* ── 4.6: tìm kiếm trong pill ── */
+.island-search-input {
+  width: min(360px, 42vw);
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--color-cm-text);
+  font-size: 13px;
+  outline: none;
+}
+.island-search-input::placeholder {
+  color: var(--color-cm-text-3);
+}
+.island-search-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--color-cm-text-3);
+  flex-shrink: 0;
+}
+.island-search-x:hover {
+  color: var(--color-cm-text);
+  background: rgba(255, 255, 255, 0.07);
+}
+.island-search-results {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, 90vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--color-cm-elevated);
+  border: 1px solid var(--color-cm-border);
+  border-radius: var(--radius-cm-modal);
+  box-shadow: var(--shadow-cm-up);
+  padding: 6px;
+  z-index: 3;
+  display: none;
+}
+.island-search-results.has-items,
+.island-mode-search + .island-search-results {
+  display: block;
+  animation: cm-menu-in var(--duration-cm) var(--ease-cm);
+}
+.island-search-hint,
+.island-search-loading,
+.island-search-empty {
+  padding: 12px 10px;
+  font-size: 12.5px;
+  color: var(--color-cm-text-3);
+}
+.island-search-hit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.island-search-hit:hover,
+.island-search-hit:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+}
+.island-search-hit img {
+  width: 28px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: var(--color-cm-surface);
+  flex-shrink: 0;
+}
+.island-search-hit-noimg {
+  width: 28px;
+  height: 38px;
+  border-radius: 5px;
+  background: var(--color-cm-surface);
+  flex-shrink: 0;
+}
+.island-search-hit-txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.island-search-hit-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-cm-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.island-search-hit-meta {
+  font-size: 11px;
+  color: var(--color-cm-text-3);
+}
+
+/* ── 1.2: pill "nuốt" poster khi bấm card phim ── */
+@media (min-width: 768px) {
+  .nav-island.island-swallow {
+    animation: island-swallow 460ms var(--ease-cm);
+  }
+  @keyframes island-swallow {
+    0% {
+      scale: 1;
+    }
+    35% {
+      scale: 0.9;
+    }
+    60% {
+      scale: 1.04;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+  /* 3.4 + focus: viền tự tương phản tốt hơn khi có backdrop-filter. */
+  .site-header.scrolled .nav-island::before {
+    border-radius: inherit;
+  }
+}
+
+/* ── 5.4: pill "cắn" theo nhịp phát (JS gắn .island-bite) ── */
+@media (min-width: 768px) {
+  .nav-island.island-bite {
+    animation: island-bite 320ms var(--ease-cm);
+  }
+  @keyframes island-bite {
+    0%,
+    100% {
+      scale: 1;
+    }
+    40% {
+      scale: 0.975 1.03;
+    }
+  }
+}
+
+/* ── 5.2: khi chia đôi, nav dịch nhẹ sang trái để nhường nửa phải ── */
+@media (min-width: 768px) {
+  #nav-island[data-island-split='on'] {
+    padding-right: 14px;
+  }
+}
+
+/* ── 4.7: nhóm trong panel tìm kiếm (lịch sử / đang xem) ── */
+.island-search-group {
+  padding: 8px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-cm-text-3);
+}
+.island-search-recent {
+  width: 100%;
+  text-align: left;
+  background: none;
+}
+.island-search-recent-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--color-cm-surface);
+  color: var(--color-cm-text-3);
+  flex-shrink: 0;
+}
+/* ── 4.2: mục đang chọn bằng bàn phím ── */
+.island-search-hit.sel,
+.island-search-hit:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.island-search-hit.sel {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 50%, transparent);
+}

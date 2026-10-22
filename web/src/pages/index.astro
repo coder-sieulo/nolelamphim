@@ -119,7 +119,7 @@ const showSubteam = subteam.items.length > 0
     {/* 4. Mới cập nhật — grid đầy đủ + phân trang */}
     {
       newMovies.items.length > 0 && (
-        <section class="mt-10">
+        <section class="mt-10" data-new-latest={newMovies.items[0]?.slug || ''} data-new-count={newMovies.items.length}>
           <SectionHeader title="Mới cập nhật" />
           <MovieGrid
             initialItems={newMovies.items}

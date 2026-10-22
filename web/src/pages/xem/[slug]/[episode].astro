@@ -112,6 +112,10 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
     movieYear: movie.year ? String(movie.year) : '',
     movieQuality: movie.quality || '',
     movieSource: 'vsmov',
+    movieType: movie.type || '',
+    movieGenres: Array.isArray(movie.category)
+      ? movie.category.map((c) => (typeof c === 'string' ? c : c.name)).join('|')
+      : '',
     episodeSlug: currentEp?.slug || episode,
     episodeName: currentEp?.name || '',
     episodeIndex: currentEpIdx >= 0 ? currentEpIdx + 1 : undefined,
@@ -428,6 +432,44 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       const movieVote = page.dataset.movieVote || ''
       const epName = page.dataset.epName || ''
 
+      /* ── 5.3: đếm người đang xem (THẬT, không bịa) ──
+       * Ping 1 lần khi vào, rồi poll mỗi 60s. Đẩy số vào pill qua
+       * window.__nllpIsland.refresh() với `watchers` mới. */
+      const presenceAc = new AbortController()
+      async function pingPresence(first: boolean) {
+        try {
+          const res = await fetch(`/api/presence?slug=${encodeURIComponent(slug)}${first ? '&ping=1' : ''}`, {
+            signal: presenceAc.signal,
+          })
+          const data = (await res.json()) as { enabled?: boolean; count?: number }
+          if (!data.enabled) return
+          const api = window.__nllpIsland as
+            | { getMode?: () => string; setMode?: (m: string, d?: Record<string, unknown>) => void }
+            | undefined
+          if (!api?.getMode || api.getMode() !== 'watch') return
+          // Cập nhật lại chế độ watch với số người mới.
+          const html = document.documentElement
+          api.setMode?.('watch', {
+            slug,
+            name: movieName,
+            thumb: html.dataset.movieThumb || '',
+            episodeSlug: html.dataset.episodeSlug || episode,
+            episodeName: html.dataset.episodeName || epName,
+            epIndex: Number(html.dataset.episodeIndex || 0) || undefined,
+            epTotal: Number(html.dataset.episodeTotal || 0) || undefined,
+            genres: (html.dataset.movieGenres || '').split('|').filter(Boolean),
+            type: html.dataset.movieType || '',
+            source: html.dataset.movieSource || 'vsmov',
+            watchers: data.count || 0,
+          })
+        } catch {
+          /* bỏ qua lỗi mạng/abort */
+        }
+      }
+      void pingPresence(true)
+      window.setInterval(() => void pingPresence(false), 60_000)
+      window.addEventListener('pagehide', () => presenceAc.abort(), { once: true })
+
       let servers: { name: string; items: { name: string; slug: string; embed: string; m3u8?: string }[] }[] = []
       try {
         servers = JSON.parse(page.dataset.servers || '[]')
@@ -453,6 +495,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       let elapsed = 0
       let progressActive = false
       let progressTick = 0
+      let lastTick = 0
 
       /* ── Vẽ thanh tiến trình cho từng nút tập (mục 1.4) — xem scripts/ep-progress.ts ── */
       function decorateEpProgress() {
@@ -521,6 +564,14 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
           v.addEventListener('timeupdate', () => {
             if (Number.isFinite(v.currentTime)) elapsed = v.currentTime
             if (Number.isFinite(v.duration) && v.duration > 0) duration = v.duration
+            // 5.4: nhịp phát thật (throttle ~400ms) → pill "cắn" theo nhịp.
+            if (!v.paused) {
+              const now = performance.now()
+              if (now - lastTick > 400) {
+                lastTick = now
+                window.dispatchEvent(new CustomEvent('nllp:player-tick'))
+              }
+            }
           }, { passive: true })
           v.addEventListener('pause', flushProgress, { passive: true })
           v.addEventListener('ended', () => {
@@ -985,6 +1036,41 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
 
       serverChips.forEach((btn) => btn.addEventListener('click', () => selectServer(Number(btn.dataset.server))))
       ddItems.forEach((btn) => btn.addEventListener('click', () => selectServer(Number(btn.dataset.server))))
+
+      /* ── 4.3: đổi nguồn phát từ viên thuốc ──
+       * Pill phát `nllp:switch-source` với id nguồn (vsmov/kkphim/nguonc).
+       * Ánh xạ id → chỉ số server theo TÊN server (nguồn V3 xuất hiện dưới
+       * các tên khác nhau tuỳ phim), rồi tái dùng selectServer(). */
+      const SOURCE_ALIAS: Record<string, string[]> = {
+        vsmov: ['vsmov', 'vietsub', 'vsmov #1', 'vsmov #2'],
+        kkphim: ['kkphim', 'kk', 'phimapi'],
+        nguonc: ['nguonc', 'nguồn c', 'nc'],
+      }
+      function selectSourceById(id: string) {
+        const aliases = SOURCE_ALIAS[id] || [id]
+        const idx = servers.findIndex((s) =>
+          aliases.some((a) => s.name.toLowerCase().includes(a.toLowerCase())),
+        )
+        if (idx >= 0) {
+          selectServer(idx)
+          return true
+        }
+        // Không khớp tên → nếu nguồn có m3u8 riêng thì phát trực tiếp.
+        const target = servers.find((s) =>
+          aliases.some((a) => s.name.toLowerCase().includes(a.toLowerCase())),
+        )
+        if (!target && servers[0]) {
+          // Fallback: nếu chỉ có 1 server, coi như đổi nguồn không khả dụng.
+          return false
+        }
+        return false
+      }
+      window.addEventListener('nllp:switch-source', (ev) => {
+        const src = (ev as CustomEvent).detail?.source as string
+        const ok = selectSourceById(src)
+        // Báo lại cho pill biết kết quả (đổi nhãn nguồn / hiện cảnh báo).
+        window.dispatchEvent(new CustomEvent('nllp:switch-source-done', { detail: { source: src, ok } }))
+      })
 
       ddTrigger?.addEventListener('click', () => {
         if (!ddMenu) return
