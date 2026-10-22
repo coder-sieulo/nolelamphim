@@ -189,6 +189,15 @@ const chipClass =
   cache="public"
   sMaxAge={300}
   staleWhileRevalidate={3600}
+  island={{
+    movieSlug: slug,
+    movieName: movie.name,
+    movieThumb: movie.thumb_url || '',
+    movieYear: movie.year ? String(movie.year) : '',
+    movieQuality: movie.quality || '',
+    movieSource: 'vsmov',
+    episodeTotal: episodes[0]?.list?.length || 0,
+  }}
 >
   <script is:inline set:html={JSON.stringify(jsonLd)} type="application/ld+json" />
   <script is:inline set:html={breadcrumbLd(breadcrumb)} type="application/ld+json" />

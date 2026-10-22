@@ -1,11 +1,15 @@
 import { registerPageInit } from './lifecycle'
 import { getCategories } from '../lib/api'
 import { escapeHTML } from '../lib/movieCard'
+import { initIsland, lastWatched } from './island'
 
 registerPageInit(() => {
   const ac = new AbortController()
 
   const nav = document.getElementById('navbar')
+
+  // ── Viên thuốc: khởi tạo bộ điều khiển (mục 1.1 / 1.3) ──
+  const disposeIsland = initIsland()
 
   // ── Nút tìm kiếm "bay" vào viên thuốc (FLIP) ──────────────────────────
   // Khi cuộn xuống: đo chênh lệch giữa nút tìm kiếm ở header và khe cắm trong
@@ -46,6 +50,18 @@ registerPageInit(() => {
     const scrolled = window.scrollY > 8
     nav.classList.toggle('scrolled', scrolled)
     if (scrolled) computeFly()
+
+    // ── 1.3 / 5.1: cuộn sâu thì viên thuốc "nhớ" phim đang xem dở (remote) ──
+    const api = window.__nllpIsland
+    if (api && (api.getMode() === 'nav' || api.getMode() === 'remote')) {
+      const deep = window.scrollY > 420
+      const lw = lastWatched()
+      if (deep && lw) {
+        if (api.getMode() !== 'remote') api.setMode('remote', lw)
+      } else if (!deep && api.getMode() === 'remote') {
+        api.setMode('nav')
+      }
+    }
   }
 
   // Khi chuyển từ scrolled -> top, xoá transform để nút trượt về chỗ cũ.
@@ -58,6 +74,8 @@ registerPageInit(() => {
 
   window.addEventListener('scroll', () => { onScroll(); syncFlyOnTop() }, { passive: true, signal: ac.signal })
   window.addEventListener('resize', () => { onScroll(); if (!nav?.classList.contains('scrolled')) syncFlyOnTop() }, { passive: true, signal: ac.signal })
+  // Viên thuốc đổi kích thước/nội dung → đo lại đường bay của nút search.
+  window.addEventListener('nllp:island-change', () => { if (nav?.classList.contains('scrolled')) computeFly() }, { signal: ac.signal })
   onScroll()
   syncFlyOnTop()
 
@@ -215,5 +233,8 @@ registerPageInit(() => {
     { signal: ac.signal },
   )
 
-  return () => ac.abort()
+  return () => {
+    disposeIsland()
+    ac.abort()
+  }
 })

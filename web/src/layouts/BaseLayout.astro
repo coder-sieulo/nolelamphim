@@ -40,6 +40,24 @@ interface Props {
    */
   sMaxAge?: number
   staleWhileRevalidate?: number
+  /**
+   * Ngữ cảnh cho "viên thuốc" (Dynamic Island) — ghi thành `data-*` trên `<html>`
+   * để `island.ts` đọc ở client. KHÔNG chứa dữ liệu người dùng ⇒ vẫn cache CDN
+   * được (chỉ là dữ liệu công khai của trang: tên/slug phim…).
+   */
+  island?: {
+    movieSlug?: string
+    movieName?: string
+    movieThumb?: string
+    movieYear?: string
+    movieQuality?: string
+    movieSource?: string
+    movieAccent?: string
+    episodeSlug?: string
+    episodeName?: string
+    episodeIndex?: number
+    episodeTotal?: number
+  }
 }
 
 const {
@@ -51,6 +69,7 @@ const {
   cache,
   sMaxAge = 60,
   staleWhileRevalidate = 300,
+  island,
 } = Astro.props
 
 const pageTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME
@@ -66,7 +85,21 @@ Astro.response.headers.set(
 ---
 
 <!doctype html>
-  <html lang="vi" class="h-full antialiased">
+  <html
+    lang="vi"
+    class="h-full antialiased"
+    data-movie-slug={island?.movieSlug}
+    data-movie-name={island?.movieName}
+    data-movie-thumb={island?.movieThumb}
+    data-movie-year={island?.movieYear}
+    data-movie-quality={island?.movieQuality}
+    data-movie-source={island?.movieSource}
+    data-movie-accent={island?.movieAccent}
+    data-episode-slug={island?.episodeSlug}
+    data-episode-name={island?.episodeName}
+    data-episode-index={island?.episodeIndex}
+    data-episode-total={island?.episodeTotal}
+  >
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
