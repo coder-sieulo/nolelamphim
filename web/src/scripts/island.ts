@@ -47,6 +47,8 @@ export interface IslandMovieData {
   watchers?: number
   /** Điểm người dùng đã chấm (mục 4.4) */
   rating?: number
+  /** Đã có tập xem dở → CTA là "Xem tiếp" thay vì "Xem ngay" */
+  resume?: boolean
 }
 
 interface IslandApi {
@@ -227,13 +229,22 @@ function pageContext(): { mode: IslandMode; data: IslandMovieData } | null {
 
   // Trang chi tiết phim
   if (path.startsWith('/phim/') && slug) {
+    // Nếu đã xem dở phim này → CTA nhảy đúng tập đã xem, không phải tập 1.
+    const recent = getRecent().find((r) => r.slug === slug)
+    const savedEp = recent?.episodeSlug || ''
+    const epSlug = savedEp || html.dataset.episodeSlug || ''
+    const prog = epSlug ? getEpProgress(slug)[epSlug] : undefined
     return {
       mode: 'movie',
       data: {
         slug,
         name,
         thumb: html.dataset.movieThumb || '',
+        episodeName: savedEp ? recent?.episode : undefined,
+        episodeSlug: epSlug,
         epTotal: Number(html.dataset.episodeTotal || 0) || undefined,
+        progress: prog && prog.duration > 0 ? prog.position / prog.duration : undefined,
+        resume: !!savedEp,
         accent: html.dataset.movieAccent || '',
         year: html.dataset.movieYear || '',
         quality: html.dataset.movieQuality || '',
@@ -272,9 +283,13 @@ function movieChipHTML(d: IslandMovieData): string {
     ? `<img class="island-poster" src="${esc(thumb)}" alt="" width="24" height="32" loading="lazy" />`
     : `<span class="island-poster island-poster-empty"></span>`
   const meta: string[] = []
+  // Tên tập (vd "Tập 05") đã mang số tập → chỉ thêm "i/total" khi tên KHÔNG có số
+  // (tránh lặp "Tập 05 · tập 5/676"). Không có tên tập thì dùng năm.
+  const nameHasNum = /\d/.test(d.episodeName || '')
   if (d.episodeName) meta.push(esc(d.episodeName))
   else if (d.year) meta.push(esc(d.year))
-  if (d.epIndex && d.epTotal) meta.push(`tập ${d.epIndex}/${d.epTotal}`)
+  if (d.epIndex && d.epTotal && !nameHasNum) meta.push(`tập ${d.epIndex}/${d.epTotal}`)
+  else if (d.epIndex && d.epTotal && d.epTotal > 1) meta.push(`${d.epIndex}/${d.epTotal}`)
   return `
     <a class="island-title" href="/phim/${esc(d.slug)}" title="${esc(d.name)}">
       ${poster}
@@ -291,6 +306,15 @@ function playBtnHTML(d: IslandMovieData, label = 'Xem tiếp'): string {
     <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
     <span>${esc(label)}</span>
   </a>`
+}
+
+/** Nút "phát tiếp" trong chế độ watch: KHÔNG điều hướng (đang ở đúng tập rồi)
+ *  mà cuộn tới player + bấm phát — trang xem tự nghe `nllp:island-resume`. */
+function resumeBtnHTML(label = 'Phát tiếp'): string {
+  return `<button class="island-cta" type="button" data-island-resume aria-label="${esc(label)}" title="${esc(label)}">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    <span>${esc(label)}</span>
+  </button>`
 }
 
 function progressRingHTML(value: number): string {
@@ -367,7 +391,7 @@ function buildContent(mode: IslandMode, data: IslandMovieData | undefined): Buil
           ${d.epTotal && d.epTotal > 1 ? `<span class="island-count">${d.epTotal} tập</span>` : ''}
           ${watchersHTML(d)}
           ${ratingHTML(0)}
-          ${playBtnHTML(d, 'Xem ngay')}
+          ${playBtnHTML(d, d.resume ? 'Xem tiếp' : 'Xem ngay')}
           ${xemChungHTML()}`,
       }
     }
@@ -378,7 +402,7 @@ function buildContent(mode: IslandMode, data: IslandMovieData | undefined): Buil
         html: `
           ${d.progress != null ? progressRingHTML(d.progress) : ''}
           ${movieChipHTML(d)}
-          ${playBtnHTML({ ...d, episodeSlug: '' }, 'Phát')}
+          ${resumeBtnHTML()}
           ${sourceHTML(d.source || 'vsmov')}`,
       }
     }
@@ -572,6 +596,13 @@ export function initIsland(): () => void {
     'click',
     (e) => {
       const t = e.target as HTMLElement
+
+      // Chế độ watch: "Phát tiếp" → cuộn tới player + phát (trang xem lắng nghe).
+      if (t.closest('[data-island-resume]')) {
+        e.preventDefault()
+        window.dispatchEvent(new CustomEvent('nllp:island-resume'))
+        return
+      }
 
       // 4.3 — mở/đóng panel chọn nguồn
       const srcBtn = t.closest<HTMLElement>('[data-island-source]')

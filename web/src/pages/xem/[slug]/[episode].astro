@@ -61,8 +61,31 @@ const serverData = episodes.map((s, si) => ({
 
 const currentServer = episodes[0]
 const currentList = currentServer?.list ?? []
-const currentEpIdx = currentList.findIndex((e) => e.slug === episode)
+
+/** Khớp tập theo slug chính xác; nếu URL dùng số thứ tự (vd `/xem/naruto/1`)
+ *  thì thử khớp theo số đầu trong slug tập (`tap-1`/`tap-001` → 1). */
+function resolveEpIndex(list: { slug: string }[], epSlug: string): number {
+  const exact = list.findIndex((e) => e.slug === epSlug)
+  if (exact >= 0) return exact
+  if (!/^\d+$/.test(epSlug)) return -1
+  const want = Number(epSlug)
+  const hits: number[] = []
+  list.forEach((e, i) => {
+    const m = e.slug.match(/(\d+)/)
+    if (m && Number(m[1]) === want) hits.push(i)
+  })
+  return hits.length === 1 ? hits[0] : -1
+}
+
+const currentEpIdx = resolveEpIndex(currentList, episode)
 const currentEp = currentList[currentEpIdx]
+
+// URL không phải slug chuẩn (vd số thứ tự cũ) nhưng khớp được tập → chuyển hướng
+// về slug chuẩn để SEO/nav/tiến trình đều nhất quán.
+if (currentEp && currentEp.slug !== episode) {
+  return Astro.redirect(`/xem/${slug}/${currentEp.slug}`, 301)
+}
+
 const currentEpM3u8 = currentEp
   ? m3u8Map[currentEp.slug] || (isRealHls(currentEp.m3u8) ? currentEp.m3u8 : '')
   : ''
@@ -1070,6 +1093,16 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         const ok = selectSourceById(src)
         // Báo lại cho pill biết kết quả (đổi nhãn nguồn / hiện cảnh báo).
         window.dispatchEvent(new CustomEvent('nllp:switch-source-done', { detail: { source: src, ok } }))
+      })
+
+      /* ── Pill "Phát tiếp" (chế độ watch) ──
+       * Đang ở đúng tập nên KHÔNG điều hướng: cuộn tới player rồi phát nếu
+       * overlay "Bấm để phát" còn hiện (chưa phát). Nếu đã phát → chỉ cuộn tới. */
+      window.addEventListener('nllp:island-resume', () => {
+        const stage = document.getElementById('player-stage')
+        stage?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const pb = document.getElementById('player-play')
+        if (pb && !pb.classList.contains('hidden')) pb.click()
       })
 
       ddTrigger?.addEventListener('click', () => {

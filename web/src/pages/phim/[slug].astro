@@ -200,6 +200,7 @@ const chipClass =
     movieGenres: Array.isArray(movie.category)
       ? movie.category.map((c) => (typeof c === 'string' ? c : c.name)).join('|')
       : '',
+    episodeSlug: episodes[0]?.list?.[0]?.slug || '',
     episodeTotal: episodes[0]?.list?.length || 0,
   }}
 >
