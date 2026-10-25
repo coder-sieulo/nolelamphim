@@ -456,8 +456,8 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
       const epName = page.dataset.epName || ''
 
       /* ── 5.3: đếm người đang xem (THẬT, không bịa) ──
-       * Ping 1 lần khi vào, rồi poll mỗi 60s. Đẩy số vào pill qua
-       * window.__nllpIsland.refresh() với `watchers` mới. */
+       * Ping 1 lần khi vào, rồi poll mỗi 60s. Đẩy số cho viên thuốc tập phim
+       * qua sự kiện `nllp:presence` (viên tự ẩn khi < 3 người). */
       const presenceAc = new AbortController()
       async function pingPresence(first: boolean) {
         try {
@@ -466,25 +466,9 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
           })
           const data = (await res.json()) as { enabled?: boolean; count?: number }
           if (!data.enabled) return
-          const api = window.__nllpIsland as
-            | { getMode?: () => string; setMode?: (m: string, d?: Record<string, unknown>) => void }
-            | undefined
-          if (!api?.getMode || api.getMode() !== 'watch') return
-          // Cập nhật lại chế độ watch với số người mới.
-          const html = document.documentElement
-          api.setMode?.('watch', {
-            slug,
-            name: movieName,
-            thumb: html.dataset.movieThumb || '',
-            episodeSlug: html.dataset.episodeSlug || episode,
-            episodeName: html.dataset.episodeName || epName,
-            epIndex: Number(html.dataset.episodeIndex || 0) || undefined,
-            epTotal: Number(html.dataset.episodeTotal || 0) || undefined,
-            genres: (html.dataset.movieGenres || '').split('|').filter(Boolean),
-            type: html.dataset.movieType || '',
-            source: html.dataset.movieSource || 'vsmov',
-            watchers: data.count || 0,
-          })
+          window.dispatchEvent(
+            new CustomEvent('nllp:presence', { detail: { slug, count: data.count || 0 } }),
+          )
         } catch {
           /* bỏ qua lỗi mạng/abort */
         }

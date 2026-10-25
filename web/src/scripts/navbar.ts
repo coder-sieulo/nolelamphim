@@ -1,8 +1,9 @@
 import { registerPageInit } from './lifecycle'
 import { getCategories } from '../lib/api'
 import { escapeHTML } from '../lib/movieCard'
-import { initIsland, lastWatched } from './island'
+import { initIsland } from './island'
 import { initIslandMotion } from './island-motion'
+import { initEpisodePill } from './episode-pill'
 
 registerPageInit(() => {
   const ac = new AbortController()
@@ -13,6 +14,8 @@ registerPageInit(() => {
   const disposeIsland = initIsland()
   // ── Hiệu ứng chuyển động của viên thuốc (mục 2.1–2.6, 4.1, 5.1…) ──
   const disposeMotion = initIslandMotion()
+  // ── Viên thuốc TẬP PHIM (tách riêng, hover đổ xuống kiểu Dynamic Island) ──
+  const disposeEpPill = initEpisodePill()
 
   // ── Nút tìm kiếm "bay" vào viên thuốc (FLIP) ──────────────────────────
   // Khi cuộn xuống: đo chênh lệch giữa nút tìm kiếm ở header và khe cắm trong
@@ -64,18 +67,6 @@ registerPageInit(() => {
       )
     }
     wasScrolled = scrolled
-
-    // ── 1.3 / 5.1: cuộn sâu thì viên thuốc "nhớ" phim đang xem dở (remote) ──
-    const api = window.__nllpIsland
-    if (api && (api.getMode() === 'nav' || api.getMode() === 'remote')) {
-      const deep = window.scrollY > 420
-      const lw = lastWatched()
-      if (deep && lw) {
-        if (api.getMode() !== 'remote') api.setMode('remote', lw)
-      } else if (!deep && api.getMode() === 'remote') {
-        api.setMode('nav')
-      }
-    }
   }
 
   // Khi chuyển từ scrolled -> top, xoá transform để nút trượt về chỗ cũ.
@@ -283,23 +274,8 @@ registerPageInit(() => {
   window.addEventListener('scroll', onDropScroll, { passive: true, signal: ac.signal })
   onDropScroll()
 
-  // ── 1.5 — Hình dạng theo vùng cuộn: ở cuối trang hiện nút "lên đầu" ──
-  // JS chèn nút vào pill khi shape=end (CSS chỉ lo hiển thị).
-  if (islandEl && !islandEl.querySelector('.island-top-btn')) {
-    const topBtn = document.createElement('button')
-    topBtn.type = 'button'
-    topBtn.className = 'island-top-btn'
-    topBtn.setAttribute('aria-label', 'Lên đầu trang')
-    topBtn.title = 'Lên đầu trang'
-    topBtn.innerHTML =
-      '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M4 12l1.4 1.4L11 7.8V20h2V7.8l5.6 5.6L20 12l-8-8z"/></svg>'
-    topBtn.addEventListener(
-      'click',
-      () => window.scrollTo({ top: 0, behavior: 'smooth' }),
-      { signal: ac.signal },
-    )
-    islandEl.appendChild(topBtn)
-  }
+  // Nút "lên đầu" KHÔNG nằm trong pill nữa: dùng #back-to-top cố định ở
+  // góc dưới-phải (BaseLayout) để pill không đổi bề rộng khi cuộn.
 
   // ── 1.2 — Pill "nuốt" poster rồi bay sang trang phim ──
   // Bấm card phim: gán view-transition-name cho ảnh card để nó "bay" sang
@@ -391,6 +367,7 @@ registerPageInit(() => {
   return () => {
     disposeIsland()
     disposeMotion()
+    disposeEpPill()
     clearTimeout(landTimer)
     ac.abort()
   }

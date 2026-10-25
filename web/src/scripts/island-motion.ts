@@ -8,11 +8,12 @@
  *   2.4  pulse              — pill "thở" khi có phim mới
  *   2.5  magnetic           — pill dịch nhẹ theo con trỏ (rất nhẹ)
  *   2.6  ripple             — gợn sóng khi bấm mục
- *   4.1  progress ring      — vòng tiến trình đọc ven pill
- *   5.1  hide-on-fast-scroll— thu gọn khi cuộn nhanh
+ *   4.1  (đã bỏ)             — vòng elip cam quanh pill theo yêu cầu
+ *   5.1  (đã bỏ)             — thu gọn khi cuộn nhanh làm pill đổi bề rộng/nháy
  *   5.5  focus dim          — làm nổi pill khi hover
  *   5.6  easter egg         — lật pill khi bấm logo 3 lần
  *
+ * 5.4 (pill "cắn" theo nhịp phát) đã bỏ: dao động 400ms gây nháy liên tục.
  * Tất cả đều tôn trọng `prefers-reduced-motion` và chỉ chạy desktop (≥768px).
  */
 
@@ -63,32 +64,6 @@ export function initIslandMotion(): () => void {
     island!.classList.add('island-has-marker')
   }
   const repositionMarker = rafThrottle(positionMarker)
-
-  /* ── 4.1: progress ring (tiến trình đọc trang) ── */
-  const ringFg = document.querySelector<SVGRectElement>('#island-progress .island-progress-fg')
-  function updateRing() {
-    if (!ringFg) return
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0
-    ringFg.style.strokeDasharray = `${p.toFixed(4)} 1`
-  }
-  const updateRingRaf = rafThrottle(updateRing)
-  void updateRingRaf
-
-  /* ── 5.1: thu gọn khi cuộn nhanh ── */
-  let lastY = window.scrollY
-  let settleTimer: number | undefined
-  function fastScrollCheck() {
-    const y = window.scrollY
-    const dy = y - lastY
-    lastY = y
-    // Cuộn rất nhanh (> 90px/khung) và đang xuống sâu → thu pill lại.
-    if (dy > 90 && y > 500 && !reducedMotion()) {
-      island!.classList.add('island-compact')
-      clearTimeout(settleTimer)
-      settleTimer = window.setTimeout(() => island!.classList.remove('island-compact'), 320)
-    }
-  }
 
   /* ── 2.5 + 2.3: magnetic nhẹ + sheen theo con trỏ ── */
   // Trạng thái "gần pill" chỉ tắt khi con trỏ ĐI XA (không dùng timeout, tránh
@@ -183,11 +158,6 @@ export function initIslandMotion(): () => void {
     }
   }
 
-  const onScroll = rafThrottle(() => {
-    updateRing()
-    fastScrollCheck()
-  })
-
   /* ── 2.4: pill "thở" khi có phim mới (so với lần xem trước) ──
    * Đọc `data-new-latest` của section "Mới cập nhật" (SSR). Nếu slug đầu khác
    * lần trước (localStorage) → pill pulse vài nhịp để hút mắt. Không bịa: chỉ
@@ -226,25 +196,10 @@ export function initIslandMotion(): () => void {
     island!.setAttribute('data-island-split', on ? 'on' : 'off')
   }
 
-  /* ── 5.4: pill "cắn" theo nhịp phim đang phát ──
-   * Nghe `nllp:player-tick` (player phát khi đang phát) → pill nhấp nhô nhẹ.
-   * Không nghe audio (không xin quyền) — chỉ dùng nhịp phát thật từ player. */
-  let biteTimer: number | undefined
-  function onPlayerTick() {
-    if (!isDesktop() || reducedMotion()) return
-    island!.classList.remove('island-bite')
-    void island!.offsetWidth
-    island!.classList.add('island-bite')
-    clearTimeout(biteTimer)
-    biteTimer = window.setTimeout(() => island!.classList.remove('island-bite'), 400)
-  }
-
   const onScroll2 = rafThrottle(() => updateSplit())
   window.addEventListener('scroll', onScroll2, { passive: true, signal: ac.signal })
   window.addEventListener('nllp:island-change', updateSplit, { signal: ac.signal })
-  window.addEventListener('nllp:player-tick', onPlayerTick, { signal: ac.signal })
 
-  window.addEventListener('scroll', onScroll, { passive: true, signal: ac.signal })
   window.addEventListener('resize', repositionMarker, { passive: true, signal: ac.signal })
   window.addEventListener('pointermove', onPointerMove, { passive: true, signal: ac.signal })
   window.addEventListener('nllp:island-change', repositionMarker, { signal: ac.signal })
@@ -255,7 +210,6 @@ export function initIslandMotion(): () => void {
   // Định vị marker sau khi layout ổn (font/ảnh có thể đổi kích thước).
   requestAnimationFrame(() => {
     positionMarker()
-    updateRing()
     updateSplit()
     checkNewPulse()
   })
@@ -264,8 +218,6 @@ export function initIslandMotion(): () => void {
 
   return () => {
     ac.abort()
-    clearTimeout(settleTimer)
     clearTimeout(logoClickTimer)
-    clearTimeout(biteTimer)
   }
 }

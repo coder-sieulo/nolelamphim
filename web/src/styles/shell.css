@@ -60,11 +60,17 @@
     pointer-events: auto;
   }
   .site-header.scrolled .nav-island {
-    background: color-mix(in srgb, var(--color-cm-elevated) 88%, transparent);
-    backdrop-filter: blur(12px);
+    background-color: color-mix(
+      in srgb,
+      var(--color-cm-accent) 11%,
+      color-mix(in srgb, var(--color-cm-elevated) 84%, transparent)
+    );
+    border-color: color-mix(in srgb, var(--color-cm-accent) 26%, var(--color-cm-border-strong));
+    backdrop-filter: blur(12px) saturate(130%);
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.06) inset,
-      0 8px 28px rgba(0, 0, 0, 0.55);
+      0 8px 28px rgba(0, 0, 0, 0.55),
+      0 0 24px color-mix(in srgb, var(--color-cm-accent) 9%, transparent);
   }
 }
 
@@ -84,9 +90,14 @@
     height: 42px;
     padding: 0 6px;
     border-radius: 999px;
-    background: var(--color-cm-elevated);
-    border: 1px solid var(--color-cm-border);
-    box-shadow: var(--shadow-cm-up);
+    /* Nền ngâm cam rất nhẹ để viên nav không còn xám lạnh. */
+    background-color: color-mix(
+      in srgb,
+      var(--color-cm-accent) 6%,
+      color-mix(in srgb, var(--color-cm-elevated) 92%, transparent)
+    );
+    border: 1px solid color-mix(in srgb, var(--color-cm-accent) 18%, var(--color-cm-border-strong));
+    box-shadow: var(--shadow-cm-up), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     /* Cần cho panel chọn nguồn (position absolute) + nền accent động. */
     position: relative;
     isolation: isolate;
@@ -242,6 +253,7 @@
 }
 .site-nav .nav-link:hover {
   color: var(--color-cm-text);
+  background: color-mix(in srgb, var(--color-cm-accent) 7%, transparent);
 }
 /* Active = nền accent mờ + chữ sáng (đọc rõ trong pill) */
 .site-nav .nav-link.active {
@@ -597,8 +609,10 @@
     display: block;
     height: 30px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--color-cm-accent) 18%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--color-cm-accent) 24%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 58%, transparent),
+      0 0 12px color-mix(in srgb, var(--color-cm-accent) 18%, transparent);
     transform: translate3d(0, -50%, 0);
     opacity: 0;
     pointer-events: none;
@@ -625,40 +639,6 @@
   #nav-island.island-has-marker .genre-wrap.genre-on .genre-btn {
     background: transparent;
     box-shadow: none;
-  }
-}
-
-/* ── 4.1: vòng tiến trình đọc ven pill ── */
-.island-progress {
-  display: none;
-}
-@media (min-width: 768px) {
-  .island-progress {
-    position: absolute;
-    inset: -1px;
-    width: calc(100% + 2px);
-    height: calc(100% + 2px);
-    display: block;
-    pointer-events: none;
-    overflow: visible;
-    z-index: 0;
-    opacity: 0;
-    transition: opacity var(--duration-cm) var(--ease-cm);
-  }
-  #nav-island[data-island-mode='nav'] .island-progress {
-    opacity: 1;
-  }
-  .island-progress-bg {
-    fill: none;
-    stroke: transparent;
-  }
-  .island-progress-fg {
-    fill: none;
-    stroke: var(--island-accent, var(--color-cm-accent));
-    stroke-width: 1.5;
-    stroke-dasharray: 0 1;
-    transition: stroke-dasharray 120ms linear;
-    opacity: 0.9;
   }
 }
 
@@ -791,15 +771,6 @@
 
 /* ── 5.1: thu gon khi cuon nhanh ── */
 @media (min-width: 768px) {
-  .nav-island.island-compact {
-    height: 34px;
-    padding: 0 4px;
-  }
-  .nav-island.island-compact .nav-link,
-  .nav-island.island-compact .genre-btn {
-    padding-inline: 9px;
-    font-size: 13px;
-  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1080,41 +1051,10 @@
 
   /* ── 1.4 + 1.5: hình dạng theo vùng cuộn ──
      - shape=top : pill đầy đủ (mặc định, không cần lớp phủ)
-     - shape=mid : pill có "gân" tiến trình đọc (đã có ở #island-progress)
+     - shape=mid : pill ở trạng thái giữa trang
      - shape=end : pill thu lại + hiện nút "lên đầu"  */
-  #nav-island[data-island-shape='end'] {
-    height: 38px;
-    padding: 0 8px;
-  }
-  /* Ở cuối trang: link nav thu gọn lại, nhường chỗ cho nút lên đầu. */
-  #nav-island[data-island-shape='end'] .nav-link,
-  #nav-island[data-island-shape='end'] .genre-btn {
-    padding-inline: 8px;
-    font-size: 12.5px;
-    opacity: 0.7;
-  }
-  #nav-island[data-island-shape='end'] .nav-link:hover,
-  #nav-island[data-island-shape='end'] .genre-btn:hover {
-    opacity: 1;
-  }
-  /* Nút "lên đầu" chỉ hiện ở shape=end (JS chèn nút này khi cần). */
-  .island-top-btn {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-    color: var(--color-cm-text-2);
-    transition: color var(--duration-cm) var(--ease-cm), background-color var(--duration-cm) var(--ease-cm);
-  }
-  #nav-island[data-island-shape='end'] .island-top-btn {
-    display: inline-flex;
-  }
-  .island-top-btn:hover {
-    color: var(--color-cm-text);
-    background: rgba(255, 255, 255, 0.07);
-  }
+  /* Không còn đổi bề rộng pill theo vùng cuộn: nút "lên đầu" nằm ở
+     #back-to-top cố định góc dưới-phải, nên pill không bị nháy/giật. */
 
   /* ── 1.4: pill thu thành "giọt" khi cuộn sâu (JS gắn .island-drop) ── */
   #nav-island.island-drop .nav-link .nav-label,
@@ -1303,22 +1243,6 @@
   }
 }
 
-/* ── 5.4: pill "cắn" theo nhịp phát (JS gắn .island-bite) ── */
-@media (min-width: 768px) {
-  .nav-island.island-bite {
-    animation: island-bite 320ms var(--ease-cm);
-  }
-  @keyframes island-bite {
-    0%,
-    100% {
-      scale: 1;
-    }
-    40% {
-      scale: 0.975 1.03;
-    }
-  }
-}
-
 /* ── 5.2: khi chia đôi, nav dịch nhẹ sang trái để nhường nửa phải ── */
 @media (min-width: 768px) {
   #nav-island[data-island-split='on'] {
@@ -1358,4 +1282,792 @@
 }
 .island-search-hit.sel {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 50%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EPISODE PILL — viên thuốc TẬP PHIM (tách khỏi viên điều hướng).
+   Spec: web/docs/EPISODE_PILL.md.
+   - Desktop (≥768px): nằm cạnh #nav-island; hover → panel đổ xuống.
+   - Mobile (<768px): thanh nổi trên bottom-nav; chạm → sheet trượt lên.
+   - Accent cam thương hiệu (--color-cm-accent), không gradient.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.ep-wrap {
+  display: none;
+}
+.ep-wrap[hidden] {
+  display: none;
+}
+
+/* ── Viên thuốc thu gọn (desktop) ── */
+.ep-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  min-width: 300px;
+  padding: 4px 5px;
+  border-radius: 999px;
+  color: var(--color-cm-text-2);
+  background: color-mix(in srgb, var(--color-cm-accent) 8%, var(--color-cm-elevated));
+  border: 1px solid color-mix(in srgb, var(--color-cm-accent) 26%, var(--color-cm-border-strong));
+  position: relative;
+  box-shadow: var(--shadow-cm-up), 0 0 22px color-mix(in srgb, var(--color-cm-accent) 7%, transparent);
+  transition:
+    transform 300ms cubic-bezier(0.2, 0.9, 0.2, 1.1),
+    box-shadow 300ms var(--ease-cm),
+    border-color 200ms var(--ease-cm),
+    background-color 200ms var(--ease-cm);
+}
+.ep-wrap[data-open='on'] .ep-pill {
+  border-color: color-mix(in srgb, var(--color-cm-accent) 58%, var(--color-cm-border));
+  box-shadow:
+    var(--shadow-cm-up),
+    0 12px 30px rgba(0, 0, 0, 0.42),
+    0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 26%, transparent),
+    0 0 30px color-mix(in srgb, var(--color-cm-accent) 11%, transparent);
+}
+
+/* Hover desktop: viên nhấc nhẹ, halo cam, poster zoom, CTA sáng lên. */
+@media (min-width: 1024px) and (hover: hover) {
+  .ep-wrap:hover .ep-pill {
+    transform: translateY(-2px) scale(1.012);
+    border-color: color-mix(in srgb, var(--color-cm-accent) 45%, var(--color-cm-border));
+    box-shadow:
+      var(--shadow-cm-up),
+      0 12px 30px rgba(0, 0, 0, 0.4),
+      0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 22%, transparent),
+      0 0 26px color-mix(in srgb, var(--color-cm-accent) 10%, transparent);
+  }
+  .ep-wrap:hover .ep-thumb {
+    transform: scale(1.06);
+    filter: saturate(1.08);
+  }
+  .ep-wrap:hover .ep-meta {
+    color: var(--color-cm-text-2);
+  }
+  .ep-wrap:hover .ep-cta {
+    filter: brightness(1.09);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--color-cm-accent) 38%, transparent);
+  }
+  .ep-wrap:hover .ep-cta svg {
+    transform: translateX(1px);
+  }
+  .ep-wrap:hover .ep-ring {
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-cm-accent) 70%, transparent));
+  }
+}
+/* Phần chip (poster + tên/tập + vòng) — bấm để mở panel.
+   Lưu ý: KHÔNG đặt tên `.ep-chip` — class đó dành cho chip TẬP trong panel. */
+.ep-main {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px 0 4px;
+  border-radius: 999px;
+  text-align: left;
+  transition: background-color var(--duration-cm) var(--ease-cm);
+}
+.ep-main:hover {
+  background: color-mix(in srgb, var(--color-cm-accent) 9%, transparent);
+}
+.ep-main:active {
+  background: color-mix(in srgb, var(--color-cm-accent) 14%, transparent);
+}
+.ep-thumb {
+  width: 26px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--color-cm-surface);
+  flex: none;
+  transition: transform 320ms cubic-bezier(0.2, 0.9, 0.2, 1.1), filter 320ms var(--ease-cm);
+}
+.ep-thumb-empty {
+  display: block;
+}
+.ep-txt {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+  line-height: 1.2;
+  text-align: left;
+}
+.ep-name {
+  max-width: 160px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-cm-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ep-meta {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--color-cm-text-3);
+  white-space: nowrap;
+}
+.ep-meta:not(:empty)::before {
+  content: '·';
+  margin: 0 5px;
+  opacity: 0.55;
+}
+/* Nút CTA cam trong viên (giống pill cũ) */
+.ep-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--color-cm-accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex: none;
+  transition:
+    filter var(--duration-cm) var(--ease-cm),
+    box-shadow var(--duration-cm) var(--ease-cm),
+    transform var(--duration-cm) var(--ease-cm);
+}
+.ep-cta svg {
+  transition: transform var(--duration-cm) var(--ease-cm);
+}
+.ep-cta:hover {
+  filter: brightness(1.1);
+}
+.ep-cta:active {
+  transform: scale(0.96);
+}
+.ep-chev {
+  display: inline-flex;
+  color: var(--color-cm-text-3);
+  transition: transform 220ms var(--ease-cm), color var(--duration-cm) var(--ease-cm);
+}
+.ep-wrap[data-open='on'] .ep-chev {
+  transform: rotate(180deg);
+  color: var(--color-cm-text);
+}
+.ep-ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  margin-left: auto;
+}
+.ep-ring-bg {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+.ep-ring-fg {
+  stroke: var(--color-cm-accent);
+  transition: stroke-dasharray var(--duration-cm-slow) var(--ease-cm);
+}
+.ep-ring {
+  transition: filter var(--duration-cm) var(--ease-cm);
+}
+
+/* ── Panel đổ xuống ── */
+.ep-panel {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px) scale(0.94);
+  transform-origin: top right;
+  background: var(--color-cm-elevated);
+  border: 1px solid var(--color-cm-border);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 18px 50px rgba(0, 0, 0, 0.6);
+  padding: 12px;
+  transition:
+    opacity 160ms var(--ease-cm),
+    transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1.08),
+    visibility 0s linear 260ms,
+    box-shadow 260ms var(--ease-cm);
+}
+/* Mũi nhọn nối panel với CTA của viên — tạo cảm giác "morph" từ viên ra. */
+.ep-panel::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 28px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px 0 0 0;
+  border-left: 1px solid var(--color-cm-border);
+  border-top: 1px solid var(--color-cm-border);
+  background: var(--color-cm-elevated);
+  transform: rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms var(--ease-cm);
+}
+.ep-wrap[data-open='on'] .ep-panel {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 24px 62px rgba(0, 0, 0, 0.64),
+    0 0 0 1px color-mix(in srgb, var(--color-cm-accent) 8%, transparent);
+  transition:
+    opacity 140ms var(--ease-cm),
+    transform 380ms cubic-bezier(0.18, 1.12, 0.28, 1.02),
+    visibility 0s linear 0s,
+    box-shadow 260ms var(--ease-cm);
+}
+.ep-wrap[data-open='on'] .ep-panel::before {
+  opacity: 1;
+  transition-delay: 50ms;
+}
+
+/* Nội dung panel trồi lên lần lượt (stagger) khi mở. */
+@keyframes ep-rise {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+}
+.ep-wrap[data-open='on'] .ep-head,
+.ep-wrap[data-open='on'] .ep-actions,
+.ep-wrap[data-open='on'] .ep-sec,
+.ep-wrap[data-open='on'] .ep-foot {
+  animation: ep-rise 340ms cubic-bezier(0.18, 1.1, 0.3, 1.02) both;
+}
+.ep-wrap[data-open='on'] .ep-head {
+  animation-delay: 50ms;
+}
+.ep-wrap[data-open='on'] .ep-actions {
+  animation-delay: 85ms;
+}
+.ep-wrap[data-open='on'] .ep-sec {
+  animation-delay: 120ms;
+}
+.ep-wrap[data-open='on'] .ep-foot {
+  animation-delay: 155ms;
+}
+
+.ep-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ep-hero {
+  width: 48px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--color-cm-surface);
+  flex: none;
+}
+.ep-hero-empty {
+  display: block;
+}
+.ep-info {
+  min-width: 0;
+  flex: 1;
+}
+.ep-title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-cm-text);
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.ep-title:hover {
+  color: var(--color-cm-accent);
+}
+.ep-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-cm-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ep-grab {
+  display: block;
+  width: 38px;
+  height: 4px;
+  margin: -2px auto 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.ep-bar {
+  position: relative;
+  height: 4px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+.ep-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-cm-accent);
+  transition: width var(--duration-cm-slow) var(--ease-cm);
+}
+.ep-bar-txt {
+  margin-top: 5px;
+  font-size: 10.5px;
+  color: var(--color-cm-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ep-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+}
+.ep-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--color-cm-accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ep-play:hover {
+  filter: brightness(1.08);
+}
+.ep-play:active {
+  transform: scale(0.97);
+}
+.ep-detail {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-cm-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-cm-text-2);
+}
+.ep-detail:hover {
+  color: var(--color-cm-text);
+  border-color: var(--color-cm-border-strong);
+}
+
+.ep-sec {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-cm-border);
+}
+.ep-sec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-cm-text-3);
+}
+.ep-sec-head b {
+  font-weight: 600;
+  color: var(--color-cm-text-3);
+  opacity: 0.8;
+}
+.ep-sec-all {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-cm-accent);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ep-sec-all:hover {
+  text-decoration: underline;
+}
+.ep-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ep-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 30px;
+  padding: 0 7px;
+  border-radius: 8px;
+  border: 1px solid var(--color-cm-border);
+  background: var(--color-cm-surface);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-cm-text-2);
+  transition:
+    background-color var(--duration-cm) var(--ease-cm),
+    border-color var(--duration-cm) var(--ease-cm),
+    color var(--duration-cm) var(--ease-cm);
+}
+.ep-chip:hover {
+  color: var(--color-cm-text);
+  border-color: var(--color-cm-border-strong);
+  background: var(--color-cm-elevated);
+}
+.ep-chip.on {
+  color: var(--color-cm-accent);
+  border-color: color-mix(in srgb, var(--color-cm-accent) 60%, var(--color-cm-border));
+  background: color-mix(in srgb, var(--color-cm-accent) 14%, transparent);
+}
+
+.ep-src-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ep-src-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-cm-border);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-cm-text-2);
+}
+.ep-src-chip:hover {
+  color: var(--color-cm-text);
+  border-color: var(--color-cm-border-strong);
+}
+.ep-src-chip.on {
+  color: var(--color-cm-accent);
+  border-color: color-mix(in srgb, var(--color-cm-accent) 55%, var(--color-cm-border));
+  background: color-mix(in srgb, var(--color-cm-accent) 12%, transparent);
+}
+.ep-src-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #4ade80;
+}
+.ep-src-chip:not(.on) .ep-src-dot {
+  background: var(--color-cm-text-3);
+}
+.ep-src-note {
+  font-size: 10.5px;
+  color: var(--color-cm-text-3);
+}
+
+.ep-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid var(--color-cm-border);
+  min-height: 20px;
+}
+.ep-rate {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ep-rate-label {
+  margin-right: 3px;
+  font-size: 10.5px;
+  color: var(--color-cm-text-3);
+}
+.ep-star {
+  display: inline-flex;
+  color: var(--color-cm-text-3);
+  transition: color var(--duration-cm-fast) var(--ease-cm), transform var(--duration-cm-fast) var(--ease-cm);
+}
+.ep-star:hover,
+.ep-star.on {
+  color: #fbbf24;
+}
+.ep-star:hover {
+  transform: scale(1.2);
+}
+.ep-watchers {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--color-cm-text-3);
+  white-space: nowrap;
+}
+.ep-watchers[hidden] {
+  display: none;
+}
+.ep-xc {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-cm-text-2);
+}
+.ep-watchers + .ep-xc {
+  margin-left: 0;
+}
+.ep-xc:hover {
+  color: var(--color-cm-accent);
+}
+
+/* ── Desktop ≥1024px: nằm cạnh viên điều hướng, panel đổ xuống ── */
+@media (min-width: 1024px) {
+  .ep-wrap.ep-wrap-m {
+    display: none;
+  }
+  .ep-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 42px;
+    margin-left: 8px;
+    z-index: 3;
+    transition: height var(--duration-cm) var(--ease-cm);
+  }
+  .site-header.scrolled .ep-wrap {
+    height: 38px;
+  }
+  .site-header.scrolled .ep-pill {
+    height: 38px;
+    padding-block: 2px;
+  }
+  .ep-panel {
+    position: absolute;
+    top: calc(100% + 9px);
+    right: 0;
+    width: 344px;
+    max-width: calc(100vw - 24px);
+    transform-origin: top right;
+    z-index: 5;
+  }
+}
+
+/* Hẹp dần: giữ viên gọn, không chồng logo/actions. */
+@media (min-width: 1200px) and (max-width: 1279px) {
+  .ep-cta-txt {
+    display: none;
+  }
+  .ep-cta {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+  .ep-name {
+    max-width: 110px;
+  }
+  .ep-pill {
+    min-width: 280px;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .ep-cta-txt,
+  .ep-meta,
+  .ep-ring {
+    display: none;
+  }
+  .ep-cta {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+  .ep-name {
+    max-width: 82px;
+  }
+  .ep-pill {
+    min-width: 180px;
+  }
+}
+
+/* 768–1023px: header không đủ chỗ cho 2 pill → viên tập phim nổi ở đáy.
+   Đồng thời ẩn chữ logo + thu hẹp khoảng đệm nav (768–899) để không chồng actions. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .site-nav .ep-wrap:not(.ep-wrap-m) {
+    display: none;
+  }
+}
+@media (min-width: 768px) and (max-width: 899px) {
+  .site-logo span {
+    display: none;
+  }
+  #nav-island .nav-link,
+  #nav-island .genre-btn {
+    padding-inline: 9px !important;
+  }
+  #nav-island {
+    gap: 0 !important;
+  }
+}
+
+/* ── Mobile/tablet nhỏ: thanh nổi (trên bottom-nav nếu có) ── */
+@media (max-width: 1023px) {
+  .ep-wrap-m {
+    position: fixed;
+    left: 10px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+    z-index: 55;
+    display: block;
+    width: min(360px, calc(100vw - 76px));
+  }
+  .ep-wrap-m[hidden] {
+    display: none;
+  }
+  .ep-m-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 54px;
+    padding: 5px;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--color-cm-accent) 24%, var(--color-cm-border-strong));
+    background: color-mix(
+      in srgb,
+      var(--color-cm-accent) 9%,
+      color-mix(in srgb, var(--color-cm-elevated) 92%, transparent)
+    );
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: 0 0 22px color-mix(in srgb, var(--color-cm-accent) 8%, transparent);
+  }
+  .ep-m-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding-left: 3px;
+    text-align: left;
+  }
+  .ep-m-main .ep-thumb {
+    width: 28px;
+    height: 38px;
+    border-radius: 7px;
+  }
+  .ep-m-main .ep-name {
+    max-width: 100%;
+    font-size: 12.5px;
+  }
+  .ep-m-main .ep-meta {
+    max-width: 100%;
+    font-size: 10.5px;
+  }
+  .ep-m-main .ep-txt {
+    flex: 1;
+  }
+  .ep-m-main .ep-ring {
+    display: none;
+  }
+  .ep-m-play {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 12px;
+    background: var(--color-cm-accent);
+    color: #fff;
+  }
+  .ep-m-play:active {
+    transform: scale(0.95);
+  }
+  .ep-m-progress {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ep-m-progress > span {
+    display: block;
+    height: 100%;
+    background: var(--color-cm-accent);
+    transition: width var(--duration-cm-slow) var(--ease-cm);
+  }
+  .ep-m-bar {
+    position: relative;
+  }
+  .ep-wrap-m .ep-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 8px);
+    max-height: 64vh;
+    overflow-y: auto;
+    transform-origin: bottom left;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.65);
+  }
+  .ep-wrap-m .ep-panel {
+    transform: translateY(10px) scale(0.97);
+  }
+  .ep-wrap-m .ep-panel::before {
+    display: none;
+  }
+  .ep-wrap-m .ep-head {
+    gap: 9px;
+  }
+}
+
+/* Tablet 768–1023: không có bottom-nav → nổi góc dưới trái */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .ep-wrap-m {
+    left: 16px;
+    bottom: 16px;
+    width: min(380px, calc(100vw - 92px));
+  }
+  .ep-wrap-m .ep-panel {
+    bottom: calc(100% + 8px);
+  }
+}
+
+/* Reduced motion: mở/đóng tức thì, không nảy */
+@media (prefers-reduced-motion: reduce) {
+  .ep-wrap[data-open='on'] .ep-head,
+  .ep-wrap[data-open='on'] .ep-actions,
+  .ep-wrap[data-open='on'] .ep-sec,
+  .ep-wrap[data-open='on'] .ep-foot {
+    animation: none;
+  }
+  .ep-chev,
+  .ep-pill,
+  .ep-main,
+  .ep-thumb,
+  .ep-panel,
+  .ep-panel::before,
+  .ep-m-main {
+    transition: none;
+  }
+  .ep-wrap:hover .ep-pill {
+    transform: none;
+  }
 }

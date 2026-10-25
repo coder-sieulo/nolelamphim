@@ -9,6 +9,9 @@ registerPageInit(() => {
   const progressBar = document.getElementById('scroll-progress')
   const backTop = document.getElementById('back-to-top')
 
+  // Nút "lên đầu" cố định ở góc dưới-phải. Dùng hysteresis (hiện >700, ẩn <500)
+  // để không nhấp nháy khi cuộn quanh ngưỡng.
+  let backTopShown = false
   let ticking = false
   function onScroll() {
     if (ticking) return
@@ -20,7 +23,9 @@ registerPageInit(() => {
         progressBar.style.transform = `scaleX(${max > 0 ? y / max : 0})`
       }
       if (backTop) {
-        backTop.classList.toggle('show', y > 600)
+        if (y > 700) backTopShown = true
+        else if (y < 500) backTopShown = false
+        backTop.classList.toggle('show', backTopShown)
       }
       ticking = false
     })
