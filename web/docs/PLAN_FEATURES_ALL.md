@@ -122,8 +122,8 @@ create index on movies (quality_norm);
 | **2.4** | Hero/backdrop đúng & nhẹ | Hero đã dùng đúng `poster_url` (ngang). Việc còn lại: **không upscale ảnh 500×281 vsmov lên 1600w** (proxy đã `withoutEnlargement`, nhưng cần `sizes`/`srcset` để mobile không tải 1600w) + `fetchpriority="high"`. Thêm srcset 800/1200/1600 qua proxy. | S |
 | **2.3** | Lọc **ngôn ngữ** + chất lượng + sắp xếp | ✅ **XONG 2026-10-19**. Chip `lang`/`quality` trong `MovieFilters` + nút sắp xếp vòng `Mới nhất → Điểm cao → Năm giảm dần`; `extraParams()` gửi `sort` chỉ khi cần. Server: `getFeedCached()` phát hiện `lang`/`quality`/`sort=vote` → `queryMovies()` (Postgres). **URL không đổi** ⇒ an toàn SEO. | M |
 | **2.2** | "Phim tương tự" chấm điểm | ✅ **XONG 2026-10-19**. `similarMovies(target)` chấm điểm trong SQL: thể loại ×3 + quốc gia ×1 + đạo diễn ×5 + diễn viên ×2 + gần năm (0..3), phá hoà bằng `vote_count`; có **prefilter rẻ** (`categories @>` / `director &&` / `actor &&`) để không quét cả bảng. Truyền sẵn dữ liệu phim đích từ trang phim (bỏ 1 vòng mạng). Cache `/similar/{slug}` TTL 30h. Fallback về feed thể loại khi < 6 kết quả. | M |
-| **2.1** | Trang **diễn viên / đạo diễn** | Bảng `people(id, name, slug, movie_count, updated_at)` + `movie_people(people_id, movie_id, role)` (migration 0006), backfill từ `actor`/`director`; route `/dien-vien/[slug]`, `/dao-dien/[slug]` (SSR + cache công khai). **`noindex` nếu < 3 phim**; chỉ vào sitemap nếu ≥ 3. Link tên diễn viên ở trang chi tiết. Lưu ý: chỉ phủ ~673 phim. | M |
-| **2.5** | Bộ sưu tập biên tập | Bảng `curated_lists(slug,title,description,cover,position)` + `curated_items(list_slug, movie_slug, position, note)` (migration 0007); trang `/bo-suu-tap/[slug]`; quản lý qua 4.3; seed 4–5 list. | M |
+| **2.1** | Trang **diễn viên / đạo diễn** | 🟡 **NỀN DỮ LIỆU XONG 2026-10-26**: migration `0007` (`people` + `movie_people`) + `npm run backfill:people` (51.615 người / 83.643 liên kết từ `actor`/`director`, đã lọc nhãn rác). Còn lại: route `/dien-vien/[slug]`, `/dao-dien/[slug]` (SSR + cache công khai), link tên ở trang chi tiết, `noindex` < 3 phim, sitemap ≥ 3. | M |
+| **2.5** | Bộ sưu tập biên tập | 🟡 **NỀN DỮ LIỆU XONG 2026-10-26**: migration `0008` (`curated_lists` + `curated_items`). Còn lại: trang `/bo-suu-tap/[slug]`, quản lý qua 4.3, seed 4–5 list. | M |
 
 ---
 
@@ -146,7 +146,7 @@ create index on movies (quality_norm);
 | Mã | Việc | Giải pháp | Công |
 |---|---|---|---|
 | **4.1** | srcset/AVIF | **Lõi đã làm ở P0.2**. Còn: AVIF theo `Accept` trong `/img` (`format=auto`), `sizes` cho hero + lưới, `srcset` cho MỌI ảnh (kể cả trực tiếp). Đo bytes trước/sau. | S |
-| **4.2** | ISR/CDN an toàn | Sau P0.1 + 3.4: chuyển nốt phần per-user của trang chi tiết sang **client** (form bình luận, `data-me`, `data-admin`, XemChungButton) ⇒ HTML công khai thật ⇒ bật lại `public, s-maxage=300, stale-while-revalidate=3600`. Gộp 2 lượt đọc (detail + episodes) thành 1. | M |
+| **4.2** | ISR/CDN an toàn | ✅ **XONG 2026-10-26**. `/phim/[slug]` + `/xem/[slug]/[episode]` đều là HTML công khai thật (không session/cookie ở SSR); phần per-user chuyển client. Cache `public, s-maxage=300, stale-while-revalidate=3600`. Chi tiết: `docs/PLAN_42_ISR.md`. | M |
 | **4.4** | Sitemap đầy đủ + IndexNow | `sitemap.xml.ts` chỉ có `newMovies`. Tách: `sitemap-index.xml` + `sitemap-tinh.xml`, `sitemap-the-loai.xml`, `sitemap-quoc-gia.xml`, `sitemap-nam.xml`, `sitemap-phim-1..n.xml` (đọc **toàn bộ** slug từ DB, 5000/khối). Ping **IndexNow** (key file) khi sync xong; cập nhật `robots.txt`. | M |
 | **4.3** | Trang quản trị `/admin` | SSR, gate `isAdmin` (Discord) + **CSRF token** cho hành động ghi. Xem: đếm (movies/detail/m3u8/lists/users), **audit identity** (chạy lại logic `tools/audit-identity.mjs` dạng read-only), coverage m3u8, log sync gần nhất. Làm: chạy sync/prewarm (server-side, có deadline), prune cache, quản lý `curated_lists`. | M |
 
@@ -167,11 +167,15 @@ create index on movies (quality_norm);
 |---|---|---|
 | 0005 | `category_slugs`, `country_slugs`, `lang_tags`, `quality_norm` + GIN index | 2.2, 2.3 |
 | 0006 | `episode_progress` | 1.4 |
-| 0007 | `people` + `movie_people` | 2.1 |
-| 0008 | `curated_lists` + `curated_items` | 2.5 |
+| 0007 | `people` + `movie_people` | 2.1 — ✅ đã áp dụng 2026-10-26 |
+| 0008 | `curated_lists` + `curated_items` | 2.5 — ✅ đã áp dụng 2026-10-26 |
 | 0009 | `comments.parent_id` + `comment_likes` | 3.4 |
 | 0010 | `collections` + `collection_items` | 3.1 |
 | 0011 | `notifications` | 3.3 |
+
+> `0005`/`0006` không còn dùng: 2.2/2.3 đã chạy SQL trực tiếp; 1.4 dùng
+> `localStorage` nên không cần `episode_progress`. Vì vậy đánh số giữ nguyên
+> `0007`/`0008` để khớp tài liệu và lịch sử migration.
 
 Quy trình: sửa `src/db/schema.ts` → `npm run db:generate` → review SQL → `npm run db:migrate` (qua `DIRECT_URL`).
 
