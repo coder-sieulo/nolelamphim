@@ -185,6 +185,96 @@ export const movies = pgTable(
   ],
 )
 
+/**
+ * Người (diễn viên / đạo diễn) — 2.1.
+ *
+ * Chuẩn hoá từ `movies.actor` / `movies.director` để có thể:
+ *  - lọc phim theo người,
+ *  - dựng trang `/dien-vien/[slug]`, `/dao-dien/[slug]`,
+ *  - đếm số phim mỗi người tham gia (`movie_count`).
+ *
+ * `slug` là khoá SEO ổn định, sinh từ tên bằng `slugify()` trong
+ * `tools/backfill-people.mjs` (bỏ dấu tiếng Việt, `đ → d`).
+ */
+export const people = pgTable(
+  'people',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    /** Số phim DISTINCT có người này (actor hoặc director). */
+    movieCount: integer('movie_count').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('people_slug_uq').on(t.slug),
+    index('people_name_idx').on(t.name),
+    index('people_movie_count_idx').on(t.movieCount),
+  ],
+)
+
+/** Liên kết phim ↔ người, kèm vai trò (`actor` | `director`) — 2.1. */
+export const moviePeople = pgTable(
+  'movie_people',
+  {
+    peopleId: bigint('people_id', { mode: 'number' })
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    movieId: bigint('movie_id', { mode: 'number' })
+      .notNull()
+      .references(() => movies.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.peopleId, t.movieId, t.role] }),
+    index('movie_people_movie_idx').on(t.movieId),
+    index('movie_people_people_idx').on(t.peopleId, t.role),
+    check('movie_people_role_ck', sql`${t.role} in ('actor', 'director')`),
+  ],
+)
+
+/**
+ * Bộ sưu tập biên tập — 2.5.
+ *
+ * `curated_lists` là metadata list; `curated_items` là các phim trong list.
+ * Dữ liệu do admin quản lý (4.3), không phải dữ liệu người dùng.
+ */
+export const curatedLists = pgTable(
+  'curated_lists',
+  {
+    slug: text('slug').primaryKey(),
+    title: text('title').notNull(),
+    description: text('description').notNull().default(''),
+    /** Ảnh bìa (URL gốc, hiển thị qua `/img` proxy). */
+    cover: text('cover'),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('curated_lists_position_idx').on(t.position)],
+)
+
+/** Phim trong 1 bộ sưu tập biên tập — 2.5. Mỗi phim chỉ 1 lần / list. */
+export const curatedItems = pgTable(
+  'curated_items',
+  {
+    listSlug: text('list_slug')
+      .notNull()
+      .references(() => curatedLists.slug, { onDelete: 'cascade' }),
+    movieSlug: text('movie_slug')
+      .notNull()
+      .references(() => movies.slug, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+    note: text('note').notNull().default(''),
+  },
+  (t) => [
+    primaryKey({ columns: [t.listSlug, t.movieSlug] }),
+    index('curated_items_list_position_idx').on(t.listSlug, t.position),
+    index('curated_items_movie_idx').on(t.movieSlug),
+  ],
+)
+
 /** Tập phim theo server (gom `server_name` → EpisodeServer[] khi đọc). */
 export const movieEpisodes = pgTable(
   'movie_episodes',
@@ -234,7 +324,20 @@ export const catalogueLists = pgTable(
   (t) => [index('catalogue_lists_synced_idx').on(t.syncedAt)],
 )
 
-export const schema = { users, favorites, ratings, history, comments, movies, movieEpisodes, catalogueLists }
+export const schema = {
+  users,
+  favorites,
+  ratings,
+  history,
+  comments,
+  movies,
+  movieEpisodes,
+  people,
+  moviePeople,
+  curatedLists,
+  curatedItems,
+  catalogueLists,
+}
 
 export type UserRow = typeof users.$inferSelect
 export type FavoriteRow = typeof favorites.$inferSelect
@@ -243,4 +346,8 @@ export type HistoryRow = typeof history.$inferSelect
 export type CommentRow = typeof comments.$inferSelect
 export type MovieRow = typeof movies.$inferSelect
 export type MovieEpisodeRow = typeof movieEpisodes.$inferSelect
+export type PersonRow = typeof people.$inferSelect
+export type MoviePersonRow = typeof moviePeople.$inferSelect
+export type CuratedListRow = typeof curatedLists.$inferSelect
+export type CuratedItemRow = typeof curatedItems.$inferSelect
 export type CatalogueListRow = typeof catalogueLists.$inferSelect

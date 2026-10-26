@@ -36,6 +36,20 @@
       "when": 1792151457719,
       "tag": "0004_cool_molly_hayes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792983047422,
+      "tag": "0007_people_movie_people",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792983048422,
+      "tag": "0008_curated_lists",
+      "breakpoints": true
     }
   ]
 }

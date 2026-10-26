@@ -9,6 +9,7 @@
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
     "prewarm:idmap": "node tools/prewarm-idmap.mjs",
+    "backfill:people": "tsx tools/backfill-people.mjs",
     "sync:catalogue": "tsx tools/sync-catalogue.mjs",
     "migrate:redis": "node tools/migrate-redis-to-pg.mjs",
     "audit:identity": "node tools/audit-identity.mjs",
