@@ -58,8 +58,9 @@ Lợi ích: chắc chắn song song (hiện đã song song), nhưng gom về 1 c
 `/phim/[slug]`: `cache="public"` + `s-maxage=300, stale-while-revalidate=3600`.
 Cần `BaseLayout` hỗ trợ `sMaxAge`/`swr` tuỳ biến (hiện cứng `60/300`).
 
-`/xem/[slug]/[episode]`: **giữ `private`** ở bước này (player có dữ liệu phiên + HLS riêng),
-trừ khi chứng minh được HTML không phụ thuộc gì. Ghi chú lại: đây là bước 2 của 4.2.
+`/xem/[slug]/[episode]`: **bước 2 đã chuyển sang `public`** — xem mục
+“Bước 2 — ĐÃ LÀM” ở cuối tài liệu. Ghi chú cũ: ở bước 1 từng giữ `private` vì
+player có dữ liệu phiên + HLS riêng.
 
 ### D. Rủi ro
 
@@ -79,7 +80,27 @@ trừ khi chứng minh được HTML không phụ thuộc gì. Ghi chú lại: �
 4. Chức năng: bình luận gửi được, xoá được, yêu thích, đánh giá, resume, xem chung (admin) vẫn chạy.
 5. Đo trước/sau: TTFB production (sau deploy).
 
+## Bước 2 — ĐÃ LÀM (2026-10-26)
+
+`/xem/[slug]/[episode]` đã được chuyển sang HTML công khai thật:
+
+- File trang **không** gọi `getSessionUser` / `isAdmin` / đọc cookie. Tiến trình xem,
+  lịch sử, hiện diện, player đều ở client (localStorage + `/api/auth/me`,
+  `/api/user/history`, `/api/presence`).
+- `BaseLayout` nhận `cache="public" sMaxAge={300} staleWhileRevalidate={3600}`.
+- Kiểm chứng:
+  - Local: `curl -I` trả `cache-control: public, s-maxage=300,
+    stale-while-revalidate=3600`; HTML có/không cookie **byte-identical**.
+  - Production (deployment `175f367`, trang đã public từ trước): `curl` 2 lần
+    với cookie khác nhau → HTML **byte-identical** (sha256 trùng);
+    `/xem/doraemon/tap-1` có lúc `MISS`, sau đó `HIT`/`STALE` với `age` tăng dần.
+  - Header trình duyệt ở production thấy `cache-control: public` (Vercel tự rút
+    gọn TTL nội bộ; edge vẫn áp `s-maxage`). Sau khi deploy commit này sẽ xác
+    nhận lại TTL 300/3600.
+- Không còn phần per-user nào ở SSR; nếu thêm session vào file này, cache sẽ
+  rò dữ liệu ⇒ đã ghi cảnh báo ngay đầu file.
+
 ## Phạm vi
 
-- TRONG: `/phim/[slug]`.
-- BƯỚC SAU (ghi chú, chưa làm): `/xem/[slug]/[episode]` chuyển hết phần phiên sang client.
+- ĐÃ XONG: `/phim/[slug]` (bước 1) và `/xem/[slug]/[episode]` (bước 2).
+- Giữ nguyên URL, JSON-LD, player HLS/iframe, resume, lịch sử, presence.

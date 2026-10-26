@@ -12,6 +12,17 @@ import { breadcrumbLd } from '../../../lib/seo'
 import { isRealHls } from '../../../lib/hls'
 import { FaCirclePlay, FaChevronLeft, FaChevronRight, FaListUl, FaXmark, FaChevronDown } from 'react-icons/fa6'
 
+/**
+ * 4.2 bước 2 — HTML của trang xem cũng phải **công khai thật** để cache CDN.
+ *
+ * File này KHÔNG đọc session/cookie ở SSR. Các phần theo người dùng đều ở client:
+ *  - tiến trình xem / lịch sử: localStorage + `/api/user/history` (sau `/api/auth/me`)
+ *  - hiện diện: `/api/presence`
+ *  - player/HLS: dữ liệu công khai từ catalogue
+ *
+ * ⚠️ Tuyệt đối không thêm `getSessionUser`, `Astro.cookies`, `isAdmin` hay
+ * dữ liệu `viewer` vào file này — sẽ làm hỏng cache edge và rò dữ liệu.
+ */
 const slug = Astro.params.slug ?? ''
 const episode = Astro.params.episode ?? ''
 
@@ -128,6 +139,8 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
   description={`Xem ${movie.name} ${currentEp ? `tập ${currentEp.name}` : ''} HD VietSub miễn phí tại Nô Lệ Làm Phim.`}
   ogImage={`${SITE_URL}/og/${slug}.png`}
   cache="public"
+  sMaxAge={300}
+  staleWhileRevalidate={3600}
   island={{
     movieSlug: slug,
     movieName: movie.name,
