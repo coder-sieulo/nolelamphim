@@ -357,7 +357,7 @@ export function initIsland(): () => void {
           }
           if (q) {
             pushRecentSearch(q)
-            location.assign(`/tim-kiem?q=${encodeURIComponent(q)}`)
+            location.assign(`/search?q=${encodeURIComponent(q)}`)
           }
         }
       },

@@ -3,6 +3,7 @@ import { continueCardHTML } from '../lib/movieCard'
 import { CONTINUE_WATCHING_MAX } from '../lib/constants'
 import type { RecentItem } from './store'
 import { registerPageInit } from './lifecycle'
+import { getMe, getLib } from './session'
 
 interface Watched extends RecentItem {
   position?: number
@@ -21,14 +22,14 @@ registerPageInit(() => {
     let watched: Watched[] = getRecent().filter((r) => r.episodeSlug) as Watched[]
     let authed = false
     try {
-      const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
-      if (me?.user) {
+      const { user } = await getMe()
+      if (user) {
         authed = true
-        const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
-        const hist = Array.isArray(res?.lib?.history) ? res.lib.history : []
+        const lib = await getLib()
+        const hist = Array.isArray(lib?.history) ? (lib.history as any[]) : []
         const serverWatched: Watched[] = hist
-          .filter((h: { episodeSlug?: string }) => h.episodeSlug)
-          .map((h: { slug: string; name: string; thumb: string; episode?: string; episodeSlug?: string; watchedAt: number; position?: number; duration?: number }) => ({
+          .filter((h: any) => h?.episodeSlug)
+          .map((h: any) => ({
             id: 0,
             slug: h.slug,
             name: h.name,

@@ -181,6 +181,7 @@ const isHost = !!user && user.sub === room.hostId
 
   <script>
     import { registerPageInit } from '../../../scripts/lifecycle'
+    import { getMe } from '../../../scripts/session'
 
     interface Member { id: string; username: string; global_name?: string | null; avatar?: string | null }
     interface ChatMsg { id: string; userId: string; username: string; avatar?: string | null; text: string; ts: number }
@@ -282,9 +283,8 @@ const isHost = !!user && user.sub === room.hostId
       async function whoami() {
         let discordUser = false
         try {
-          const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
-          const d = await r.json()
-          _userId = d.user?.id || d.user?.sub || ''
+          const { user } = await getMe()
+          _userId = user?.id || ''
           discordUser = !!_userId
         } catch { _userId = '' }
         // Guest: coi như "đã xác minh người xem" để mở chat/xem, nhưng KHÔNG phải host.

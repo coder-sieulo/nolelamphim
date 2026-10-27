@@ -58,6 +58,7 @@ const { id, name, slug, thumb, vote = '', variant = 'action' } = Astro.props
 <script>
   import { isFavorite, toggleFavorite, getFavorites, writeJSON } from '../scripts/store'
   import { registerPageInit } from '../scripts/lifecycle'
+  import { getMe, getLib } from '../scripts/session'
 
   registerPageInit(() => {
     const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.fav-button'))
@@ -97,18 +98,18 @@ const { id, name, slug, thumb, vote = '', variant = 'action' } = Astro.props
     // Đã đăng nhập → hợp nhất thư viện tài khoản vào máy để mọi nút hiện đúng trạng thái.
     void (async () => {
       try {
-        const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
-        if (!me?.user) return
-        const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
-        const server = Array.isArray(res?.lib?.favorites) ? res.lib.favorites : []
+        const { user } = await getMe()
+        if (!user) return
+        const lib = await getLib()
+        const server = Array.isArray(lib?.favorites) ? (lib.favorites as any[]) : []
         const merged = server.slice()
         for (const f of getFavorites()) {
-          if (!merged.some((m: { slug: string }) => m.slug === f.slug)) merged.push(f)
+          if (!merged.some((m: any) => m.slug === f.slug)) merged.push(f)
         }
         writeJSON('favorites', merged)
         buttons.forEach((b) => {
           const item = itemOf(b)
-          if (merged.some((f: { slug: string }) => f.slug === item.slug)) paint(b)
+          if (merged.some((f: any) => f.slug === item.slug)) paint(b)
         })
       } catch {
         /* thư viện máy vẫn hoạt động */
@@ -124,8 +125,8 @@ const { id, name, slug, thumb, vote = '', variant = 'action' } = Astro.props
           if (b !== btn) paint(b)
         })
         try {
-          const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
-          if (!me?.user) return
+          const { user } = await getMe()
+          if (!user) return
           await fetch('/api/user/favorite', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

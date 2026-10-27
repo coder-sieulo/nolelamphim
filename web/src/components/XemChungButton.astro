@@ -71,6 +71,7 @@ const serverIdle =
 
 <script>
   import { registerPageInit } from '../scripts/lifecycle'
+  import { getMe } from '../scripts/session'
 
   interface QuickEp { name: string; slug: string; embed: string }
 
@@ -80,9 +81,8 @@ const serverIdle =
     document.querySelectorAll<HTMLElement>('.xc-quick').forEach(async (box) => {
       // Chỉ admin mới được tạo phòng (host) — ẩn luôn nút cho người khác.
       try {
-        const r = await fetch('/api/auth/me', { credentials: 'same-origin', signal: ac.signal })
-        const d = await r.json()
-        if (!d.admin) {
+        const { admin } = await getMe()
+        if (!admin || ac.signal.aborted) {
           box.classList.add('hidden')
           return
         }

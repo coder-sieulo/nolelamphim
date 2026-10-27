@@ -27,6 +27,7 @@
   import { getMovieDetail, getMoviesByCategory } from '../lib/api'
   import { movieToCard, movieCardHTML } from '../lib/movieCard'
   import { registerPageInit } from '../scripts/lifecycle'
+  import { getMe, getLib } from '../scripts/session'
 
   const MAX_INFERENCE = 3
   const ROW_LIMIT = 12
@@ -94,13 +95,13 @@
       // Ưu tiên lịch sử tài khoản (có thể xem mọi máy), fallback lịch sử máy
       let slugs: string[] = []
       try {
-        const me = await fetch('/api/auth/me', { credentials: 'same-origin', signal }).then((r) => r.json())
-        if (!me?.user) throw new Error('guest')
-        const res = await fetch('/api/user/lib', { credentials: 'same-origin', signal }).then((r) => r.json())
-        const hist = Array.isArray(res?.lib?.history) ? res.lib.history : []
+        const { user } = await getMe()
+        if (!user || signal.aborted) throw new Error('guest')
+        const lib = await getLib()
+        const hist = Array.isArray(lib?.history) ? (lib.history as any[]) : []
         slugs = hist
-          .filter((h: { episodeSlug?: string; slug?: string }) => h.episodeSlug && h.slug)
-          .map((h: { slug: string }) => h.slug)
+          .filter((h: any) => h?.episodeSlug && h?.slug)
+          .map((h: any) => h.slug)
       } catch {
         slugs = getRecent().filter((r) => r.episodeSlug).map((r) => r.slug)
       }

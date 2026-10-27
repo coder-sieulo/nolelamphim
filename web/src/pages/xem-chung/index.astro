@@ -87,6 +87,7 @@ import { FaFilm, FaLink, FaGaugeHigh } from 'react-icons/fa6'
 
   <script>
     import { registerPageInit } from '../../scripts/lifecycle'
+    import { getMe } from '../../scripts/session'
 
     registerPageInit(() => {
       const root = document.querySelector('[data-grid-page]')
@@ -132,9 +133,8 @@ import { FaFilm, FaLink, FaGaugeHigh } from 'react-icons/fa6'
 
       async function whoami(): Promise<{ user: MeUser | null; admin: boolean }> {
         try {
-          const r = await fetch('/api/auth/me', { credentials: 'same-origin' })
-          const d = await r.json()
-          return { user: d.user?.id ? d.user as MeUser : null, admin: !!d.admin }
+          const { user, admin } = await getMe()
+          return { user: user?.id ? (user as MeUser) : null, admin }
         } catch {
           return { user: null, admin: false }
         }

@@ -454,6 +454,7 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
     import { decorateEpProgress as decorateEpProgressFor } from '../../../scripts/ep-progress'
     import { escapeHTML } from '../../../scripts/cards'
     import { registerPageInit } from '../../../scripts/lifecycle'
+    import { getMe } from '../../../scripts/session'
     import { imgProxyUrl } from '../../../lib/img'
 
     registerPageInit(() => {
@@ -529,10 +530,9 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         // Tiến trình theo TỪNG TẬP (để vẽ vòng ở danh sách tập).
         setEpProgress(slug, episode, position, duration)
         // Đồng bộ tiến trình lên tài khoản (nếu đã đăng nhập) — throttled bên gọi.
-        fetch('/api/auth/me', { credentials: 'same-origin' })
-          .then((r) => r.json())
-          .then((d) => {
-            if (!d?.user) return
+        getMe()
+          .then(({ user }) => {
+            if (!user) return
             return fetch('/api/user/history', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -626,10 +626,9 @@ const serverActive = 'ep-server px-3.5 py-1.5 rounded-[var(--radius-cm-btn)] tex
         position: 0,
         duration,
       })
-      fetch('/api/auth/me', { credentials: 'same-origin' })
-        .then((r) => r.json())
-        .then((d) => {
-          if (!d?.user) return
+      getMe()
+        .then(({ user }) => {
+          if (!user) return
           return fetch('/api/user/history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

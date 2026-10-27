@@ -161,6 +161,7 @@ const slideVote = (m: Movie) => {
 <script>
   import { isFavorite, toggleFavorite, getFavorites, writeJSON } from '../scripts/store'
   import { registerPageInit } from '../scripts/lifecycle'
+  import { getMe, getLib } from '../scripts/session'
 
   registerPageInit(() => {
     const section = document.getElementById('home-hero')
@@ -192,10 +193,9 @@ const slideVote = (m: Movie) => {
       btn.addEventListener('click', () => {
         const next = toggleFavorite(item)
         apply(next)
-        fetch('/api/auth/me', { credentials: 'same-origin' })
-          .then((r) => r.json())
-          .then((d) => {
-            if (!d?.user) return
+        getMe()
+          .then(({ user }) => {
+            if (!user) return
             return fetch('/api/user/favorite', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -209,21 +209,18 @@ const slideVote = (m: Movie) => {
 
     /* ── Đồng bộ favorites từ tài khoản (1 lần, áp cho mọi nút) ── */
     const ac = new AbortController()
-    fetch('/api/auth/me', { credentials: 'same-origin' })
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d?.user) return
-        return fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
-      })
-      .then((res: { lib?: { favorites?: { id: number }[] } } | void) => {
-        if (!res?.lib?.favorites || res.lib.favorites.length === 0 || ac.signal.aborted) return
-        const local = getFavorites()
-        const known = new Set(local.map((f) => f.id))
-        const merged = [...local, ...res.lib.favorites.filter((f) => !known.has(f.id))]
-        writeJSON('favorites', merged)
-        for (const btn of favBtns) setActive(btn, isFavorite(Number(btn.dataset.id || 0)))
-      })
-      .catch(() => {})
+    void (async () => {
+      const { user } = await getMe()
+      if (!user) return
+      const lib = await getLib()
+      const favorites = (lib?.favorites ?? []) as { id: number }[]
+      if (favorites.length === 0 || ac.signal.aborted) return
+      const local = getFavorites()
+      const known = new Set(local.map((f) => f.id))
+      const merged = [...local, ...favorites.filter((f) => !known.has(f.id))]
+      writeJSON('favorites', merged)
+      for (const btn of favBtns) setActive(btn, isFavorite(Number(btn.dataset.id || 0)))
+    })().catch(() => {})
 
     /* ── Xoay vòng slide ── */
     const slides = Array.from(section.querySelectorAll<HTMLElement>('[data-hero-slide]'))

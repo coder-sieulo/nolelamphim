@@ -48,6 +48,7 @@ const LEVELS = [
 <script>
   import { getRatings, saveRating, writeJSON } from '../scripts/store'
   import { registerPageInit } from '../scripts/lifecycle'
+  import { getMe, getLib } from '../scripts/session'
 
   registerPageInit(() => {
     document.querySelectorAll<HTMLElement>('.rating-box').forEach((box) => {
@@ -69,10 +70,10 @@ const LEVELS = [
       // Đã đăng nhập → lấy điểm đã lưu trên tài khoản, hợp nhất lên máy.
       void (async () => {
         try {
-          const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
-          if (!me?.user) return
-          const res = await fetch('/api/user/lib', { credentials: 'same-origin' }).then((r) => r.json())
-          const server = (res?.lib?.ratings ?? {}) as Record<string, number>
+          const { user } = await getMe()
+          if (!user) return
+          const lib = await getLib()
+          const server = (lib?.ratings ?? {}) as Record<string, number>
           writeJSON('ratings', { ...getRatings(), ...server })
           const synced = server[slug] ?? 0
           if (synced) {
@@ -99,8 +100,8 @@ const LEVELS = [
           paint()
           void (async () => {
             try {
-              const me = await fetch('/api/auth/me', { credentials: 'same-origin' }).then((r) => r.json())
-              if (!me?.user) return
+              const { user } = await getMe()
+              if (!user) return
               await fetch('/api/user/rate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

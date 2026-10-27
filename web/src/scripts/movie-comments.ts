@@ -1,5 +1,6 @@
 import { escapeHTML } from '../lib/movieCard'
 import { registerPageInit } from './lifecycle'
+import { getMe } from './session'
 
 /**
  * Bình luận phim — **client-driven** (4.2).
@@ -23,8 +24,8 @@ interface CommentLite {
 }
 
 interface MeResponse {
-  user?: { id?: string; username?: string; global_name?: string | null } | null
-  admin?: boolean
+  user: { id: string; username: string; global_name?: string | null } | null
+  admin: boolean
 }
 
 const PAGE = 20
@@ -132,9 +133,7 @@ function initMovieComments(): void {
       }
 
       // ── 1. Danh tính (song song với việc nạp bình luận) ──
-      const mePromise: Promise<MeResponse> = fetch('/api/auth/me', { credentials: 'same-origin' })
-        .then((r) => r.json() as Promise<MeResponse>)
-        .catch(() => ({ user: null, admin: false }))
+      const mePromise: Promise<MeResponse> = getMe()
 
       const commentsPromise = fetch(
         `/api/movie/${encodeURIComponent(slug)}/comments?limit=${PAGE}&offset=0`,

@@ -1,18 +1,6 @@
 import { registerPageInit } from './lifecycle'
 import { iconString } from '../lib/icon-strings'
-
-interface MeUser {
-  id: string
-  username: string
-  global_name?: string | null
-  avatar?: string | null
-}
-
-type AuthState = 'loading' | 'guest' | 'user'
-
-let cachedState: { state: AuthState; user: MeUser | null } = { state: 'loading', user: null }
-let cacheExpires = 0
-const CACHE_TTL = 60_000
+import { getMe, invalidateSession, type MeUser } from './session'
 
 function avatarUrl(user: MeUser): string | null {
   if (!user.avatar) return null
@@ -79,28 +67,6 @@ function loginSlot() {
   </a>`
 }
 
-async function fetchMe(): Promise<MeUser | null> {
-  const now = Date.now()
-  if (now < cacheExpires) {
-    return cachedState.state === 'user' ? cachedState.user : null
-  }
-  try {
-    const res = await fetch('/api/auth/me', { headers: { Accept: 'application/json' } })
-    const data = (await res.json()) as { user?: MeUser | null }
-    const user = data.user ?? null
-    cachedState = { state: user ? 'user' : 'guest', user }
-    cacheExpires = now + CACHE_TTL
-    return user
-  } catch {
-    return null
-  }
-}
-
-function discardCache() {
-  cachedState = { state: 'loading', user: null }
-  cacheExpires = 0
-}
-
 function bind(user: MeUser | null) {
   const slot = document.getElementById('auth-slot')
   if (!slot) return
@@ -153,14 +119,14 @@ async function handleLogout() {
   } catch {
     /* nothing */
   }
-  discardCache()
+  invalidateSession()
   renderAuth()
 }
 
 let ac = new AbortController()
 
 async function renderAuth() {
-  const user = await fetchMe()
+  const { user } = await getMe()
   if (ac.signal.aborted) return
   bind(user)
 }
