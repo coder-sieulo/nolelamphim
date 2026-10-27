@@ -45,6 +45,10 @@ const skeleton = `
     <FaComment className="w-4 h-4 text-cm-text-3" />
     Bình luận
     <span id="cmt-count" class="text-cm-meta text-cm-text-3 font-normal">{total > 0 ? `(${total})` : ''}</span>
+    <div class="ml-auto flex items-center gap-1 text-cm-meta">
+      <button type="button" class="cmt-sort px-2 py-1 rounded-[4px] text-cm-text-2" data-sort="newest">Mới nhất</button>
+      <button type="button" class="cmt-sort px-2 py-1 rounded-[4px] text-cm-text-3 hover:text-cm-text" data-sort="liked">Nhiều lượt thích</button>
+    </div>
   </h2>
 
   {/* Vùng form: client thay bằng form thật hoặc nút đăng nhập sau khi biết danh tính. */}

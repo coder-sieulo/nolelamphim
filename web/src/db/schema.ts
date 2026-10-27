@@ -4,6 +4,7 @@ import {
   bigserial,
   check,
   doublePrecision,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -110,11 +111,33 @@ export const comments = pgTable(
     username: text('username').notNull().default(''),
     avatar: text('avatar'),
     text: text('text').notNull(),
+    parentId: uuid('parent_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('comments_slug_created_idx').on(t.slug, t.createdAt),
+    index('comments_slug_parent_created_idx').on(t.slug, t.parentId, t.createdAt),
     index('comments_user_created_idx').on(t.userSub, t.createdAt),
+    foreignKey({
+      columns: [t.parentId],
+      foreignColumns: [t.id],
+    }).onDelete('cascade'),
+  ],
+)
+
+/** Thích bình luận (1 lượt / user / comment). */
+export const commentLikes = pgTable(
+  'comment_likes',
+  {
+    commentId: uuid('comment_id')
+      .notNull()
+      .references(() => comments.id, { onDelete: 'cascade' }),
+    userSub: text('user_sub').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId, t.userSub] }),
+    index('comment_likes_comment_idx').on(t.commentId),
   ],
 )
 
@@ -344,6 +367,7 @@ export type FavoriteRow = typeof favorites.$inferSelect
 export type RatingRow = typeof ratings.$inferSelect
 export type HistoryRow = typeof history.$inferSelect
 export type CommentRow = typeof comments.$inferSelect
+export type CommentLikeRow = typeof commentLikes.$inferSelect
 export type MovieRow = typeof movies.$inferSelect
 export type MovieEpisodeRow = typeof movieEpisodes.$inferSelect
 export type PersonRow = typeof people.$inferSelect

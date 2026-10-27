@@ -50,6 +50,20 @@
       "when": 1792983048422,
       "tag": "0008_curated_lists",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793099362903,
+      "tag": "0009_comments_replies_likes",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793099414510,
+      "tag": "0010_ambitious_wild_pack",
+      "breakpoints": true
     }
   ]
 }
