@@ -1,0 +1,150 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { FaEnvelope, FaLock, FaUser } from 'react-icons/fa6'
+import { getSessionUser } from '../lib/auth'
+
+const user = await getSessionUser(Astro.cookies)
+if (user) return Astro.redirect('/')
+---
+
+<BaseLayout title="Đăng nhập | Nô Lệ Làm Phim" description="Đăng nhập tài khoản Nô Lệ Làm Phim">
+  <main class="min-h-[70vh] px-4 sm:px-6 flex items-center justify-center">
+    <div class="w-full max-w-md">
+      <div class="bg-cm-elevated border border-cm-border rounded-[var(--radius-cm-modal)] shadow-[var(--shadow-cm-up)] p-6 sm:p-8">
+        <div class="text-center mb-6">
+          <h1 class="text-2xl font-bold text-cm-text mb-1">Đăng nhập</h1>
+          <p class="text-cm-text-2">Đăng nhập để lưu yêu thích, đánh giá, lịch sử xem</p>
+        </div>
+
+        <div class="flex gap-2 mb-6 bg-cm-surface p-1 rounded-[var(--radius-cm-btn)] border border-cm-border">
+          <button id="tab-login" class="flex-1 h-10 rounded-[6px] bg-cm-accent text-white text-sm font-medium">Đăng nhập</button>
+          <button id="tab-register" class="flex-1 h-10 rounded-[6px] text-cm-text-2 text-sm font-medium hover:text-cm-text">Đăng ký</button>
+        </div>
+
+        <div id="login-form" class="space-y-3">
+          <div>
+            <label class="block text-sm text-cm-text mb-1.5">Email</label>
+            <div class="relative">
+              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cm-text-3" />
+              <input id="login-email" type="email" class="w-full h-11 pl-10 pr-3 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-text focus:outline-none focus:border-cm-border-strong" placeholder="email@example.com" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-cm-text mb-1.5">Mật khẩu</label>
+            <div class="relative">
+              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cm-text-3" />
+              <input id="login-pass" type="password" class="w-full h-11 pl-10 pr-3 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-text focus:outline-none focus:border-cm-border-strong" placeholder="Mật khẩu" />
+            </div>
+          </div>
+          <button id="btn-login" class="w-full h-11 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white font-medium hover:bg-cm-accent-hover transition-colors">Đăng nhập</button>
+        </div>
+
+        <div id="register-form" class="space-y-3 hidden">
+          <div>
+            <label class="block text-sm text-cm-text mb-1.5">Tên hiển thị</label>
+            <div class="relative">
+              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cm-text-3" />
+              <input id="reg-username" type="text" maxlength="32" class="w-full h-11 pl-10 pr-3 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-text focus:outline-none focus:border-cm-border-strong" placeholder="Nhập tên hiển thị" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-cm-text mb-1.5">Email</label>
+            <div class="relative">
+              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cm-text-3" />
+              <input id="reg-email" type="email" class="w-full h-11 pl-10 pr-3 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-text focus:outline-none focus:border-cm-border-strong" placeholder="email@example.com" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-cm-text mb-1.5">Mật khẩu</label>
+            <div class="relative">
+              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cm-text-3" />
+              <input id="reg-pass" type="password" class="w-full h-11 pl-10 pr-3 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-text focus:outline-none focus:border-cm-border-strong" placeholder="Tối thiểu 6 ký tự" />
+            </div>
+          </div>
+          <button id="btn-register" class="w-full h-11 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white font-medium hover:bg-cm-accent-hover transition-colors">Tạo tài khoản</button>
+        </div>
+
+        <p id="auth-msg" class="text-sm text-cm-text-2 mt-4 hidden text-center"></p>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    function initAuth(){
+      const tabLogin = document.getElementById('tab-login')
+      const tabRegister = document.getElementById('tab-register')
+      const loginForm = document.getElementById('login-form')
+      const registerForm = document.getElementById('register-form')
+      const msg = document.getElementById('auth-msg')
+
+      function showMsg(m){ if(msg){msg.textContent=m;msg.classList.remove('hidden')} }
+      function hideMsg(){ if(msg){msg.classList.add('hidden')} }
+
+      tabLogin?.addEventListener('click',()=>{
+        tabLogin.classList.add('bg-cm-accent','text-white')
+        tabLogin.classList.remove('text-cm-text-2')
+        tabRegister.classList.remove('bg-cm-accent','text-white')
+        tabRegister.classList.add('text-cm-text-2')
+        loginForm?.classList.remove('hidden')
+        registerForm?.classList.add('hidden')
+        hideMsg()
+      })
+
+      tabRegister?.addEventListener('click',()=>{
+        tabRegister.classList.add('bg-cm-accent','text-white')
+        tabRegister.classList.remove('text-cm-text-2')
+        tabLogin.classList.remove('bg-cm-accent','text-white')
+        tabLogin.classList.add('text-cm-text-2')
+        registerForm?.classList.remove('hidden')
+        loginForm?.classList.add('hidden')
+        hideMsg()
+      })
+
+      document.getElementById('btn-login')?.addEventListener('click', async ()=>{
+        const email = document.getElementById('login-email').value.trim()
+        const password = document.getElementById('login-pass').value || ''
+        if(!email || !password){showMsg('Nhập đầy đủ email và mật khẩu');return;}
+        try {
+          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
+          const url = localStorage.getItem('sb-url') || window.__SB_URL || ''
+          const key = localStorage.getItem('sb-key') || window.__SB_KEY || ''
+          if(!url||!key){showMsg('Thiếu cấu hình Supabase');return;}
+          const supabase = createClient(url,key)
+          const {data,error}=await supabase.auth.signInWithPassword({email,password})
+          if(error){showMsg(error.message);return;}
+          const user = data.user
+          if(!user){showMsg('Đăng nhập thất bại');return;}
+          await fetch('/api/auth/supabase-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sub:user.id,username:user.user_metadata?.username || user.email?.split('@')[0],global_name:user.user_metadata?.full_name || user.user_metadata?.username || null,avatar:user.user_metadata?.avatar_url || null})})
+          location.href='/'
+        }catch(e){showMsg('Lỗi đăng nhập')}
+      })
+
+      document.getElementById('btn-register')?.addEventListener('click', async ()=>{
+        const username = document.getElementById('reg-username').value.trim()
+        const email = document.getElementById('reg-email').value.trim()
+        const password = document.getElementById('reg-pass').value || ''
+        if(!username){showMsg('Nhập tên hiển thị');return;}
+        if(!email){showMsg('Nhập email');return;}
+        if(password.length < 6){showMsg('Mật khẩu tối thiểu 6 ký tự');return;}
+        try {
+          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
+          const url = localStorage.getItem('sb-url') || window.__SB_URL || ''
+          const key = localStorage.getItem('sb-key') || window.__SB_KEY || ''
+          if(!url||!key){showMsg('Thiếu cấu hình Supabase');return;}
+          const supabase = createClient(url,key)
+          const {data,error}=await supabase.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/api/auth/supabase-callback',data:{username,full_name:username}}})
+          if(error){showMsg(error.message);return;}
+          if(data.session && data.user){
+            const user = data.user
+            await fetch('/api/auth/supabase-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sub:user.id,username,global_name:username,avatar:null})})
+            location.href='/'
+            return
+          }
+          showMsg('Đăng ký thành công. Kiểm tra email để xác nhận tài khoản.')
+        }catch(e){showMsg('Lỗi đăng ký')}
+      })
+    }
+    initAuth()
+    document.addEventListener('astro:page-load', initAuth)
+  </script>
+</BaseLayout>

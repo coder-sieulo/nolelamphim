@@ -61,10 +61,10 @@ function userMenu(user: MeUser) {
 }
 
 function loginSlot() {
-  return `<button type="button" data-auth-open class="site-login">
+  return `<a href="/dang-nhap" class="site-login">
     ${iconString('user', 'w-4 h-4')}
     <span class="hidden sm:inline">Đăng nhập</span>
-  </button>`
+  </a>`
 }
 
 function bind(user: MeUser | null) {
