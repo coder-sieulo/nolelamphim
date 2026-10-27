@@ -13,6 +13,7 @@ import '@fontsource/be-vietnam-pro/700.css'
 import inter600Woff2 from '@fontsource/inter/files/inter-vietnamese-600-normal.woff2?url'
 import Navbar from '../components/Navbar.astro'
 import Footer from '../components/Footer.astro'
+import AuthModal from '../components/AuthModal.astro'
 import { SITE_NAME, SITE_URL } from '../lib/site'
 import { FaChevronUp } from 'react-icons/fa6'
 
@@ -260,6 +261,7 @@ Astro.response.headers.set(
         </ul>
       </div>
     </div>
+    <AuthModal />
 
     <script is:inline>
       // Overlay "Bé Lỏ đang lấy phim cho bạn" theo View Transitions.

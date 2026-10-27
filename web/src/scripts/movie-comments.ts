@@ -114,9 +114,9 @@ function authSlotHTML(username: string): string {
     </form>`
 }
 
-const loginHTML = `<a href="/api/auth/discord" class="flex items-center justify-center gap-2 px-4 py-3 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] mb-2">
+const loginHTML = `<button type="button" data-auth-open class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-meta text-cm-text-2 hover:text-cm-text hover:border-cm-border-strong hover:bg-cm-elevated transition-colors duration-[var(--duration-cm)] mb-2">
     Đăng nhập để bình luận
-  </a>`
+  </button>`
 
 function initMovieComments(): void {
   registerPageInit(() => {

@@ -3,7 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ThemeBG from '../../../components/ThemeBG.astro'
 import { getSessionUser } from '../../../lib/auth'
 import { getRoom } from '../../../lib/rooms'
-import { FaDiscord, FaTv, FaCirclePlay, FaClock, FaStop, FaComment, FaSliders, FaLock, FaChevronLeft } from 'react-icons/fa6'
+import { FaTv, FaCirclePlay, FaClock, FaStop, FaComment, FaSliders, FaLock, FaChevronLeft } from 'react-icons/fa6'
 
 const code = (Astro.params.code || '').toUpperCase()
 
@@ -24,12 +24,11 @@ const isHost = !!user && user.sub === room.hostId
       <div class="bg-cm-surface border border-cm-border rounded-[var(--radius-cm-modal)] px-8 py-8 text-center max-w-sm mx-4">
         <div class="w-14 h-14 rounded-full bg-cm-surface border border-cm-border flex items-center justify-center mb-3 mx-auto text-cm-accent"><FaLock className="w-6 h-6" /></div>
         <h2 class="text-lg font-bold text-cm-text">Đăng nhập để xem cùng nhau</h2>
-        <p class="text-cm-body text-cm-text-2 mt-2 mb-5">Bạn cần đăng nhập Discord để tham gia phòng, chat và đồng bộ phim.</p>
-        <a href="/api/auth/discord"
+        <p class="text-cm-body text-cm-text-2 mt-2 mb-5">Bạn cần đăng nhập để tham gia phòng, chat và đồng bộ phim.</p>
+        <button type="button" data-auth-open
           class="inline-flex items-center gap-2 h-12 px-6 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">
-          <FaDiscord className="w-5 h-5" />
-          Đăng nhập bằng Discord
-        </a>
+          Đăng nhập
+        </button>
         <a href="/xem-chung" class="flex items-center justify-center gap-1 mt-3 text-cm-meta text-cm-text-3 hover:text-cm-text transition-colors duration-[var(--duration-cm)]">
           <FaChevronLeft className="w-3 h-3" />
           Quay lại trang Xem Chung
@@ -162,12 +161,11 @@ const isHost = !!user && user.sub === room.hostId
           <span id="xc-members-pop" class="text-cm-meta text-cm-text-3"></span>
         </div>
         <div id="xc-login-gate" class="hidden flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
-          <p class="text-cm-body text-cm-text-2">Đăng nhập Discord để tham gia chat và xem.</p>
-          <a href="/api/auth/discord"
+          <p class="text-cm-body text-cm-text-2">Đăng nhập để tham gia chat và xem.</p>
+          <button type="button" data-auth-open
             class="inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] text-cm-body font-bold bg-cm-accent text-white hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">
-            <FaDiscord className="w-5 h-5" />
-            Đăng nhập bằng Discord
-          </a>
+            Đăng nhập
+          </button>
         </div>
         <div id="xc-chat" class="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-[18rem]"></div>
         <form id="xc-chat-form" class="flex gap-2 p-3 border-t border-cm-border">

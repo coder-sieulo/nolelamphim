@@ -8,6 +8,13 @@ export interface DiscordUser {
   discriminator?: string | null
 }
 
+export interface AuthUser {
+  id: string
+  username: string
+  global_name?: string | null
+  avatar?: string | null
+}
+
 export interface SessionPayload {
   sub: string
   username: string
@@ -62,7 +69,7 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
   )
 }
 
-export async function signSession(user: DiscordUser): Promise<string | null> {
+export async function signSession(user: AuthUser | DiscordUser): Promise<string | null> {
   const { secret } = discordConfig()
   if (!secret) return null
   const now = Math.floor(Date.now() / 1000)

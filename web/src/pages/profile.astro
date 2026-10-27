@@ -53,13 +53,12 @@ const row = 'bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card
           <img src="/logo-128.png" alt="" width="72" height="72" class="rounded-[var(--radius-cm-card)] mb-5" />
           <h1 class="text-lg font-semibold text-cm-text mb-2">Đăng nhập để dùng hồ sơ của bạn</h1>
           <p class="text-cm-text-2 text-cm-body max-w-md mb-6">
-            Đăng nhập Discord để lưu phim yêu thích, đánh giá và lịch sử xem — đồng bộ trên mọi thiết bị,
-            cùng nhiều tính năng riêng của thành viên.
+            Đăng nhập để lưu phim yêu thích, đánh giá và lịch sử xem — đồng bộ trên mọi thiết bị.
           </p>
-          <a href="/api/auth/discord" class="inline-flex items-center gap-2.5 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-cm-body font-semibold hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">
+          <button type="button" data-auth-open class="inline-flex items-center gap-2.5 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-cm-body font-semibold hover:bg-cm-accent-hover transition-colors duration-[var(--duration-cm)]">
             <FaRightToBracket className="w-4 h-4" />
-            Đăng nhập với Discord
-          </a>
+            Đăng nhập
+          </button>
         </div>
       ) : (
         <div>

@@ -61,10 +61,10 @@ function userMenu(user: MeUser) {
 }
 
 function loginSlot() {
-  return `<a href="/api/auth/discord" class="site-login">
-    ${iconString('discord', 'w-4 h-4')}
+  return `<button type="button" data-auth-open class="site-login">
+    ${iconString('user', 'w-4 h-4')}
     <span class="hidden sm:inline">Đăng nhập</span>
-  </a>`
+  </button>`
 }
 
 function bind(user: MeUser | null) {
