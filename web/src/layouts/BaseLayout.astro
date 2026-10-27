@@ -17,6 +17,9 @@ import AuthModal from '../components/AuthModal.astro'
 import { SITE_NAME, SITE_URL } from '../lib/site'
 import { FaChevronUp } from 'react-icons/fa6'
 
+const sbUrl = import.meta.env.PUBLIC_SUPABASE_URL || ''
+const sbKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || ''
+
 interface Props {
   title?: string
   description?: string
@@ -262,6 +265,11 @@ Astro.response.headers.set(
       </div>
     </div>
     <AuthModal />
+
+    <script is:inline define:vars={{ sbUrl, sbKey }}>
+      if (sbUrl) window.__SB_URL = sbUrl
+      if (sbKey) window.__SB_KEY = sbKey
+    </script>
 
     <script is:inline>
       // Overlay "Bé Lỏ đang lấy phim cho bạn" theo View Transitions.
