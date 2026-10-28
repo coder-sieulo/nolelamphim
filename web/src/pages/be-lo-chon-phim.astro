@@ -85,7 +85,8 @@ import { imgProxyUrl } from '../lib/img'
             wrapper.classList.add('case-revealed')
             hint.textContent = 'Bé Lỏ đã chọn!'
             if (thumb) {
-              thumb.src = m.thumb_url ? `/api/img?url=${encodeURIComponent(m.thumb_url)}&w=640` : ''
+              const src = m.thumb_url || m.poster_url || m.thumb || m.image || m.cover || ''
+              thumb.src = src ? `/api/img?url=${encodeURIComponent(src)}&w=640` : ''
               thumb.alt = m.name || ''
             }
             if (nameEl) nameEl.textContent = m.name || ''
