@@ -64,6 +64,20 @@
       "when": 1793099414510,
       "tag": "0010_ambitious_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793195116637,
+      "tag": "0011_collections",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793195148712,
+      "tag": "0011_brave_swarm",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { getCollectionBySlug } from '../../lib/collections'
+import { getSessionUser } from '../../lib/auth'
+import MovieCard from '../../components/MovieCard.astro'
+import { FaShareNodes, FaLock, FaGlobe } from 'react-icons/fa6'
+
+const { slug } = Astro.params
+const user = await getSessionUser(Astro.cookies)
+const data = await getCollectionBySlug(slug || '', user?.sub || null)
+if (!data) {
+  return Astro.redirect('/404')
+}
+const { collection, items } = data
+const isOwner = user?.sub === collection.userSub
+const shareUrl = `${Astro.url.origin}/collection/${collection.slug}`
+---
+
+<BaseLayout title={`${collection.title} | Bộ sưu tập`} description={collection.description || `Bộ sưu tập phim ${collection.title}`} cache="public" sMaxAge={300} staleWhileRevalidate={600}>
+  <main class="px-4 sm:px-6 md:px-8 py-6 space-y-6">
+    <header class="space-y-2">
+      <div class="flex items-center gap-2 text-cm-text-2 text-sm">
+        {collection.isPublic ? <FaGlobe className="w-4 h-4" /> : <FaLock className="w-4 h-4" />}
+        <span>{collection.isPublic ? 'Công khai' : 'Riêng tư'}</span>
+        <span>•</span>
+        <span>{items.length} phim</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-cm-text">{collection.title}</h1>
+      {collection.description && <p class="text-cm-text-2 max-w-2xl">{collection.description}</p>}
+      <div class="flex flex-wrap items-center gap-2 pt-2">
+        <button id="share-collection" data-url={shareUrl} class="inline-flex items-center gap-2 h-10 px-4 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text hover:bg-cm-elevated">
+          <FaShareNodes className="w-4 h-4" /> Chia sẻ
+        </button>
+        {isOwner && (
+          <button id="toggle-public" data-id={collection.id} data-public={String(collection.isPublic)} class="inline-flex items-center gap-2 h-10 px-4 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text hover:bg-cm-elevated">
+            {collection.isPublic ? 'Chuyển về riêng tư' : 'Công khai bộ sưu tập'}
+          </button>
+        )}
+      </div>
+    </header>
+
+    {items.length === 0 ? (
+      <div class="text-center py-12 text-cm-text-2">Chưa có phim nào trong bộ sưu tập này.</div>
+    ) : (
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 sm:gap-4">
+        {items.map((it) => (
+          <MovieCard
+            movie={{
+              _id: it.movieExtId,
+              name: it.name,
+              slug: it.slug,
+              thumb_url: it.thumb,
+              tmdb_vote: it.tmdbVote || undefined,
+              year: it.year || undefined,
+              quality: it.quality || undefined,
+            } as any}
+          />
+        ))}
+      </div>
+    )}
+  </main>
+
+  <script is:inline>
+    document.getElementById('share-collection')?.addEventListener('click', async (e) => {
+      const url = e.currentTarget.dataset.url
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: document.title, url })
+          return
+        }
+        await navigator.clipboard.writeText(url)
+        alert('Đã sao chép link bộ sưu tập')
+      } catch {}
+    })
+    document.getElementById('toggle-public')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget
+      const id = btn.dataset.id
+      try {
+        const res = await fetch(`/api/collections/${id}/toggle`, { method: 'POST' })
+        const d = await res.json()
+        if (d.ok) {
+          location.reload()
+        }
+      } catch {}
+    })
+  </script>
+</BaseLayout>

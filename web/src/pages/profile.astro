@@ -4,7 +4,8 @@ import { getSessionUser } from '../lib/auth'
 import { getUserLibrary } from '../lib/user-store'
 import { movieCardHTML, escapeHTML, continueCardHTML } from '../lib/movieCard'
 import { imgUrl } from '../lib/img'
-import { FaHeart, FaClockRotateLeft, FaStar, FaRightToBracket, FaChevronRight } from 'react-icons/fa6'
+import { FaHeart, FaClockRotateLeft, FaStar, FaRightToBracket, FaChevronRight, FaLayerGroup, FaPlus, FaGlobe, FaLock } from 'react-icons/fa6'
+import { listMyCollections } from '../lib/collections'
 
 const user = await getSessionUser(Astro.cookies)
 const lib = user ? await getUserLibrary(user.sub) : null
@@ -12,6 +13,7 @@ const favorites = lib?.favorites ?? []
 const history = lib ? [...lib.history].sort((a, b) => b.watchedAt - a.watchedAt) : []
 const continueList = history.filter((h) => h.episodeSlug)
 const ratings = lib ? Object.entries(lib.ratings).sort((a, b) => b[1] - a[1]) : []
+const myCollections = user ? await listMyCollections(user.sub) : []
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts
@@ -166,7 +168,38 @@ const row = 'bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card
             </section>
           )}
 
-          {favorites.length === 0 && continueList.length === 0 && ratings.length === 0 && (
+          <!-- Bộ sưu tập -->
+          <section class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <FaLayerGroup className="w-4 h-4 text-cm-text-3" />
+                <h2 class="text-lg font-semibold text-cm-text">Bộ sưu tập của bạn</h2>
+              </div>
+              <button id="create-collection" class="inline-flex items-center gap-2 h-9 px-3 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-sm font-medium hover:bg-cm-accent-hover">
+                <FaPlus className="w-3.5 h-3.5" /> Tạo bộ sưu tập
+              </button>
+            </div>
+            {myCollections.length === 0 ? (
+              <div class={`${card} p-6 text-center text-cm-text-2`}>Chưa có bộ sưu tập nào.</div>
+            ) : (
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {myCollections.map((c) => (
+                  <a href={`/collection/${c.slug}`} class={`${card} p-4 flex items-center justify-between hover:bg-cm-elevated transition-colors`}>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <p class="text-cm-text font-medium truncate">{c.title}</p>
+                        {c.isPublic ? <FaGlobe className="w-3.5 h-3.5 text-cm-text-3" /> : <FaLock className="w-3.5 h-3.5 text-cm-text-3" />}
+                      </div>
+                      <p class="text-sm text-cm-text-2 mt-1">{c.count || 0} phim</p>
+                    </div>
+                    <FaChevronRight className="w-4 h-4 text-cm-text-3" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {favorites.length === 0 && continueList.length === 0 && ratings.length === 0 && myCollections.length === 0 && (
             <div class={`${card} px-6 py-12 flex flex-col items-center text-center`}>
               <FaHeart className="w-8 h-8 text-cm-text-3 mb-3" />
               <p class="text-cm-text-2 text-cm-body mb-1">Thư viện của bạn còn trống</p>
@@ -177,6 +210,24 @@ const row = 'bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card
         </div>
       )
     }
+  </div>
+
+  <div id="col-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70" data-col-close></div>
+    <div class="relative w-full max-w-sm rounded-[var(--radius-cm-modal)] bg-cm-elevated border border-cm-border p-6">
+      <h3 class="text-lg font-semibold text-cm-text mb-4">Tạo bộ sưu tập mới</h3>
+      <div class="space-y-3">
+        <input id="col-title" placeholder="Tên bộ sưu tập" class="w-full h-11 px-3 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-text" />
+        <textarea id="col-desc" placeholder="Mô tả (tùy chọn)" rows="3" class="w-full px-3 py-2 rounded-[var(--radius-cm-input)] bg-cm-surface border border-cm-border text-cm-text resize-none"></textarea>
+        <label class="flex items-center gap-2 text-sm text-cm-text-2">
+          <input id="col-public" type="checkbox" /> Công khai bộ sưu tập
+        </label>
+        <div class="flex gap-2">
+          <button id="col-create" class="flex-1 h-10 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white">Tạo</button>
+          <button data-col-close class="flex-1 h-10 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text">Huỷ</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -205,6 +256,27 @@ const row = 'bg-cm-surface border border-cm-border rounded-[var(--radius-cm-card
         }
         getRecent().forEach((r) => removeRecent(r.slug))
         window.location.reload()
+      })
+
+      const modal = document.getElementById('col-modal')
+      document.getElementById('create-collection')?.addEventListener('click', () => {
+        modal?.classList.remove('hidden')
+        modal?.classList.add('flex')
+      })
+      document.querySelectorAll('[data-col-close]').forEach((b) => b.addEventListener('click', () => {
+        modal?.classList.add('hidden')
+        modal?.classList.remove('flex')
+      }))
+      document.getElementById('col-create')?.addEventListener('click', async () => {
+        const title = (document.getElementById('col-title') as HTMLInputElement)?.value || ''
+        const description = (document.getElementById('col-desc') as HTMLTextAreaElement)?.value || ''
+        const isPublic = (document.getElementById('col-public') as HTMLInputElement)?.checked || false
+        try {
+          const res = await fetch('/api/collections', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description, isPublic }) })
+          const d = await res.json()
+          if (d.ok && d.collection) location.href = `/collection/${d.collection.slug}`
+          else alert(d.error || 'Không tạo được')
+        } catch { alert('Không tạo được') }
       })
     })
   </script>

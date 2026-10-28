@@ -74,6 +74,7 @@ export function movieCardHTML(movie: CardMovie, dot?: 'new' | 'hot'): string {
         ${posterImg}
         ${badge}
         ${episodeBadge}
+        ${slug && movie._id ? `<button type="button" class="mc-add-collection absolute top-1.5 left-1.5 z-30 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" data-ext-id="${String(movie._id)}" data-slug="${slug}" data-name="${name}" data-thumb="${escapeHTML(imgUrl(movie.thumb_url, 320))}" data-tmdb="${escapeHTML(String(voteRaw||''))}" data-year="${year}" data-quality="${quality}" aria-label="Thêm vào bộ sưu tập"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>` : ''}
       </div>
       <div class="mt-2 px-0.5">
         <h3 class="text-[13px] font-medium text-cm-text leading-snug line-clamp-2 transition-colors duration-[var(--duration-cm)] group-hover:text-cm-text-2">${name}</h3>

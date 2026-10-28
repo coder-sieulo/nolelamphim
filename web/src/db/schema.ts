@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import {
   bigint,
   bigserial,
+  boolean,
   check,
   doublePrecision,
   foreignKey,
@@ -140,6 +141,54 @@ export const commentLikes = pgTable(
     index('comment_likes_comment_idx').on(t.commentId),
   ],
 )
+
+/** Bộ sưu tập cá nhân (có thể public). */
+export const collections = pgTable(
+  'collections',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    userSub: text('user_sub')
+      .notNull()
+      .references(() => users.sub, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description').notNull().default(''),
+    isPublic: boolean('is_public').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('collections_user_idx').on(t.userSub),
+    index('collections_public_idx').on(t.isPublic, t.updatedAt),
+  ],
+)
+
+/** Phim trong bộ sưu tập. */
+export const collectionItems = pgTable(
+  'collection_items',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    collectionId: uuid('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade' }),
+    movieExtId: bigint('movie_ext_id', { mode: 'number' }).notNull(),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    thumb: text('thumb').notNull(),
+    tmdbVote: text('tmdb_vote'),
+    year: text('year'),
+    quality: text('quality'),
+    position: integer('position').notNull().default(0),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('collection_items_collection_id_movie_ext_id_uq').on(t.collectionId, t.movieExtId),
+    index('collection_items_collection_idx').on(t.collectionId, t.position),
+  ],
+)
+
+export type CollectionRow = typeof collections.$inferSelect
+export type CollectionItemRow = typeof collectionItems.$inferSelect
 
 /**
  * Catalogue phim (read model) — dữ liệu công khai, KHÔNG cần auth.
