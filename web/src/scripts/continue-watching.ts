@@ -25,6 +25,15 @@ registerPageInit(() => {
       const { user } = await getMe()
       if (user) {
         authed = true
+        // Đồng bộ lịch sử local lên tài khoản nếu chưa có
+        if (watched.length > 0) {
+          fetch('/api/user/history/sync', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ items: watched.slice(0, 30) }),
+          }).catch(() => {})
+        }
         const lib = await getLib()
         const hist = Array.isArray(lib?.history) ? (lib.history as any[]) : []
         const serverWatched: Watched[] = hist
