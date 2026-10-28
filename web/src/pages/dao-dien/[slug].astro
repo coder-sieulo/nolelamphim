@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { getPersonBySlug } from '../../lib/people'
+import MovieCard from '../../components/MovieCard.astro'
+import { FaClapperboard } from 'react-icons/fa6'
+
+const { slug } = Astro.params
+const data = await getPersonBySlug(slug || '')
+if (!data) return Astro.redirect('/404')
+const { person, films } = data
+const directed = films.filter((f) => f.role === 'director')
+---
+
+<BaseLayout title={`${person.name} | Đạo diễn`} description={`Danh sách phim do ${person.name} đạo diễn`} cache="public" sMaxAge={600} staleWhileRevalidate={1800}>
+  <main class="px-4 sm:px-6 md:px-8 py-6 space-y-6">
+    <header class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-full bg-cm-surface border border-cm-border flex items-center justify-center">
+        <FaClapperboard className="w-7 h-7 text-cm-text-3" />
+      </div>
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-cm-text">{person.name}</h1>
+        <p class="text-cm-text-2 mt-1">{directed.length} phim</p>
+      </div>
+    </header>
+
+    {directed.length === 0 ? (
+      <div class="text-center py-12 text-cm-text-2">Chưa có dữ liệu phim.</div>
+    ) : (
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 sm:gap-4">
+        {directed.map((f) => (
+          <MovieCard movie={f as any} />
+        ))}
+      </div>
+    )}
+  </main>
+</BaseLayout>
