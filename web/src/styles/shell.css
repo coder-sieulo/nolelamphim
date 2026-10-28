@@ -632,20 +632,37 @@
     z-index: 1;
   }
 
-  #nav-island .nav-belo {
+  .nav-belo-pill {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding-left: 0.625rem;
-    padding-right: 0.75rem;
-  }
-
-  #nav-island .nav-belo .nav-belo-label {
-    font-weight: 600;
-  }
-
-  #nav-island .nav-belo.active {
+    gap: 0.5rem;
+    height: 2.25rem;
+    padding: 0 0.9rem 0 0.8rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-cm-border);
+    background: linear-gradient(180deg, rgba(249, 115, 22, 0.18) 0%, rgba(249, 115, 22, 0.1) 100%);
     color: var(--color-cm-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 150ms ease;
+  }
+
+  .nav-belo-pill:hover {
+    border-color: rgba(249, 115, 22, 0.8);
+    color: #fff;
+  }
+
+  .nav-belo-pill.active {
+    border-color: rgba(249, 115, 22, 0.9);
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.25);
+  }
+
+  .site-header.scrolled .nav-belo-pill {
+    height: 2rem;
+    font-size: 0.8125rem;
+    padding: 0 0.8rem 0 0.7rem;
   }
   /* Marker thay cho nền active tĩnh → bỏ nền riêng của link active. */
   #nav-island.island-has-marker .nav-link.active {
