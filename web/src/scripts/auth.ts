@@ -43,9 +43,9 @@ function userMenu(user: MeUser) {
         Đã xem
       </a>
       <div class="menu-sep"></div>
-      <a href="/api/random" class="menu-item" role="menuitem" data-loading-msg="Đang tìm phim bất kỳ…">
+      <a href="/be-lo-chon-phim" class="menu-item" role="menuitem">
         <span class="mi-ic">${iconString('dice', 'w-4 h-4')}</span>
-        Phim bất kỳ
+        Bé Lỏ chọn phim
       </a>
       <a href="/phim-dna" class="menu-item" role="menuitem" data-loading-msg="Đang nạp DNA phim…">
         <span class="mi-ic">${iconString('dna', 'w-4 h-4')}</span>
