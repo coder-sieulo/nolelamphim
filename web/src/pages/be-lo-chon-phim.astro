@@ -1,36 +1,114 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { FaDice, FaFilm } from 'react-icons/fa6'
+import { FaDice } from 'react-icons/fa6'
+import { imgProxyUrl } from '../lib/img'
 
 ---
 
 <BaseLayout title="Bé Lỏ chọn phim" description="Bé Lỏ chọn ngẫu nhiên một bộ phim cho bạn" cache="public" sMaxAge={60} staleWhileRevalidate={300}>
-  <main class="px-4 sm:px-6 md:px-8 py-10 min-h-[60vh] flex items-center justify-center">
-    <div class="text-center space-y-6 max-w-md">
-      <div class="flex justify-center">
-        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-cm-accent to-orange-500 flex items-center justify-center shadow-[0_0_60px_-20px_rgba(249,115,22,0.8)]">
-          <FaDice className="w-9 h-9 text-white" />
+  <main class="px-4 sm:px-6 md:px-8 py-8 min-h-[70vh] flex flex-col items-center justify-center gap-6">
+    <header class="text-center space-y-2">
+      <h1 class="text-2xl sm:text-3xl font-bold text-cm-text">Bé Lỏ chọn phim</h1>
+      <p class="text-cm-text-2">Bấm mở hòm để ngẫu nhiên chọn phim</p>
+    </header>
+
+    <div class="relative w-full max-w-[280px] sm:max-w-[320px]">
+      <button id="case-open" class="group relative w-full aspect-[3/4] rounded-[var(--radius-cm-card)] overflow-hidden border border-cm-border bg-cm-surface shadow-[0_60px_120px_-80px_rgba(249,115,22,0.9)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cm-accent">
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div id="case-lid" class="case-lid absolute inset-0 bg-gradient-to-br from-cm-accent/90 to-orange-600 flex flex-col items-center justify-center gap-3 text-white transition-transform duration-700 ease-[cubic-bezier(.25,.8,.25,1)]">
+            <FaDice className="w-10 h-10" />
+            <span class="text-base font-semibold uppercase tracking-[0.4em]">Bé Lỏ</span>
+          </div>
+          <div id="case-inner" class="case-inner absolute inset-0 bg-cm-bg/80 flex items-center justify-center opacity-0 transition-opacity duration-500">
+            <div class="w-8 h-8 border-2 border-cm-accent/30 border-t-cm-accent rounded-full animate-spin"></div>
+          </div>
         </div>
-      </div>
-      <div class="space-y-2">
-        <h1 class="text-2xl sm:text-3xl font-bold text-cm-text">Bé Lỏ chọn phim</h1>
-        <p class="text-cm-text-2">Không biết xem gì? Để Bé Lỏ chọn ngẫu nhiên một bộ phim cho bạn</p>
-      </div>
-      <button id="pick-movie" class="inline-flex items-center gap-2 h-12 px-6 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white text-base font-semibold hover:bg-cm-accent-hover transition-colors">
-        <FaFilm className="w-4 h-4" />
-        Bé Lỏ chọn ngay
+        <div id="case-result" class="case-result absolute inset-0 opacity-0 transition-opacity duration-700">
+          <img id="case-thumb" src="" alt="" class="w-full h-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+          <div class="absolute bottom-0 left-0 right-0 p-4 text-left">
+            <p id="case-name" class="text-white font-semibold line-clamp-2"></p>
+            <p id="case-meta" class="text-white/70 text-sm mt-1"></p>
+          </div>
+        </div>
       </button>
-      <p id="status" class="text-sm text-cm-text-3 hidden">Đang chọn...</p>
+      <p id="case-hint" class="text-center text-sm text-cm-text-3 mt-4">Nhấn vào hòm để mở</p>
     </div>
+
+    <a id="watch-link" href="#" class="hidden inline-flex items-center gap-2 h-11 px-5 rounded-[var(--radius-cm-btn)] bg-cm-accent text-white font-medium hover:bg-cm-accent-hover transition-colors">
+      Xem phim này
+    </a>
   </main>
 
+  <style>
+    .case-lid {
+      transform-origin: top;
+    }
+    .case-open .case-lid {
+      transform: rotateX(-110deg);
+    }
+    .case-open .case-inner {
+      opacity: 1;
+    }
+    .case-revealed .case-inner {
+      opacity: 0;
+    }
+    .case-revealed .case-result {
+      opacity: 1;
+    }
+  </style>
+
   <script is:inline>
-    document.getElementById('pick-movie')?.addEventListener('click', () => {
-      const btn = document.getElementById('pick-movie')
-      const status = document.getElementById('status')
-      if (btn) btn.disabled = true
-      if (status) { status.classList.remove('hidden'); status.textContent = 'Đang chọn...' }
-      window.location.href = '/api/random'
+    const btn = document.getElementById('case-open')
+    const wrapper = btn
+    const hint = document.getElementById('case-hint')
+    const watch = document.getElementById('watch-link')
+    const thumb = document.getElementById('case-thumb')
+    const nameEl = document.getElementById('case-name')
+    const metaEl = document.getElementById('case-meta')
+
+    let spinning = false
+    btn?.addEventListener('click', async () => {
+      if (spinning) return
+      spinning = true
+      wrapper.classList.remove('case-revealed')
+      wrapper.classList.add('case-open')
+      hint.textContent = 'Đang lắc hòm...'
+      watch.classList.add('hidden')
+
+      try {
+        const res = await fetch('/api/be-lo-pick', { cache: 'no-store' })
+        const data = await res.json()
+        if (data?.ok && data.movie) {
+          const m = data.movie
+          setTimeout(() => {
+            wrapper.classList.add('case-revealed')
+            hint.textContent = 'Bé Lỏ đã chọn!'
+            if (thumb) {
+              thumb.src = m.thumb_url ? `/api/img?url=${encodeURIComponent(m.thumb_url)}&w=640` : ''
+              thumb.alt = m.name || ''
+            }
+            if (nameEl) nameEl.textContent = m.name || ''
+            const parts = []
+            if (m.year) parts.push(m.year)
+            if (m.quality) parts.push(m.quality)
+            if (m.episode_current) parts.push(m.episode_current)
+            if (metaEl) metaEl.textContent = parts.join(' • ')
+            if (watch) {
+              watch.href = `/phim/${m.slug}`
+              watch.classList.remove('hidden')
+            }
+          }, 650)
+        } else {
+          hint.textContent = 'Thử lại nhé'
+          wrapper.classList.remove('case-open')
+          spinning = false
+        }
+      } catch {
+        hint.textContent = 'Thử lại nhé'
+        wrapper.classList.remove('case-open')
+        spinning = false
+      }
     })
   </script>
 </BaseLayout>
