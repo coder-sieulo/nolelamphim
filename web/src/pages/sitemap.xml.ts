@@ -16,6 +16,7 @@ export const GET: APIRoute = async () => {
     { url: abs('/sitemap-the-loai.xml') },
     { url: abs('/sitemap-quoc-gia.xml') },
     { url: abs('/sitemap-nam.xml') },
+    { url: abs('/sitemap-bo-suu-tap.xml') },
     ...Array.from({ length: chunkCount(total, MOVIE_SITEMAP_CHUNK) }, (_, i) => ({
       url: abs(`/sitemap-phim-${i + 1}.xml`),
       lastmod,

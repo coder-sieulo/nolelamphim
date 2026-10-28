@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { getCuratedList } from '../../lib/curated'
+import { getDb, hasDb } from '../../db'
+import { movies } from '../../db/schema'
+import { inArray } from 'drizzle-orm'
+import { rowToMovie } from '../../lib/catalogue'
+import MovieCard from '../../components/MovieCard.astro'
+import { imgProxyUrl } from '../../lib/img'
+
+const { slug } = Astro.params
+const list = await getCuratedList(slug || '')
+if (!list) return Astro.redirect('/404')
+const slugs = list.items.map((i) => i.movieSlug)
+let ordered: any[] = []
+if (hasDb() && slugs.length) {
+  const db = getDb()
+  const rows = await db.select().from(movies).where(inArray(movies.slug, slugs))
+  const map = new Map(rows.map((r) => [r.slug, rowToMovie(r)]))
+  ordered = slugs.map((s) => map.get(s)).filter(Boolean)
+}
+---
+
+<BaseLayout title={`${list.title} | Bộ sưu tập`} description={list.description || list.title} cache="public" sMaxAge={600} staleWhileRevalidate={1800}>
+  <main class="px-4 sm:px-6 md:px-8 py-6 space-y-6">
+    <header class="space-y-3">
+      {list.cover && (
+        <div class="rounded-[var(--radius-cm-card)] overflow-hidden aspect-[21/9]">
+          <img src={imgProxyUrl(list.cover, 1280)} alt={list.title} class="w-full h-full object-cover" />
+        </div>
+      )}
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-cm-text">{list.title}</h1>
+        {list.description && <p class="text-cm-text-2 mt-2 max-w-3xl">{list.description}</p>}
+        <p class="text-cm-text-3 text-sm mt-2">{ordered.length} phim</p>
+      </div>
+    </header>
+
+    {ordered.length === 0 ? (
+      <div class="text-center py-12 text-cm-text-2">Chưa có phim trong bộ sưu tập.</div>
+    ) : (
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 sm:gap-4">
+        {ordered.map((m: any) => <MovieCard movie={m} />)}
+      </div>
+    )}
+  </main>
+</BaseLayout>
