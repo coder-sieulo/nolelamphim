@@ -631,6 +631,22 @@
     position: relative;
     z-index: 1;
   }
+
+  #nav-island .nav-belo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding-left: 0.625rem;
+    padding-right: 0.75rem;
+  }
+
+  #nav-island .nav-belo .nav-belo-label {
+    font-weight: 600;
+  }
+
+  #nav-island .nav-belo.active {
+    color: var(--color-cm-text);
+  }
   /* Marker thay cho nền active tĩnh → bỏ nền riêng của link active. */
   #nav-island.island-has-marker .nav-link.active {
     background: transparent;

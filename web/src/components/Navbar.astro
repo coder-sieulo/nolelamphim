@@ -60,6 +60,15 @@ const bottomItems = [
       <div id="nav-island" class="nav-island">
         <!-- Khối cam trượt giữa các mục (mục 2.1) — JS định vị -->
         <span id="island-marker" class="island-marker" aria-hidden="true"></span>
+        <a
+          href="/be-lo-chon-phim"
+          class:list={['nav-link nav-belo', pathname === '/be-lo-chon-phim' && 'active']}
+          aria-label="Bé Lỏ chọn phim"
+          title="Bé Lỏ chọn phim"
+        >
+          <FaDice className="w-[16px] h-[16px]" />
+          <span class="nav-belo-label">Bé Lỏ</span>
+        </a>
         {
           links.map((link, i) => (
             <a
@@ -94,15 +103,6 @@ const bottomItems = [
     </div>
 
     <div class="site-actions">
-      <a
-        href="/be-lo-chon-phim"
-        id="nav-be-lo"
-        class="site-icon-btn"
-        aria-label="Bé Lỏ chọn phim"
-        title="Bé Lỏ chọn phim"
-      >
-        <FaDice className="w-[18px] h-[18px]" />
-      </a>
       <button id="search-open" class="site-icon-btn" aria-label="Tìm kiếm" title="Tìm kiếm (/)">
         <FaMagnifyingGlass className="w-[18px] h-[18px]" />
       </button>
