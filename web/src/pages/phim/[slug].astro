@@ -22,6 +22,7 @@ import { imgUrl, imgProxyUrl, imgSrcSet } from '../../lib/img'
 import { SITE_URL } from '../../lib/site'
 import { breadcrumbLd } from '../../lib/seo'
 import { FaPlay, FaArrowLeft } from 'react-icons/fa6'
+import { slugifyName } from '../../lib/slugify'
 
 /**
  * 4.2 — HTML của trang này phải **công khai thật** (byte-identical với mọi người
@@ -166,8 +167,15 @@ const techRows = [
   { k: 'Loại phim', v: typeLabel(movie.type) },
   { k: 'Thời lượng', v: movie.time || '' },
   { k: 'Trạng thái', v: movie.status || '' },
-  ...(hasDirector ? [{ k: 'Đạo diễn', v: movie.director!.join(', ') }] : []),
-].filter((r) => r.v)
+  ...(hasDirector
+    ? [
+        {
+          k: 'Đạo diễn',
+          v: movie.director!.map((d: string) => ({ name: d, slug: `/dao-dien/${slugifyName(d)}` })),
+        },
+      ]
+    : []),
+].filter((r: any) => r.v)
 
 const tabs = [
   { id: 'tong-quan', label: 'Tổng quan' },
@@ -370,21 +378,35 @@ const chipClass =
 
             {/* Diễn viên */}
             {
-              hasActor && (
+              (hasActor || hasDirector) && (
                 <section data-panel="dien-vien" class="movie-panel" hidden>
                   <div class="flex flex-col gap-5">
-                    <div>
-                      <h3 class="text-cm-meta font-semibold uppercase tracking-wide text-cm-text-3 mb-2">Diễn viên</h3>
-                      <p class="text-cm-body text-cm-text-2 leading-relaxed">{movie.actor!.join(', ')}</p>
-                    </div>
-                    {
-                      hasDirector && (
-                        <div>
-                          <h3 class="text-cm-meta font-semibold uppercase tracking-wide text-cm-text-3 mb-2">Đạo diễn</h3>
-                          <p class="text-cm-body text-cm-text-2 leading-relaxed">{movie.director!.join(', ')}</p>
-                        </div>
-                      )
-                    }
+                    {hasActor && (
+                      <div>
+                        <h3 class="text-cm-meta font-semibold uppercase tracking-wide text-cm-text-3 mb-2">Diễn viên</h3>
+                        <p class="text-cm-body text-cm-text-2 leading-relaxed flex flex-wrap gap-x-2 gap-y-1">
+                          {movie.actor!.map((a: string, i: number) => (
+                            <>
+                              <a href={`/dien-vien/${slugifyName(a)}`} class="hover:text-cm-text underline-offset-4 hover:underline">{a}</a>
+                              {i < movie.actor!.length - 1 && <span class="text-cm-text-3">,</span>}
+                            </>
+                          ))}
+                        </p>
+                      </div>
+                    )}
+                    {hasDirector && (
+                      <div>
+                        <h3 class="text-cm-meta font-semibold uppercase tracking-wide text-cm-text-3 mb-2">Đạo diễn</h3>
+                        <p class="text-cm-body text-cm-text-2 leading-relaxed flex flex-wrap gap-x-2 gap-y-1">
+                          {movie.director!.map((d: string, i: number) => (
+                            <>
+                              <a href={`/dao-dien/${slugifyName(d)}`} class="hover:text-cm-text underline-offset-4 hover:underline">{d}</a>
+                              {i < movie.director!.length - 1 && <span class="text-cm-text-3">,</span>}
+                            </>
+                          ))}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </section>
               )
@@ -441,10 +463,25 @@ const chipClass =
         <h3 class="text-cm-meta font-semibold uppercase tracking-wide text-cm-text-3 mb-3">Thông tin phim</h3>
         <dl class="tech-list">
           {
-            techRows.map((r) => (
+            techRows.map((r: any) => (
               <div class="tech-row">
                 <dt>{r.k}</dt>
-                <dd>{r.v}</dd>
+                <dd>
+                  {Array.isArray(r.v)
+                    ? r.v.map((item: any, i: number) => (
+                        <>
+                          {typeof item === 'string' ? (
+                            item
+                          ) : (
+                            <a href={item.slug} class="hover:text-cm-text hover:underline underline-offset-4">
+                              {item.name}
+                            </a>
+                          )}
+                          {i < r.v.length - 1 && <span class="text-cm-text-3">, </span>}
+                        </>
+                      ))
+                    : r.v}
+                </dd>
               </div>
             ))
           }

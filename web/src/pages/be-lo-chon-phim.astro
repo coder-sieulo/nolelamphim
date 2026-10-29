@@ -1,7 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { FaDice } from 'react-icons/fa6'
+import { FaDice, FaChevronDown } from 'react-icons/fa6'
 import { imgProxyUrl } from '../lib/img'
+import { getCategories } from '../lib/api'
+
+const cats = await getCategories().catch(() => ({ status: false, items: [] }))
+const categories = Array.isArray((cats as any).items) ? (cats as any).items.slice(0, 30) : []
 
 ---
 
@@ -9,8 +13,18 @@ import { imgProxyUrl } from '../lib/img'
   <main class="px-4 sm:px-6 md:px-8 py-8 min-h-[70vh] flex flex-col items-center justify-center gap-6">
     <header class="text-center space-y-2">
       <h1 class="text-2xl sm:text-3xl font-bold text-cm-text">Bé Lỏ chọn phim</h1>
-      <p class="text-cm-text-2">Bấm mở hòm để ngẫu nhiên chọn phim</p>
+      <p class="text-cm-text-2">Chọn bất kỳ hoặc ngẫu nhiên theo thể loại</p>
     </header>
+
+    <div class="relative">
+      <select id="belo-category" class="h-10 pl-3 pr-8 rounded-[var(--radius-cm-btn)] bg-cm-surface border border-cm-border text-cm-text-2 text-sm focus:outline-none focus:border-cm-border-strong">
+        <option value="">Bé Lỏ chọn bất kỳ</option>
+        {categories.map((c: any) => (
+          <option value={c.slug}>{c.name}</option>
+        ))}
+      </select>
+      <FaChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-cm-text-3" />
+    </div>
 
     <div class="relative w-full max-w-[280px] sm:max-w-[320px]">
       <button id="case-open" class="group relative w-full aspect-[3/4] rounded-[var(--radius-cm-card)] overflow-hidden border border-cm-border bg-cm-surface shadow-[0_60px_120px_-80px_rgba(249,115,22,0.9)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cm-accent">
@@ -68,6 +82,7 @@ import { imgProxyUrl } from '../lib/img'
     const metaEl = document.getElementById('case-meta')
 
     let spinning = false
+    const catSelect = document.getElementById('belo-category')
     btn?.addEventListener('click', async () => {
       if (spinning) return
       spinning = true
@@ -77,7 +92,10 @@ import { imgProxyUrl } from '../lib/img'
       watch.classList.add('hidden')
 
       try {
-        const res = await fetch('/api/be-lo-pick', { cache: 'no-store' })
+        const catEl = catSelect
+        const cat = catEl && 'value' in catEl ? catEl.value : ''
+        const url = cat ? `/api/be-lo-pick?cat=${encodeURIComponent(cat)}` : '/api/be-lo-pick'
+        const res = await fetch(url, { cache: 'no-store' })
         const data = await res.json()
         if (data?.ok && data.movie) {
           const m = data.movie
