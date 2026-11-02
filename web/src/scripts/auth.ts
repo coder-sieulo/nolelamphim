@@ -79,15 +79,15 @@ function bind(user: MeUser | null) {
   const wrap = document.getElementById('auth-menu-wrap') as HTMLElement | null
 
   const close = () => {
-    menu?.classList.remove('open')
+    wrap?.classList.remove('open')
     btn?.setAttribute('aria-expanded', 'false')
   }
   btn?.addEventListener('click', (e) => {
     e.stopPropagation()
-    const isOpen = menu?.classList.contains('open')
+    const isOpen = wrap?.classList.contains('open')
     if (isOpen) close()
     else {
-      menu?.classList.add('open')
+      wrap?.classList.add('open')
       btn?.setAttribute('aria-expanded', 'true')
     }
   })
