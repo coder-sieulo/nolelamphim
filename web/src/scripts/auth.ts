@@ -119,6 +119,17 @@ async function handleLogout() {
   } catch {
     /* nothing */
   }
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
+    const url = localStorage.getItem('sb-url') || (window as any).__SB_URL || ''
+    const key = localStorage.getItem('sb-key') || (window as any).__SB_KEY || ''
+    if (url && key) {
+      const supabase = createClient(url, key)
+      await supabase.auth.signOut().catch(() => {})
+    }
+  } catch {
+    /* nothing */
+  }
   invalidateSession()
   renderAuth()
 }
